@@ -1,0 +1,91 @@
+{% extends 'portal/base.html' %}
+{% block title %}{{ provider.company_name }} - Ledger{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="fw-bold mb-0">{{ provider.company_name }}</h3>
+        <small class="text-muted">Provider Ledger &amp; Statement</small>
+    </div>
+    <div>
+        <a href="{% url 'erp:provider_detail' provider.id %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back to Provider</a>
+        <button onclick="window.print()" class="btn btn-purple btn-sm"><i class="bi bi-printer"></i> Print</button>
+    </div>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="card text-center border-primary">
+            <div class="card-body">
+                <h6 class="text-muted mb-1">Total Billed</h6>
+                <h4 class="fw-bold text-primary mb-0">R{{ total_billed|floatformat:2 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center border-success">
+            <div class="card-body">
+                <h6 class="text-muted mb-1">Total Paid</h6>
+                <h4 class="fw-bold text-success mb-0">R{{ total_paid|floatformat:2 }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center {% if balance_due > 0 %}border-danger{% else %}border-success{% endif %}">
+            <div class="card-body">
+                <h6 class="text-muted mb-1">Balance Due</h6>
+                <h4 class="fw-bold {% if balance_due > 0 %}text-danger{% else %}text-success{% endif %} mb-0">R{{ balance_due|floatformat:2 }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="card">
+    <div class="card-header bg-purple text-white">
+        <h6 class="mb-0"><i class="bi bi-journal-text"></i> Transaction History</h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Amount (Incl)</th>
+                        <th>Paid</th>
+                        <th>Balance</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exp in expenses %}
+                    <tr>
+                        <td>{{ exp.expense_date|date:"d M Y" }}</td>
+                        <td>{{ exp.description|truncatechars:50 }}</td>
+                        <td>R{{ exp.amount_incl|floatformat:2 }}</td>
+                        <td>R{{ exp.amount_paid|floatformat:2 }}</td>
+                        <td class="fw-bold {% if exp.balance_due > 0 %}text-danger{% endif %}">R{{ exp.balance_due|floatformat:2 }}</td>
+                        <td><span class="badge bg-{% if exp.status == 'unpaid' %}danger{% elif exp.status == 'paid' %}success{% elif exp.status == 'partial' %}warning{% else %}secondary{% endif %}">{{ exp.get_status_display }}</span></td>
+                        <td>
+                            {% if exp.balance_due > 0 %}
+                            <a href="{% url 'erp:expense_pay' exp.id %}" class="btn btn-sm btn-gold"><i class="bi bi-credit-card"></i> Pay</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center text-muted py-4">No transactions found</td></tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-active fw-bold">
+                        <td></td>
+                        <td>TOTALS</td>
+                        <td>R{{ total_billed|floatformat:2 }}</td>
+                        <td>R{{ total_paid|floatformat:2 }}</td>
+                        <td class="{% if balance_due > 0 %}text-danger{% endif %}">R{{ balance_due|floatformat:2 }}</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends 'portal/base.html' %}
+{% block title %}Income Statement - Accounting{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold mb-0"><i class="bi bi-graph-up"></i> Income Statement</h4>
+    <div class="d-flex gap-2">
+        <a href="{% url 'accounting:trial_balance' %}" class="btn btn-sm btn-outline-purple"><i class="bi bi-list-columns"></i> Trial Balance</a>
+        <a href="{% url 'accounting:balance_sheet' %}" class="btn btn-sm btn-outline-purple"><i class="bi bi-pie-chart"></i> Balance Sheet</a>
+        <button onclick="window.print()" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer"></i> Print</button>
+    </div>
+</div>
+<div class="card">
+    <div class="card-header bg-purple text-white text-center">
+        <h5 class="mb-0">Al Ansaar Foundation</h5>
+        <small>Income Statement</small>
+    </div>
+    <div class="card-body">
+        <h6 class="text-success border-bottom pb-2"><i class="bi bi-arrow-up-circle"></i> Income</h6>
+        <table class="table table-sm mb-0">
+            {% for item in incomes %}
+            <tr><td>{{ item.account.name }}</td><td class="text-end">R{{ item.amount|floatformat:2 }}</td></tr>
+            {% empty %}
+            <tr><td colspan="2" class="text-muted text-center">No income recorded</td></tr>
+            {% endfor %}
+            <tr class="fw-bold border-top"><td>Total Income</td><td class="text-end text-success">R{{ total_income|floatformat:2 }}</td></tr>
+        </table>
+
+        <h6 class="text-danger border-bottom pb-2 mt-4"><i class="bi bi-arrow-down-circle"></i> Expenses</h6>
+        <table class="table table-sm mb-0">
+            {% for item in expenses %}
+            <tr><td>{{ item.account.name }}</td><td class="text-end">R{{ item.amount|floatformat:2 }}</td></tr>
+            {% empty %}
+            <tr><td colspan="2" class="text-muted text-center">No expenses recorded</td></tr>
+            {% endfor %}
+            <tr class="fw-bold border-top"><td>Total Expenses</td><td class="text-end text-danger">R{{ total_expenses|floatformat:2 }}</td></tr>
+        </table>
+
+        <div class="border-top pt-2 mt-4">
+            <table class="table table-sm mb-0">
+                <tr class="fw-bold">
+                    <td style="font-size:1.1rem;">Net Profit / (Loss)</td>
+                    <td class="text-end" style="font-size:1.1rem;{% if net_profit >= 0 %}color:#27ae60{% else %}color:#e74c3c{% endif %}">
+                        R{{ net_profit|floatformat:2 }}
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

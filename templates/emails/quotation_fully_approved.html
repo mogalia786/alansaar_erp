@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px;">
+<div style="max-width:600px;margin:auto;background:#fff;border-radius:8px;overflow:hidden;">
+<div style="background:#5B2C6F;padding:30px 20px;text-align:center;">
+<h1 style="color:#D4AF37;margin:0;font-size:24px;">Al Ansaar Foundation</h1>
+<p style="color:#fff;margin:8px 0 0 0;font-size:16px;">Quotation Fully Approved</p>
+</div>
+<div style="padding:25px;">
+<h2 style="color:#5B2C6F;">Final Approval Confirmed</h2>
+<p>Dear <strong>{{ quotation.provider.company_name }}</strong>,</p>
+<p>We are pleased to inform you that following the site meeting, your quotation <strong>{{ quotation.quotation_number }}</strong> for <strong>{{ rfq.title }}</strong> has been <strong style="color:#28a745;">fully approved</strong>.</p>
+<table style="width:100%;border-collapse:collapse;margin:20px 0;">
+<tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;width:140px;">Quotation #</td><td style="padding:8px;border:1px solid #ddd;">{{ quotation.quotation_number }}</td></tr>
+<tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Amount</td><td style="padding:8px;border:1px solid #ddd;">R{{ quotation.total_amount_incl|floatformat:2 }} (incl VAT)</td></tr>
+</table>
+<p>You are now an approved service provider. Your account has been created, and you can log in to the provider portal to track your engagements and view your financial records.</p>
+<p><strong>Your Provider Portal:</strong> <a href="{{ site_url }}/providers/login/" style="color:#5B2C6F;">{{ site_url }}/providers/login/</a></p>
+<p>Please log in using your registered email address. If this is your first login, you will be prompted to set a new password.</p>
+<hr style="border:none;border-top:1px solid #eee;margin:25px 0;">
+<p style="color:#888;font-size:12px;">Al Ansaar Foundation &bull; 207 West Road, Overport, Durban &bull; www.alansaar.org.za<br>Tel: 031 208 1601 &bull; Email: info@alansaar.org.za</p>
+<p style="color:#888;font-size:11px;">This is an automated message. Please do not reply directly.</p>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,70 @@
+{% extends 'providers/provider_base.html' %}
+{% load static %}
+{% block title %}Submit Quotation - {{ rfq.rfq_number }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'providers:rfq_list' %}">RFQs</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'providers:rfq_detail' rfq.id %}">{{ rfq.rfq_number }}</a></li>
+            <li class="breadcrumb-item active">Submit Quotation</li>
+        </ol>
+    </nav>
+    <div class="card">
+        <div class="card-header bg-purple text-white">
+            <h4 class="mb-0">Submit Quotation</h4>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <strong>{{ rfq.rfq_number }}</strong> - {{ rfq.title }}<br>
+                <small>Closing: {{ rfq.closing_date|date:"d F Y H:i" }}</small>
+            </div>
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <h5 class="text-purple">Company Info</h5>
+                <table class="table table-sm table-borderless w-50">
+                    <tr><td class="text-muted">Company</td><td><strong>{{ provider.company_name }}</strong></td></tr>
+                    <tr><td class="text-muted">Contact</td><td>{{ provider.contact_person|default:provider.company_name }}</td></tr>
+                    <tr><td class="text-muted">Email</td><td>{{ provider.email }}</td></tr>
+                    <tr><td class="text-muted">Phone</td><td>{{ provider.phone }}</td></tr>
+                    <tr><td class="text-muted">VAT</td><td>{{ provider.vat_number|default:"Not provided" }}</td></tr>
+                    <tr><td class="text-muted">Registration</td><td>{{ provider.registration_number|default:"Not provided" }}</td></tr>
+                </table>
+                <h5 class="mt-4 text-purple">Executive Summary</h5>
+                <textarea name="cover_letter" rows="4" class="form-control" placeholder="Introduce your company, highlight key differentiators, summarize why you are the best fit."></textarea>
+                <h5 class="mt-3 text-purple">Methodology</h5>
+                <textarea name="methodology" rows="5" class="form-control" placeholder="Describe your solution approach. Include resource allocation, schedule, and execution plan."></textarea>
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Total excl VAT (R)</label>
+                        <input type="number" name="total_amount_excl" class="form-control" required step="0.01" min="0">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Delivery Timeline</label>
+                        <input type="text" name="delivery_timeline" class="form-control" placeholder="e.g. 30 days">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Validity Period</label>
+                        <input type="text" name="validity_period" class="form-control" placeholder="e.g. 30 days">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Payment Terms</label>
+                        <input type="text" name="payment_terms" class="form-control" placeholder="e.g. 50% upfront 50% completion">
+                    </div>
+                </div>
+                <h5 class="mt-4 text-purple">Upload Proposal</h5>
+                <div class="mb-3">
+                    <input type="file" name="documents" class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.png,.zip" multiple>
+                    <div class="form-text">Multiple files allowed. Accepted: PDF, DOC, DOCX, XLS, PPT, Images.</div>
+                </div>
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'providers:rfq_detail' rfq.id %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-purple btn-lg">Submit Quotation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

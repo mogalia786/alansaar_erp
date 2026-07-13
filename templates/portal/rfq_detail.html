@@ -1,0 +1,98 @@
+{% extends 'portal/base.html' %}
+{% load static %}
+{% block title %}{{ rfq.rfq_number }} - Al Ansaar ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">{{ rfq.rfq_number }}</h3>
+    <div>
+        {% if rfq.status == 'draft' %}
+        <a href="{% url 'erp:rfq_publish' rfq.pk %}" class="btn btn-success" onclick="return confirm('Publish this RFQ? All active providers will be notified.')"><i class="bi bi-send"></i> Publish</a>
+        {% elif rfq.status == 'open' %}
+        <a href="{% url 'erp:rfq_close' rfq.pk %}" class="btn btn-warning" onclick="return confirm('Close this RFQ? No further submissions will be accepted.')"><i class="bi bi-lock"></i> Close RFQ</a>
+        {% endif %}
+        <a href="{% url 'erp:rfq_edit' rfq.pk %}" class="btn btn-purple"><i class="bi bi-pencil"></i> Edit</a>
+        <a href="{% url 'erp:rfq_list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-info-circle"></i> <strong>{{ rfq.title }}</strong></span>
+                <span>
+                    {% if rfq.status == 'draft' %}<span class="badge bg-secondary">Draft</span>
+                    {% elif rfq.status == 'open' %}<span class="badge bg-success">Open</span>
+                    {% elif rfq.status == 'closed' %}<span class="badge bg-warning text-dark">Closed</span>
+                    {% elif rfq.status == 'awarded' %}<span class="badge bg-info">Awarded</span>
+                    {% elif rfq.status == 'cancelled' %}<span class="badge bg-danger">Cancelled</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr><th class="text-muted" style="width:140px;">Category</th><td>{{ rfq.category.name|default:"-" }}</td></tr>
+                    <tr><th class="text-muted">Event</th><td>{{ rfq.event.name|default:"-" }}</td></tr>
+                    <tr><th class="text-muted">Priority</th><td>{{ rfq.get_priority_display }}</td></tr>
+                    <tr><th class="text-muted">Closing Date</th><td><strong>{{ rfq.closing_date|date:"d F Y H:i" }}</strong></td></tr>
+                    <tr><th class="text-muted">Est. Budget</th><td>{% if rfq.estimated_budget %}R{{ rfq.estimated_budget|floatformat:2 }}{% else %}Not disclosed{% endif %}</td></tr>
+                    <tr><th class="text-muted">Issue Date</th><td>{{ rfq.issue_date|date:"d F Y"|default:"Not yet published" }}</td></tr>
+                    <tr><th class="text-muted">Created By</th><td>{{ rfq.created_by.get_full_name|default:rfq.created_by.username }}</td></tr>
+                    <tr><th class="text-muted">Created</th><td>{{ rfq.created_at|date:"d M Y H:i" }}</td></tr>
+                    {% if rfq.documents %}
+                    <tr><th class="text-muted">Documents</th><td><a href="{{ rfq.documents.url }}" target="_blank" class="btn btn-sm btn-outline-purple"><i class="bi bi-download"></i> Download</a></td></tr>
+                    {% endif %}
+                </table>
+                <h6 class="text-purple mt-3">Scope of Work</h6>
+                <p>{{ rfq.description|linebreaksbr }}</p>
+                {% if rfq.deliverables %}
+                <h6 class="text-purple mt-3">Deliverables</h6>
+                <p>{{ rfq.deliverables|linebreaksbr }}</p>
+                {% endif %}
+                {% if rfq.terms_and_conditions %}
+                <h6 class="text-purple mt-3">Terms &amp; Conditions / Evaluation Criteria</h6>
+                <p class="small">{{ rfq.terms_and_conditions|linebreaksbr }}</p>
+                {% endif %}
+                <h6 class="text-purple mt-3">Contact</h6>
+                <p>
+                    {{ rfq.contact_person|default:"Procurement Team" }}<br>
+                    {% if rfq.contact_email %}{{ rfq.contact_email }}<br>{% endif %}
+                    {% if rfq.contact_phone %}{{ rfq.contact_phone }}{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-purple text-white">
+                <h5 class="mb-0"><i class="bi bi-send"></i> Quotations ({{ quotations|length }})</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for q in quotations %}
+                <div class="list-group-item {% if q.status == 'accepted' %}list-group-item-success{% endif %}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>{{ q.provider.company_name|default:q.submitter_company_name }}</strong><br>
+                            <small class="text-muted">{{ q.quotation_number }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="fw-bold">R{{ q.total_amount_incl|floatformat:0 }}</span><br>
+                            {% if q.status == 'submitted' %}<span class="badge bg-info">New</span>
+                            {% elif q.status == 'shortlisted' %}<span class="badge bg-warning text-dark">Shortlisted</span>
+                            {% elif q.status == 'accepted' %}<span class="badge bg-success">Accepted</span>
+                            {% elif q.status == 'rejected' %}<span class="badge bg-danger">Not Selected</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <a href="{% url 'erp:quotation_detail' q.pk %}" class="stretched-link"></a>
+                </div>
+                {% empty %}
+                <div class="list-group-item text-center text-muted py-4">
+                    <i class="bi bi-inbox" style="font-size:2rem;"></i><br>
+                    No quotations received yet.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

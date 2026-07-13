@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Booking {{ booking.booking_reference }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'my_bookings' %}">My Bookings</a></li>
+            <li class="breadcrumb-item active">{{ booking.booking_reference }}</li>
+        </ol>
+    </nav>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-3">
+                <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Booking {{ booking.booking_reference }}</h4>
+                    <span class="badge bg-{% if booking.status == 'pending' %}warning{% elif booking.status == 'approved' %}info{% elif booking.status == 'confirmed' %}success{% elif booking.status == 'cancelled' %}danger{% else %}secondary{% endif %} fs-6">{{ booking.get_status_display }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6>Event</h6>
+                            <p>{{ booking.event.name }}</p>
+                            <h6>Venue</h6>
+                            <p>{{ booking.event.venue.name }}</p>
+                            <h6>Date</h6>
+                            <p>{{ booking.event.start_date|date:"d M Y" }} - {{ booking.event.end_date|date:"d M Y" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Stall</h6>
+                            <p>{{ booking.stall.name }} ({{ booking.stall.size_sqm }} m&sup2;)</p>
+                            <h6>Location</h6>
+                            <p>Zone: {{ booking.stall.zone.name|default:"N/A" }}</p>
+                            <h6>Booking Date</h6>
+                            <p>{{ booking.booking_date|date:"d M Y H:i" }}</p>
+                        </div>
+                    </div>
+                    <h5 class="text-purple">Financial Summary</h5>
+                    <table class="table table-bordered">
+                        <tr><td>Stall Price</td><td class="text-end">R{{ booking.stall_price|floatformat:2 }}</td></tr>
+                        {% if booking.accessories_total > 0 %}
+                        <tr><td>Accessories</td><td class="text-end">R{{ booking.accessories_total|floatformat:2 }}</td></tr>
+                        {% endif %}
+                        <tr><td>Subtotal (excl. VAT)</td><td class="text-end">R{{ booking.subtotal|floatformat:2 }}</td></tr>
+                        {% if booking.vat_amount > 0 %}
+                        <tr><td>VAT (15%)</td><td class="text-end">R{{ booking.vat_amount|floatformat:2 }}</td></tr>
+                        {% endif %}
+                        <tr class="fw-bold"><td>Total</td><td class="text-end">R{{ booking.total_amount|floatformat:2 }}</td></tr>
+                        <tr><td>Amount Paid</td><td class="text-end text-success">R{{ booking.amount_paid|floatformat:2 }}</td></tr>
+                        <tr class="fw-bold"><td>Balance Due</td><td class="text-end text-{% if booking.balance_due > 0 %}danger{% else %}success{% endif %}">R{{ booking.balance_due|floatformat:2 }}</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Requirements Card -->
+            <div class="card mb-3">
+                <div class="card-header bg-purple text-white">
+                    <h5 class="mb-0"><i class="bi bi-gear"></i> Requirements</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{% url 'update_booking' booking.id %}">
+                        {% csrf_token %}
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="requires_power" id="u_power" {% if booking.requires_power %}checked{% endif %}>
+                                    <label class="form-check-label" for="u_power">Power Supply</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="requires_water" id="u_water" {% if booking.requires_water %}checked{% endif %}>
+                                    <label class="form-check-label" for="u_water">Water Supply</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="require_stand_build" id="u_build" {% if booking.require_stand_build %}checked{% endif %}>
+                                    <label class="form-check-label" for="u_build">Stand Build</label>
+                                </div>
+                                <div class="mb-1">
+                                    <label class="form-label small fw-bold">Side Wall Removal</label>
+                                    <select class="form-select form-select-sm" name="side_wall_removal">
+                                        <option value="none" {% if booking.side_wall_removal == 'none' %}selected{% endif %}>None</option>
+                                        <option value="left" {% if booking.side_wall_removal == 'left' %}selected{% endif %}>Remove Left Side</option>
+                                        <option value="right" {% if booking.side_wall_removal == 'right' %}selected{% endif %}>Remove Right Side</option>
+                                        <option value="both" {% if booking.side_wall_removal == 'both' %}selected{% endif %}>Remove Both</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="require_floor_mat" id="u_mat" {% if booking.require_floor_mat %}checked{% endif %}>
+                                    <label class="form-check-label" for="u_mat">Floor Mat</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="require_carpet" id="u_carpet" {% if booking.require_carpet %}checked{% endif %}>
+                                    <label class="form-check-label" for="u_carpet">Carpet</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="require_extra_plugs" id="u_plugs" {% if booking.require_extra_plugs %}checked{% endif %}>
+                                    <label class="form-check-label" for="u_plugs">Extra Plugs</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="require_extra_lights" id="u_lights" {% if booking.require_extra_lights %}checked{% endif %}>
+                                    <label class="form-check-label" for="u_lights">Extra Lights</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2 g-2">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Fascia / Company Name</label>
+                                <input type="text" class="form-control form-control-sm" name="fascia_name" maxlength="28" value="{{ booking.fascia_name }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Power Amps Required</label>
+                                <input type="number" class="form-control form-control-sm" name="power_amps" value="{{ booking.power_amps }}" min="0" max="100">
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label class="form-label small fw-bold">Special Requirements</label>
+                            <textarea class="form-control form-control-sm" name="special_requirements" rows="2">{{ booking.special_requirements }}</textarea>
+                        </div>
+                        {% if booking.status == 'pending' or booking.status == 'approved' %}
+                        <button type="submit" class="btn btn-purple btn-sm mt-2"><i class="bi bi-save"></i> Update Requirements</button>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+
+            <!-- Accessories Card -->
+            <div class="card mb-3">
+                <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-cart-plus"></i> Accessories</h5>
+                </div>
+                <div class="card-body">
+                    {% if booking.accessories.exists %}
+                    <table class="table table-sm">
+                        <thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead>
+                        <tbody>
+                        {% for a in booking.accessories.all %}
+                        <tr><td>{{ a.accessory.name }}</td><td>{{ a.quantity }}</td><td>R{{ a.price|floatformat:2 }}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="text-muted small mb-2">No accessories ordered yet.</p>
+                    {% endif %}
+                    {% if booking.status == 'pending' or booking.status == 'approved' %}
+                    <form method="POST" action="{% url 'add_accessory' booking.id %}" class="row g-2">
+                        {% csrf_token %}
+                        <div class="col-md-8">
+                            <select class="form-select form-select-sm" name="accessory_id" required>
+                                <option value="">Select accessory...</option>
+                                {% for acc in accessories %}
+                                <option value="{{ acc.id }}">{{ acc.name }} - R{{ acc.price|floatformat:2 }} / {{ acc.unit }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" class="form-control form-control-sm" name="quantity" value="1" min="1" placeholder="Qty">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-purple btn-sm w-100"><i class="bi bi-plus"></i> Add</button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-purple text-white">
+                    <h5 class="mb-0"><i class="bi bi-gear"></i> Actions</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'stand_3d_view' booking.id %}" class="btn btn-gold text-dark fw-bold w-100 mb-2" target="_blank">
+                        <i class="bi bi-box"></i> 3D Stand View
+                    </a>
+                    {% if booking.invoices.exists %}
+                    {% with invoice=booking.invoices.first %}
+                    <a href="{% url 'invoice_detail' invoice.id %}" class="btn btn-purple w-100 mb-2">
+                        <i class="bi bi-file-text"></i> View Invoice
+                    </a>
+                    {% if invoice.balance_due > 0 %}
+                    <a href="{% url 'make_payment' invoice.id %}" class="btn btn-success w-100 mb-2">
+                        <i class="bi bi-credit-card"></i> Make Payment
+                    </a>
+                    {% endif %}
+                    {% endwith %}
+                    {% endif %}
+                    {% if booking.status == 'pending' or booking.status == 'approved' %}
+                    <a href="{% url 'cancel_booking' booking.id %}" class="btn btn-outline-danger w-100" onclick="return confirm('Are you sure?')">
+                        <i class="bi bi-x-circle"></i> Cancel Booking
+                    </a>
+                    {% endif %}
+                    {% if booking.status == 'pending' or booking.status == 'approved' %}
+                    <button class="btn btn-outline-warning w-100 mb-2" data-bs-toggle="collapse" data-bs-target="#discountForm">
+                        <i class="bi bi-percent"></i> Request Discount
+                    </button>
+                    <div class="collapse {% if form_errors %}show{% endif %}" id="discountForm">
+                        <form method="POST" action="{% url 'request_discount' booking.id %}">
+                            {% csrf_token %}
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">Discount %</label>
+                                <input type="number" class="form-control form-control-sm" name="discount_percent" min="1" max="100" step="0.01" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">Reason</label>
+                                <textarea class="form-control form-control-sm" name="reason" rows="2" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-warning btn-sm w-100">Submit Discount Request</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                    {% with pending_dr=booking.discount_requests.all %}
+                    {% for dr in pending_dr %}
+                    <div class="mt-2 p-2 border rounded small">
+                        <strong>Discount {{ dr.discount_percent }}%</strong>
+                        <span class="badge bg-{% if dr.status == 'pending' %}warning{% elif dr.status == 'approved_by_first' %}info{% elif dr.status == 'approved' %}success{% else %}danger{% endif %}">
+                            {{ dr.get_status_display }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                    {% endwith %}
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header bg-purple text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Requirements Summary</h5>
+                </div>
+                <div class="card-body small">
+                    <ul class="list-unstyled mb-0">
+                        <li>{% if booking.requires_power %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %} Power Supply</li>
+                        <li>{% if booking.requires_water %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %} Water Supply</li>
+                        <li>{% if booking.require_stand_build %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %} Stand Build</li>
+                        <li>{% if booking.side_wall_removal != 'none' %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %} Side Walls: {{ booking.get_side_wall_removal_display }}</li>
+                        <li>{% if booking.require_floor_mat %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %} Floor Mat</li>
+                        <li>{% if booking.require_carpet %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %} Carpet</li>
+                        <li>{% if booking.require_extra_plugs %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %} Extra Plugs</li>
+                        <li>{% if booking.require_extra_lights %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x-circle text-muted"></i>{% endif %} Extra Lights</li>
+                    </ul>
+                    {% if booking.fascia_name %}
+                    <hr class="my-1"><strong>Fascia:</strong> {{ booking.fascia_name }}
+                    {% endif %}
+                    {% if booking.special_requirements %}
+                    <hr class="my-1"><strong>Special Reqs:</strong> {{ booking.special_requirements }}
+                    {% endif %}
+                    <hr class="my-1">
+                    <small class="text-muted">Requirements v{{ booking.requirements_version }}</small>
+                    {% if booking.requirements_updated_at %}
+                    <br><small class="text-muted">Last updated: {{ booking.requirements_updated_at|date:"d M Y H:i" }}</small>
+                    {% endif %}
+                    {% if booking.stand_build_completed %}
+                    <br><span class="badge bg-success">Build Complete</span>
+                    {% endif %}
+                    {% if booking.electrical_completed %}
+                    <br><span class="badge bg-success">Electrical Complete</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

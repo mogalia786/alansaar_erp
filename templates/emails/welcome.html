@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Welcome to Al Ansaar Foundation</title></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:30px 10px;">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+<tr><td style="background:#5B2C6F;padding:25px 30px;text-align:center;">
+<h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:2px;">AL ANSAAR FOUNDATION</h1>
+<p style="color:#D4AF37;margin:5px 0 0;font-size:13px;letter-spacing:1px;">DURBAN SUMMER SOUK 2026</p>
+</td></tr>
+<tr><td style="padding:30px;">
+<h2 style="color:#5B2C6F;margin:0 0 15px;">Welcome, {{ user.company_name }}!</h2>
+<p>Assalaamu Alaikum,</p>
+<p>Thank you for registering with the <strong>Al Ansaar Foundation</strong> for the <strong>Durban Summer Souk 2026</strong>. We are delighted to have you on board!</p>
+<p>Your exhibitor account has been created successfully. You can now log in to browse available stalls, make bookings, and manage your participation.</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;">
+<tr><td align="center">
+<a href="{{ site_url }}{% url 'login' %}" style="display:inline-block;background:#5B2C6F;color:#ffffff;padding:14px 40px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:16px;">LOGIN TO YOUR ACCOUNT</a>
+</td></tr>
+</table>
+<table width="100%" cellpadding="8" cellspacing="0" style="background:#f8f4fc;border-radius:6px;margin:15px 0;">
+<tr><td style="border-bottom:1px solid #e0d4ed;color:#5B2C6F;font-weight:bold;">Your Details</td><td></td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Username:</strong></td><td>{{ user.username }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Company:</strong></td><td>{{ user.company_name }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Email:</strong></td><td>{{ user.email }}</td></tr>
+<tr><td><strong>Phone:</strong></td><td>{{ user.phone }}</td></tr>
+</table>
+<p>If you have any questions or need assistance, please contact our events team at <strong>info@alansaar.org.za</strong> or call <strong>031 208 1601</strong>.</p>
+<p>We look forward to a successful Souk with you!</p>
+<p>Warm regards,<br><strong>The Al Ansaar Events Team</strong></p>
+</td></tr>
+<tr><td style="background:#f8f4fc;padding:20px 30px;text-align:center;border-top:2px solid #5B2C6F;font-size:12px;color:#888;">
+<p style="margin:0;">Al Ansaar Foundation &bull; 207 West Road, Overport, Durban &bull; www.alansaar.org.za</p>
+<p style="margin:5px 0 0;">Tel: 031 208 1601 &bull; Email: info@alansaar.org.za</p>
+<p style="margin:5px 0 0;">This is an automated message. Please do not reply directly.</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>

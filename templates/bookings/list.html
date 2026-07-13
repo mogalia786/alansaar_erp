@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% block title %}My Bookings - Al Ansaar Foundation{% endblock %}
+{% block extra_head %}
+<style>
+:root { --purple: #5B2C6F; --gold: #D4AF37; --purple-light: #7B3F95; }
+body { background: #0d0d1a !important; }
+.hero {
+    background: linear-gradient(135deg, #1a0a2e 0%, var(--purple) 50%, #2c1640 100%);
+    padding: 22px 20px 16px; border-bottom: 3px solid var(--gold);
+}
+.hero .inner { max-width: 1400px; margin: 0 auto; }
+.hero h2 { color: #fff; font-size: 22px; font-weight: 900; margin: 0; }
+.hero p { color: rgba(255,255,255,0.5); font-size: 13px; margin: 3px 0 0; }
+.hero .chips { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.hero .chip {
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; padding: 6px 14px; color: rgba(255,255,255,0.7);
+    font-size: 12px; display: flex; align-items: center; gap: 6px;
+}
+.hero .chip b { color: var(--gold); font-size: 16px; }
+.sec { max-width: 1400px; margin: 24px auto; padding: 0 20px; }
+.sec-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.sec-head h3 { color: #fff; font-size: 16px; font-weight: 700; margin: 0; }
+.sec-head .badge { background: rgba(212,175,55,0.12); border: 1px solid rgba(212,175,55,0.25); color: var(--gold); padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.bc {
+    background: linear-gradient(145deg, #181830, #1e1e3a);
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 16px; transition: all .2s;
+}
+.bc:hover { border-color: rgba(212,175,55,0.3); transform: translateY(-1px); }
+.bc .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.bc .ref { color: var(--gold); font-weight: 800; font-size: 13px; }
+.bc .st { padding: 2px 8px; border-radius: 16px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.bc .st.pending { background: rgba(255,193,7,0.15); color: #f1c40f; }
+.bc .st.approved { background: rgba(52,152,219,0.15); color: #3498db; }
+.bc .st.confirmed { background: rgba(46,204,113,0.15); color: #2ecc71; }
+.bc .st.cancelled { background: rgba(231,76,60,0.15); color: #e74c3c; }
+.bc .nm { font-size: 20px; font-weight: 900; color: #fff; margin: 4px 0; }
+.bc .det { font-size: 11px; color: rgba(255,255,255,0.4); margin: 1px 0; }
+.bc .det b { color: rgba(255,255,255,0.7); }
+.bc .pr { font-size: 18px; font-weight: 900; color: var(--gold); margin-top: 8px; }
+.bc .pr .pay { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-left: 6px; }
+.bc .pr .pay.paid { background: rgba(46,204,113,0.15); color: #2ecc71; }
+.bc .pr .pay.unpaid { background: rgba(231,76,60,0.15); color: #e74c3c; }
+.bc .acts { margin-top: 10px; display: flex; gap: 6px; }
+.bc .acts a { padding: 5px 12px; border-radius: 7px; font-size: 11px; font-weight: 700; text-decoration: none; transition: all .15s; }
+.bc .bv { background: var(--purple); color: #fff; }
+.bc .bv:hover { background: var(--purple-light); }
+.bc .bx { background: rgba(231,76,60,0.1); color: #e74c3c; border: 1px solid rgba(231,76,60,0.2); }
+.fp-box {
+    background: #111128; border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; overflow: hidden; margin-top: 12px;
+}
+.fp-top {
+    padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+}
+.fp-top h4 { color: #fff; font-size: 13px; font-weight: 700; margin: 0; }
+.fp-top .hint { color: rgba(255,255,255,0.3); font-size: 11px; }
+.fp-top .zg { display: flex; gap: 2px; background: rgba(255,255,255,0.06); border-radius: 7px; padding: 2px; }
+.fp-top .zg button {
+    width: 26px; height: 26px; border: none; border-radius: 5px; background: transparent;
+    color: #888; font-size: 13px; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; transition: all .15s;
+}
+.fp-top .zg button:hover { background: var(--purple); color: #fff; }
+.fp-top .zg .zl { padding: 0 6px; font-size: 10px; font-weight: 700; color: var(--gold); min-width: 36px; text-align: center; display:flex; align-items:center; }
+.fp-scr {
+    overflow: auto; max-height: 550px; background: #1a1a1a;
+    scrollbar-width: thin; scrollbar-color: var(--purple) #14142a;
+    display: flex; align-items: flex-start; justify-content: flex-start;
+}
+.fp-scr::-webkit-scrollbar { width: 6px; height: 6px; }
+.fp-scr::-webkit-scrollbar-track { background: #14142a; }
+.fp-scr::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 3px; }
+.fp-inner { position: relative; line-height: 0; }
+.fp-inner svg { display: block; overflow: visible !important; }
+.fp-inner svg path { stroke-opacity: 1 !important; }
+.fp-grid { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 1; }
+.myst {
+    position: absolute; border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: #fff; white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0,0,0,.7); line-height: 1;
+    z-index: 5; transition: all .15s; cursor: default;
+}
+.myst.mine {
+    background: linear-gradient(135deg, rgba(212,175,55,0.92), rgba(232,200,74,0.95));
+    border: 2.5px solid var(--gold);
+    box-shadow: 0 0 0 2px rgba(212,175,55,0.3), 0 4px 14px rgba(212,175,55,0.5);
+    animation: myglow 2.5s ease-in-out infinite;
+    z-index: 10; cursor: pointer;
+}
+@keyframes myglow { 0%,100%{box-shadow:0 0 0 2px rgba(212,175,55,0.3),0 4px 14px rgba(212,175,55,0.5)} 50%{box-shadow:0 0 0 4px rgba(212,175,55,0.15),0 4px 22px rgba(212,175,55,0.7)} }
+.myst.mine:hover { transform: scale(1.12); z-index: 20; }
+.myst.sa { background: rgba(39,174,96,0.65); border: 1.5px solid rgba(39,174,96,0.8); }
+.myst.sr { background: rgba(243,156,18,0.5); border: 1.5px solid rgba(243,156,18,0.7); }
+.myst.sc { background: rgba(231,76,60,0.5); border: 1.5px solid rgba(231,76,60,0.7); }
+.myst.sb { background: rgba(120,120,140,0.5); border: 1.5px solid rgba(120,120,140,0.6); }
+.empty { text-align: center; padding: 80px 20px; max-width: 400px; margin: 0 auto; }
+.empty i { font-size: 56px; color: rgba(255,255,255,0.12); display: block; margin-bottom: 12px; }
+.empty p { color: rgba(255,255,255,0.35); font-size: 15px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="hero">
+    <div class="inner">
+        <h2><i class="bi bi-bag-check"></i> My Bookings</h2>
+        <p>Your exhibition stands and floor plan</p>
+        <div class="chips">
+            <div class="chip"><b>{{ bookings.count }}</b> Bookings</div>
+        </div>
+    </div>
+</div>
+
+{% if event_groups %}
+    {% for g in event_groups %}
+    <div class="sec">
+        <div class="sec-head">
+            <h3><i class="bi bi-calendar-event"></i> {{ g.event.name }}</h3>
+            <span class="badge">{{ g.bookings|length }} stand{{ g.bookings|length|pluralize }}</span>
+        </div>
+
+        {% if g.bookings %}
+        <div class="cards">
+            {% for b in g.bookings %}
+            <div class="bc">
+                <div class="top"><span class="ref">{{ b.booking_reference }}</span><span class="st {{ b.status }}">{{ b.get_status_display }}</span></div>
+                <div class="nm">{{ b.stall.name }}</div>
+                <div class="det">Zone: <b>{{ b.stall.zone|default:"General" }}</b></div>
+                <div class="pr">R{{ b.total_amount|floatformat:2 }} <span class="pay {{ b.payment_status }}">{{ b.get_payment_status_display }}</span></div>
+                <div class="acts">
+                    <a href="{% url 'booking_detail' b.id %}" class="bv">Details</a>
+                    {% if b.status == 'pending' or b.status == 'approved' %}
+                    <a href="{% url 'cancel_booking' b.id %}" class="bx" onclick="return confirm('Cancel?')">Cancel</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 18px;margin-bottom:12px;">
+            <span style="color:rgba(255,255,255,0.4);font-size:13px;">No bookings yet for this event — <a href="{% url 'floor_plan_view' g.event.id %}" style="color:var(--gold);font-weight:700;text-decoration:underline;">browse the floor plan</a> to book a stand.</span>
+        </div>
+        {% endif %}
+
+        <div class="fp-box">
+            <div class="fp-top">
+                <div>
+                    <h4><i class="bi bi-map"></i> Floor Plan</h4>
+                    <div class="hint">Gold = your stands | Drag to pan | Ctrl+scroll to zoom</div>
+                </div>
+                <div class="zg">
+                    <button onclick="zo{{ g.ev_id }}()"><i class="bi bi-dash-lg"></i></button>
+                    <span class="zl" data-eid="{{ g.ev_id }}">100%</span>
+                    <button onclick="zi{{ g.ev_id }}()"><i class="bi bi-plus-lg"></i></button>
+                </div>
+            </div>
+            <div class="fp-scr" id="w{{ g.ev_id }}">
+                <div class="fp-inner" id="i{{ g.ev_id }}">
+                    {{ g.svg_content|safe }}
+                    <div class="fp-grid" id="g{{ g.ev_id }}"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    (function(){
+        var VW={{ g.svg_w }}, VH={{ g.svg_h }};
+        var stalls={{ g.stalls_data|safe }};
+        var wrap=document.getElementById('w{{ g.ev_id }}');
+        var inner=document.getElementById('i{{ g.ev_id }}');
+        var grid=document.getElementById('g{{ g.ev_id }}');
+        var zm=1,baseZ=1;
+        function calcBase(){baseZ=wrap.clientWidth/VW;}
+        function getCssZoom(){return zm*baseZ;}
+        function drawGrid(){
+            var cssZ=getCssZoom();
+            var lineW=Math.max(0.5,1/cssZ);
+            grid.style.backgroundImage=[
+                'repeating-linear-gradient(to right, rgba(255,255,255,0.25) 0 '+lineW+'px, transparent '+lineW+'px 1000px)',
+                'repeating-linear-gradient(to bottom, rgba(255,255,255,0.25) 0 '+lineW+'px, transparent '+lineW+'px 1000px)'
+            ].join(',');
+            grid.style.backgroundSize='1000px 1000px';
+        }
+        function sn(n){var m=n.match(/^(\w+)\s+(\d+)$/);return m?m[1].charAt(0)+m[2]:n;}
+        function layout(){
+            inner.querySelectorAll('.myst').forEach(function(e){e.remove();});
+            var fs=Math.max(6,Math.round(10/getCssZoom()));
+            stalls.forEach(function(s){
+                var d=document.createElement('div');
+                d.className='myst '+(s.is_mine?'mine':s.status==='available'?'sa':s.status==='reserved'?'sr':s.status==='confirmed'?'sc':'sb');
+                d.style.left=(s.x/VW*100)+'%';
+                d.style.top=(s.y/VH*100)+'%';
+                d.style.width=(s.w/VW*100)+'%';
+                d.style.height=(s.h/VH*100)+'%';
+                d.style.fontSize=fs+'px';
+                d.textContent=sn(s.name);
+                d.title=s.name+(s.is_mine?' (YOUR STAND)':'');
+                inner.appendChild(d);
+            });
+        }
+        function applyZoom(){
+            calcBase();
+            inner.style.zoom=getCssZoom();
+            var l=document.querySelector('.zl[data-eid="{{ g.ev_id }}"]');
+            if(l)l.textContent=Math.round(zm*100)+'%';
+            layout();
+            drawGrid();
+        }
+        window['zi{{ g.ev_id }}']=function(){zm=Math.min(12,zm*1.25);applyZoom();};
+        window['zo{{ g.ev_id }}']=function(){zm=Math.max(0.1,zm/1.25);applyZoom();};
+        zm=4;applyZoom();
+        setTimeout(function(){
+            var iw=VW*baseZ,ih=VH*baseZ;
+            wrap.scrollLeft=Math.max(0,(iw-wrap.clientWidth)/2);
+            wrap.scrollTop=Math.max(0,(ih-wrap.clientHeight)/2);
+        },100);
+    })();
+    </script>
+    {% endfor %}
+{% else %}
+<div class="empty" style="margin-top:40px;">
+    <i class="bi bi-inbox"></i>
+    <p>No bookings yet. Browse events to find your perfect stand!</p>
+    <a href="{% url 'event_list' %}" style="display:inline-block;margin-top:14px;padding:10px 24px;background:var(--gold);color:#000;font-weight:700;border-radius:10px;text-decoration:none;">Browse Events</a>
+</div>
+{% endif %}
+{% endblock %}

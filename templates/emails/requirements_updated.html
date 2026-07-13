@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Requirements Updated</title></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:30px 10px;">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+<tr><td style="background:#5B2C6F;padding:25px 30px;text-align:center;">
+<h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:2px;">AL ANSAAR FOUNDATION</h1>
+<p style="color:#D4AF37;margin:5px 0 0;font-size:13px;letter-spacing:1px;">REQUIREMENTS UPDATE</p>
+</td></tr>
+<tr><td style="padding:30px;">
+<h2 style="color:#5B2C6F;margin:0 0 15px;">Requirements Changed</h2>
+<p>Dear Service Provider,</p>
+<p><strong>{{ booking.exhibitor.company_name }}</strong> has updated their requirements for booking <strong>{{ booking.booking_reference }}</strong>.</p>
+<table width="100%" cellpadding="8" cellspacing="0" style="background:#f8f4fc;border-radius:6px;margin:15px 0;">
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Booking:</strong></td><td>{{ booking.booking_reference }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Exhibitor:</strong></td><td>{{ booking.exhibitor.company_name }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Event:</strong></td><td>{{ booking.event.name }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Stall:</strong></td><td>{{ booking.stall.name }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Version:</strong></td><td>v{{ booking.requirements_version }}</td></tr>
+<tr><td><strong>Changed By:</strong></td><td>{{ changed_by.company_name }}</td></tr>
+</table>
+<h4>Current Requirements:</h4>
+<ul>
+<li>Stand Build: {{ booking.require_stand_build|yesno:"Yes,No" }}</li>
+<li>Side Wall Removal: {{ booking.get_side_wall_removal_display }}</li>
+<li>Power: {{ booking.requires_power|yesno:"Yes,No" }} ({{ booking.power_amps }}A)</li>
+<li>Water: {{ booking.requires_water|yesno:"Yes,No" }}</li>
+<li>Floor Mat: {{ booking.require_floor_mat|yesno:"Yes,No" }}</li>
+<li>Carpet: {{ booking.require_carpet|yesno:"Yes,No" }}</li>
+<li>Extra Plugs: {{ booking.require_extra_plugs|yesno:"Yes,No" }}</li>
+<li>Extra Lights: {{ booking.require_extra_lights|yesno:"Yes,No" }}</li>
+</ul>
+{% if booking.special_requirements %}
+<p><strong>Special Requirements:</strong><br>{{ booking.special_requirements }}</p>
+{% endif %}
+<p><a href="{{ site_url }}/providers/events/{{ booking.event.id }}/" style="display:inline-block;background:#5B2C6F;color:#ffffff;padding:12px 30px;border-radius:6px;text-decoration:none;font-weight:bold;">View in Portal</a></p>
+</td></tr>
+<tr><td style="background:#f8f4fc;padding:20px 30px;text-align:center;border-top:2px solid #5B2C6F;font-size:12px;color:#888;">
+<p style="margin:0;">Al Ansaar Foundation &bull; VAT: 4870261234 &bull; Durban, South Africa</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>

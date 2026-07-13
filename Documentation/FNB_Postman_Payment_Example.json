@@ -1,0 +1,56 @@
+{
+  "groupHeader": {
+    "messageId": "OD-TEST-20260124-001",
+    "creationDateTime": "2026-01-24T04:35:00",
+    "initiatingPartyName": "OVEN DELIGHTS PTY LTD",
+    "initiatingPartyBIC": "FIRNZAJJ",
+    "totalNumberOfTransactions": 1,
+    "totalControlSum": 1000.00
+  },
+  "paymentInformation": {
+    "paymentInformationId": "OD-TEST-20260124-001",
+    "paymentInformationMethod": "TRF",
+    "batchBooking": true,
+    "numberOfTransactions": 1,
+    "controlSum": 1000.00,
+    "paymentTypeInformationServiceLevelCode": "SDVA",
+    "requestedExecutionDate": "2026-01-24",
+    "debtor": {
+      "debtorName": "OVEN DELIGHTS PTY LTD",
+      "debtorAccount": {
+        "debtorAccountNumber": "63001723469",
+        "debtorAccountType": "CACC"
+      },
+      "debtorAgent": {
+        "debtorAgentBIC": "FIRNZAJJ",
+        "debtorAgentBranchCode": "250655"
+      }
+    },
+    "creditTransferTransactionInformation": [
+      {
+        "paymentId": "PMT-001",
+        "amount": {
+          "instructedAmount": 1000.00,
+          "currency": "ZAR"
+        },
+        "creditorAgent": {
+          "creditorAgentBIC": "FIRNZAJJ",
+          "creditorAgentBranchCode": "250655"
+        },
+        "creditor": {
+          "creditorName": "TEST SUPPLIER",
+          "creditorAccount": {
+            "creditorAccountNumber": "63001730117",
+            "creditorAccountType": "CACC"
+          }
+        },
+        "remittanceInformation": {
+          "unstructured": "TEST PAYMENT"
+        },
+        "proofOfPayment": {
+          "emailAddress": "test@example.com"
+        }
+      }
+    ]
+  }
+}

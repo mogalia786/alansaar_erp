@@ -1,0 +1,49 @@
+{% extends 'portal/base.html' %}
+{% block title %}FNB Payments - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="bi bi-send"></i> Payments</h3>
+    <a href="{% url 'fnb:make_payment' %}" class="btn btn-sm btn-gold"><i class="bi bi-plus-circle"></i> New Payment</a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-purple">
+                    <tr>
+                        <th>ID</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Amount</th>
+                        <th>Reference</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Initiated By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in payments %}
+                    <tr>
+                        <td>{{ p.id }}</td>
+                        <td><small>{{ p.debtor_account.account_number }}</small></td>
+                        <td><small>{{ p.creditor_account.account_number }}</small></td>
+                        <td>R{{ p.amount|floatformat:2 }}</td>
+                        <td><small>{{ p.reference|truncatechars:15|default:"-" }}</small></td>
+                        <td>
+                            <span class="badge bg-{% if p.status == 'confirmed' %}success{% elif p.status == 'sent' %}info{% elif p.status == 'failed' %}danger{% elif p.status == 'reversed' %}secondary{% else %}warning{% endif %}">
+                                {{ p.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ p.initiated_at|date:"d/m H:i" }}</td>
+                        <td><small>{{ p.initiated_by.get_full_name|default:p.initiated_by.username|default:"-" }}</small></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8" class="text-center text-muted py-4">No payments made yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

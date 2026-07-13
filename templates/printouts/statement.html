@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Statement - {{ exhibitor.company_name }}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    @page { size: A4; margin: 12mm; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #222; }
+    .statement-box { max-width: 210mm; margin: 0 auto; padding: 15px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand img { height: 50px; width: auto; }
+    .brand .brand-text h1 { color: #5B2C6F; font-size: 20px; margin: 0; letter-spacing: 1px; }
+    .brand .sub { color: #D4AF37; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; }
+    .brand .details { font-size: 10px; color: #666; margin-top: 8px; line-height: 1.6; }
+    .title-area h2 { color: #5B2C6F; font-size: 26px; margin: 0; letter-spacing: 3px; text-transform: uppercase; }
+    .title-area .date-range { font-size: 11px; color: #888; }
+    .info-section { display: flex; justify-content: space-between; background: #f8f4fc; border-radius: 6px; padding: 15px 20px; margin-bottom: 20px; }
+    .info-section .label { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+    .info-section .value { font-size: 13px; font-weight: 600; }
+    .summary-cards { display: flex; gap: 12px; margin-bottom: 20px; }
+    .summary-card { flex: 1; border-radius: 6px; padding: 12px 15px; text-align: center; }
+    .summary-card .label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
+    .summary-card .amount { font-size: 20px; font-weight: 800; }
+    .card-invoiced { background: #e8dff5; color: #5B2C6F; }
+    .card-paid { background: #d4edda; color: #27ae60; }
+    .card-balance { background: #fce4ec; color: #e74c3c; }
+    .card-outstanding { background: #fff3cd; color: #f39c12; }
+    .ledger-table { width: 100%; border-collapse: collapse; }
+    .ledger-table th { background: #5B2C6F; color: #fff; padding: 8px 10px; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; text-align: left; font-weight: 500; }
+    .ledger-table td { padding: 7px 10px; border-bottom: 1px solid #e0e0e0; font-size: 11px; }
+    .ledger-table .type-icon { font-size: 14px; }
+    .ledger-table .debit { text-align: right; font-weight: 600; color: #e74c3c; }
+    .ledger-table .credit { text-align: right; font-weight: 600; color: #27ae60; }
+    .ledger-table .balance-col { text-align: right; font-weight: 700; }
+    .ledger-table tr.row-invoice { background: #fafafa; }
+    .ledger-table tr.row-payment { background: #f0faf0; }
+    .ledger-table tr.row-opening td { font-weight: 600; background: #f0f0f0; }
+    .ledger-table tr.row-closing td { font-weight: 800; background: #f8f4fc; border-top: 2px solid #5B2C6F; }
+    .footer { margin-top: 30px; border-top: 2px solid #5B2C6F; padding-top: 10px; font-size: 9px; color: #aaa; text-align: center; }
+    .aging-box { margin-top: 20px; padding: 12px 18px; background: #f9f9f9; border-radius: 6px; font-size: 10px; }
+    .aging-box table td { padding: 3px 15px 3px 0; }
+    @media print { .no-print { display: none; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="statement-box">
+    <div class="header">
+    <div class="brand">
+        <img src="{{ MEDIA_URL }}logo/al_ansaar_logo.png" alt="Al Ansaar Logo" onerror="this.style.display='none'">
+        <div>
+            <div class="brand-text"><h1>Al Ansaar Foundation</h1></div>
+            <div class="sub">{{ exhibitor.bookings.first.event.name|default:'Durban Summer Souk 2026' }}</div>
+            <div class="details">
+                Durban Exhibition Centre, 11 Walnut Road, Durban<br>
+                info@alansaar.org.za
+            </div>
+        </div>
+    </div>
+        <div class="title-area">
+            <h2>ACCOUNT STATEMENT</h2>
+            <div class="date-range">As at {% now "d F Y" %}</div>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <div>
+            <div class="label">Exhibitor</div>
+            <div class="value">{{ exhibitor.company_name }}</div>
+            <div style="font-size:10px;color:#666;">{{ exhibitor.get_full_name }}</div>
+        </div>
+        <div>
+            <div class="label">Email</div>
+            <div class="value">{{ exhibitor.email }}</div>
+            <div style="font-size:10px;color:#666;">{{ exhibitor.phone|default:"" }}</div>
+        </div>
+        <div class="text-end">
+            <div class="label">Statement Date</div>
+            <div class="value">{% now "d F Y" %}</div>
+        </div>
+    </div>
+
+    <div class="summary-cards">
+        <div class="summary-card card-invoiced">
+            <div class="label">Total Invoiced</div>
+            <div class="amount">R{{ total_invoiced|floatformat:2 }}</div>
+        </div>
+        <div class="summary-card card-paid">
+            <div class="label">Total Paid</div>
+            <div class="amount">R{{ total_paid|floatformat:2 }}</div>
+        </div>
+        <div class="summary-card card-outstanding">
+            <div class="label">Outstanding</div>
+            <div class="amount">R{{ outstanding|floatformat:2 }}</div>
+        </div>
+        <div class="summary-card card-balance">
+            <div class="label">Overdue</div>
+            <div class="amount">R{{ overdue|floatformat:2 }}</div>
+        </div>
+    </div>
+
+    <table class="ledger-table">
+        <thead><tr>
+            <th style="width:12%;">Date</th>
+            <th style="width:15%;">Type</th>
+            <th style="width:23%;">Reference</th>
+            <th style="width:30%;">Description</th>
+            <th style="width:10%;text-align:right;">Debit (R)</th>
+            <th style="width:10%;text-align:right;">Credit (R)</th>
+            <th style="width:10%;text-align:right;">Balance (R)</th>
+        </tr></thead>
+        <tbody>
+            <tr class="row-opening">
+                <td>-</td><td>OPENING</td><td>-</td><td>Opening Balance</td>
+                <td class="debit">-</td><td class="credit">-</td>
+                <td class="balance-col">R0.00</td>
+            </tr>
+            {% for entry in ledger %}
+            <tr class="row-{{ entry.entry_type }}">
+                <td>{{ entry.entry_date|date:"d M Y" }}</td>
+                <td><span class="type-icon">{% if entry.entry_type == 'invoice' %}📄{% elif entry.entry_type == 'payment' %}💳{% else %}📝{% endif %}</span> {{ entry.get_entry_type_display }}</td>
+                <td>{{ entry.reference }}</td>
+                <td>{{ entry.description }}</td>
+                <td class="debit">{% if entry.debit > 0 %}R{{ entry.debit|floatformat:2 }}{% else %}-{% endif %}</td>
+                <td class="credit">{% if entry.credit > 0 %}R{{ entry.credit|floatformat:2 }}{% else %}-{% endif %}</td>
+                <td class="balance-col {% if entry.balance < 0 %}text-success{% elif entry.balance > 0 %}text-danger{% endif %}">R{{ entry.balance|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-4">No transactions recorded</td></tr>
+            {% endfor %}
+            <tr class="row-closing">
+                <td colspan="4" style="text-align:right;">CLOSING BALANCE</td>
+                <td class="debit">R{{ total_debits|floatformat:2 }}</td>
+                <td class="credit">R{{ total_credits|floatformat:2 }}</td>
+                <td class="balance-col {% if closing_balance < 0 %}text-success{% elif closing_balance > 0 %}text-danger{% endif %}">R{{ closing_balance|floatformat:2 }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="aging-box">
+        <strong style="color:#5B2C6F;">AGING SUMMARY</strong>
+        <table>
+            <tr><td>Current (not yet due)</td><td><strong>R{{ aging_current|floatformat:2 }}</strong></td>
+            <td style="padding-left:20px;">30 Days Overdue</td><td><strong>R{{ aging_30|floatformat:2 }}</strong></td></tr>
+            <tr><td>60 Days Overdue</td><td><strong>R{{ aging_60|floatformat:2 }}</strong></td>
+            <td style="padding-left:20px;">90+ Days Overdue</td><td><strong>R{{ aging_90|floatformat:2 }}</strong></td></tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        Al Ansaar Foundation &bull; VAT: 4870261234 &bull; Reg: 2018/123456/08 &bull; Durban, South Africa<br>
+        www.alansaar.org &bull; accounts@alansaar.org<br>
+        <span style="color:#bbb;">Developed by Mogalia Enterprises&trade; &copy; 2026</span>
+    </div>
+
+    <div class="no-print text-center mt-3">
+        <button onclick="window.print()" class="btn btn-purple">Print / Save PDF</button>
+        <button onclick="window.close()" class="btn btn-secondary">Close</button>
+    </div>
+</div>
+</body>
+</html>

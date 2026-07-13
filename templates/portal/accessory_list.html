@@ -1,0 +1,31 @@
+{% extends 'portal/base.html' %}
+{% block title %}Accessories - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="bi bi-box"></i> Accessories</h3>
+    <button class="btn btn-purple btn-sm" data-bs-toggle="modal" data-bs-target="#accModal"><i class="bi bi-plus-lg"></i> Add</button>
+</div>
+<div class="card"><div class="card-body p-0">
+<div class="table-responsive"><table class="table table-hover mb-0">
+<thead class="table-purple"><tr><th>Name</th><th>Price</th><th>Unit</th><th>Active</th><th>Order</th></tr></thead>
+<tbody>{% for a in accessories %}<tr>
+    <td>{{ a.name }}</td>
+    <td>R{{ a.price|floatformat:2 }}</td>
+    <td>{{ a.unit }}</td>
+    <td>{% if a.is_active %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td>
+    <td>{{ a.display_order }}</td>
+</tr>{% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No accessories</td></tr>{% endfor %}</tbody>
+</table></div></div></div>
+<div class="modal fade" id="accModal"><div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header bg-purple text-white"><h6 class="mb-0">Add Accessory</h6><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+    <form method="post" action="{% url 'erp:add_accessory' %}">{% csrf_token %}
+    <div class="modal-body">
+        <div class="mb-2"><label class="form-label">Name</label><input type="text" name="name" class="form-control" required></div>
+        <div class="mb-2"><label class="form-label">Description</label><textarea name="description" class="form-control"></textarea></div>
+        <div class="row g-2"><div class="col"><label class="form-label">Price (R)</label><input type="number" name="price" step="0.01" class="form-control" required></div>
+        <div class="col"><label class="form-label">Unit</label><input type="text" name="unit" class="form-control" value="per unit"></div></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-purple btn-sm">Save</button></div>
+    </form>
+</div></div></div>
+{% endblock %}

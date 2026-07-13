@@ -1,0 +1,46 @@
+{% extends 'portal/base.html' %}
+{% block title %}Dashboard - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0"><i class="bi bi-speedometer2"></i> Dashboard</h3>
+    <small class="text-muted">{{ user.get_full_name|default:user.username }}</small>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-primary"><div class="stat-value h3 mb-0">{{ active_events }}</div><div class="text-muted small">Active Events</div><i class="icon bi bi-calendar-event text-primary"></i></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-warning"><div class="stat-value h3 mb-0">{{ pending_bookings }}</div><div class="text-muted small">Pending Bookings</div><i class="icon bi bi-clock text-warning"></i></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-danger"><div class="stat-value h3 mb-0">{{ pending_payments }}</div><div class="text-muted small">Pending Payments</div><i class="icon bi bi-credit-card text-danger"></i></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-success"><div class="stat-value h3 mb-0">R{{ total_revenue|floatformat:0 }}</div><div class="text-muted small">Revenue Collected</div><i class="icon bi bi-cash text-success"></i></div></div>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card"><div class="card-header bg-purple text-white"><h6 class="mb-0">Recent Bookings</h6></div>
+        <div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0">
+            <thead><tr><th>Ref</th><th>Exhibitor</th><th>Event</th><th>Stall</th><th>Status</th></tr></thead>
+            <tbody>{% for b in recent_bookings %}<tr>
+                <td><a href="{% url 'erp:booking_detail' b.id %}">{{ b.booking_reference }}</a></td>
+                <td>{{ b.exhibitor.company_name|truncatechars:20 }}</td>
+                <td>{{ b.event.name|truncatechars:20 }}</td>
+                <td>{{ b.stall.name }}</td>
+                <td><span class="badge bg-{% if b.status == 'pending' %}warning{% elif b.status == 'approved' %}info{% elif b.status == 'confirmed' %}success{% elif b.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ b.get_status_display }}</span></td>
+            </tr>{% empty %}<tr><td colspan="5" class="text-center text-muted py-3">No bookings yet</td></tr>{% endfor %}</tbody>
+        </table></div></div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-header bg-purple text-white"><h6 class="mb-0">Quick Actions</h6></div>
+        <div class="card-body">
+            <a href="{% url 'erp:event_list' %}" class="btn btn-purple btn-sm w-100 mb-2"><i class="bi bi-plus-circle"></i> Manage Events</a>
+            <a href="{% url 'erp:booking_list' %}" class="btn btn-purple btn-sm w-100 mb-2"><i class="bi bi-check-circle"></i> Review Bookings</a>
+            <a href="{% url 'erp:payment_list' %}?status=pending" class="btn btn-gold btn-sm w-100 mb-2"><i class="bi bi-shield-check"></i> Verify Payments</a>
+            <a href="{% url 'erp:discount_list' %}" class="btn btn-purple btn-sm w-100"><i class="bi bi-percent"></i> Discount Approvals</a>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-header bg-purple text-white"><h6 class="mb-0">Alerts</h6></div>
+        <div class="card-body">
+            <p class="mb-1"><span class="badge bg-warning me-1">{{ unverified_exhibitors }}</span> Unverified exhibitors</p>
+            <p class="mb-1"><span class="badge bg-danger me-1">{{ pending_bookings }}</span> Pending bookings</p>
+            <p class="mb-0"><span class="badge bg-warning me-1">{{ pending_payments }}</span> Payments to verify</p>
+        </div></div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Login - Al Ansaar Foundation{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header bg-purple text-white text-center">
+                    <h4 class="mb-0"><i class="bi bi-box-arrow-in-right"></i> Exhibitor Login</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            {{ form.username }}
+                            {% if form.username.errors %}<div class="text-danger small">{{ form.username.errors }}</div>{% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            {{ form.password }}
+                            {% if form.password.errors %}<div class="text-danger small">{{ form.password.errors }}</div>{% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-purple w-100">Login</button>
+                    </form>
+                    <p class="text-center mt-3 mb-0">
+                        Don't have an account? <a href="{% url 'register' %}">Register here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>document.querySelectorAll('input').forEach(i => i.classList.add('form-control'));</script>
+{% endblock %}

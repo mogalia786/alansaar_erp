@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}{{ event.name }} - Al Ansaar Foundation{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'event_list' %}">Events</a></li>
+            <li class="breadcrumb-item active">{{ event.name }}</li>
+        </ol>
+    </nav>
+    <div class="row">
+        <div class="col-md-8">
+            <h2 class="fw-bold text-purple">{{ event.name }}</h2>
+            <p class="text-muted">{{ event.description|default:"No description available." }}</p>
+            <table class="table table-bordered mt-3">
+                <tr><th>Venue</th><td>{{ event.venue.name }}</td></tr>
+                <tr><th>Date</th><td>{{ event.start_date|date:"d M Y" }} - {{ event.end_date|date:"d M Y" }}</td></tr>
+                <tr><th>Status</th><td><span class="badge bg-{% if event.status == 'published' %}success{% elif event.status == 'draft' %}secondary{% elif event.status == 'ongoing' %}info{% else %}danger{% endif %}">{{ event.get_status_display }}</span></td></tr>
+            </table>
+            {% if event.booking_open %}
+            <a href="{% url 'floor_plan_view' event.id %}" class="btn btn-gold text-dark fw-bold">
+                <i class="bi bi-map"></i> View Floor Plan & Book
+            </a>
+            {% endif %}
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-purple text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Contact</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>{{ event.organizer_name|default:"Al Ansaar Foundation" }}</strong></p>
+                    {% if event.organizer_email %}<p><i class="bi bi-envelope"></i> {{ event.organizer_email }}</p>{% endif %}
+                    {% if event.organizer_phone %}<p><i class="bi bi-telephone"></i> {{ event.organizer_phone }}</p>{% endif %}
+                    {% if event.website %}<p><i class="bi bi-globe"></i> <a href="{{ event.website }}" target="_blank">{{ event.website }}</a></p>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

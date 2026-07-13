@@ -1,0 +1,50 @@
+{% extends 'providers/provider_base.html' %}
+{% load static %}
+{% block title %}My Quotations - Provider Portal{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h3 class="mb-4"><i class="bi bi-send-check"></i> My Quotations</h3>
+    <div class="card">
+        <div class="card-body">
+            <p class="text-muted">View your submitted quotations and their current status. Browse open RFQs on the <a href="{% url 'rfq_list' %}">public RFQ page</a>.</p>
+        </div>
+    </div>
+    {% if quotations %}
+    <div class="card mt-3">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Quotation #</th>
+                        <th>RFQ</th>
+                        <th>Amount (incl)</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for q in quotations %}
+                    <tr>
+                        <td>{{ q.quotation_number }}</td>
+                        <td><a href="{% url 'rfq_detail' q.rfq.id %}">{{ q.rfq.rfq_number }}</a></td>
+                        <td>R{{ q.total_amount_incl|floatformat:2 }}</td>
+                        <td>
+                            {% if q.status == 'submitted' %}<span class="badge bg-info">Submitted</span>
+                            {% elif q.status == 'shortlisted' %}<span class="badge bg-warning text-dark">Shortlisted</span>
+                            {% elif q.status == 'accepted' %}<span class="badge bg-success">Accepted</span>
+                            {% elif q.status == 'rejected' %}<span class="badge bg-danger">Not Accepted</span>
+                            {% else %}<span class="badge bg-secondary">{{ q.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td><small>{{ q.submitted_at|date:"d M Y H:i" }}</small></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted py-4">No quotations submitted yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

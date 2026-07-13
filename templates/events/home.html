@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Al Ansaar Foundation - Durban Summer Souk{% endblock %}
+{% block content %}
+<div class="position-relative overflow-hidden" style="background: linear-gradient(135deg, #2c1640 0%, #5B2C6F 50%, #7B3F95 100%); min-height: 80vh;">
+    <div class="container py-5">
+        <div class="row align-items-center min-vh-75">
+            <div class="col-lg-6 text-white py-5">
+                <h1 class="display-4 fw-bold mb-3">Durban Summer Souk <span class="text-gold">2026</span></h1>
+                <p class="lead mb-4">Secure your prime trading spot at Durban's premier shopping festival. Choose from standard, enhanced, or food court packages.</p>
+                <a href="{% url 'event_list' %}" class="btn btn-gold btn-lg text-dark fw-bold me-3">
+                    <i class="bi bi-calendar-event"></i> Browse Events
+                </a>
+                <a href="{% url 'register' %}" class="btn btn-outline-light btn-lg">
+                    <i class="bi bi-person-plus"></i> Register Now
+                </a>
+            </div>
+            <div class="col-lg-6 text-center py-5">
+                <div class="position-relative">
+                    <div class="display-1 text-gold opacity-25">
+                        <i class="bi bi-shop"></i>
+                    </div>
+                    <div class="mt-3">
+                        <span class="badge bg-gold text-dark me-2 px-3 py-2">3×3 Stands</span>
+                        <span class="badge bg-gold text-dark me-2 px-3 py-2">3×4 Stands</span>
+                        <span class="badge bg-gold text-dark me-2 px-3 py-2">3×6 Stands</span><br>
+                        <span class="badge bg-gold text-dark me-2 px-3 py-2 mt-2">Food Court</span>
+                        <span class="badge bg-gold text-dark me-2 px-3 py-2 mt-2">Enhanced Packages</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold text-purple">Why Trade With Us?</h2>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card text-center h-100 border-gold border-2">
+                <div class="card-body py-4">
+                    <i class="bi bi-people-fill display-5 text-gold"></i>
+                    <h4 class="mt-3">High Traffic</h4>
+                    <p class="text-muted">Thousands of shoppers visit the Durban Summer Souk annually, giving you maximum exposure.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center h-100 border-gold border-2">
+                <div class="card-body py-4">
+                    <i class="bi bi-box-seam display-5 text-gold"></i>
+                    <h4 class="mt-3">Flexible Packages</h4>
+                    <p class="text-muted">Choose from standard shell scheme, enhanced corner stands, or food court options to suit your needs.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center h-100 border-gold border-2">
+                <div class="card-body py-4">
+                    <i class="bi bi-shield-check display-5 text-gold"></i>
+                    <h4 class="mt-3">Secure Booking</h4>
+                    <p class="text-muted">Our online booking system makes it easy to reserve and pay for your stall securely.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if events %}
+<div class="bg-light py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold text-purple">Upcoming Events</h2>
+        </div>
+        <div class="row g-4">
+            {% for event in events %}
+            <div class="col-md-4">
+                <div class="card h-100">
+                    {% if event.logo %}
+                    <img src="{{ event.logo.url }}" class="card-img-top" alt="{{ event.name }}" style="height:200px;object-fit:cover;">
+                    {% else %}
+                    <div class="card-img-top bg-purple d-flex align-items-center justify-content-center" style="height:200px;">
+                        <i class="bi bi-calendar-event display-3 text-gold"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title text-purple">{{ event.name }}</h5>
+                        <p class="card-text text-muted small">
+                            <i class="bi bi-geo-alt"></i> {{ event.venue.name }}<br>
+                            <i class="bi bi-calendar"></i> {{ event.start_date|date:"d M Y" }} - {{ event.end_date|date:"d M Y" }}
+                        </p>
+                        <a href="{% url 'event_detail' event.id %}" class="btn btn-purple w-100">
+                            View Details <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

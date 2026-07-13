@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    * { margin: 0; padding: 0; }
+    html, body { overflow: visible; background: #1a1a1a; }
+    svg { display: block; }
+    svg.fp-svg path { stroke: #fff !important; }
+    svg.fp-svg * { stroke-opacity: 1 !important; }
+    img { display: block; }
+</style>
+</head>
+<body>
+{% if svg_content %}
+    {{ svg_content|safe }}
+{% elif floor_plan and floor_plan.image %}
+    <img src="{{ floor_plan.image.url }}">
+{% endif %}
+</body>
+</html>

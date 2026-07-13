@@ -1,0 +1,173 @@
+{% extends 'portal/base.html' %}
+{% block title %}Accounting Dashboard - ERP{% endblock %}
+{% block extra_head %}
+<style>
+.stat-card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08); position: relative; overflow: hidden; transition: transform .2s; }
+.stat-card:hover { transform: translateY(-2px); }
+.stat-card .icon { font-size: 2.2rem; opacity: .2; position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); }
+.stat-card .stat-value { font-size: 1.6rem; font-weight: 700; }
+.stat-card .stat-label { font-size: .8rem; color: rgba(255,255,255,.75); }
+.bg-income { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+.bg-expense { background: linear-gradient(135deg, #c0392b, #e74c3c); }
+.bg-profit { background: linear-gradient(135deg, #5B2C6F, #7B3F95); }
+.bg-receivable { background: linear-gradient(135deg, #d35400, #e67e22); }
+.bg-collected { background: linear-gradient(135deg, #16a085, #1abc9c); }
+.bg-pending { background: linear-gradient(135deg, #f39c12, #f1c40f); }
+.bg-payable { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+.bg-paid-provider { background: linear-gradient(135deg, #2980b9, #3498db); }
+.entry-row { transition: background .15s; }
+.entry-row:hover { background: #f8f4fc; }
+.table-accounting th { background: #5B2C6F; color: #fff; font-weight: 500; font-size: .85rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold mb-0"><i class="bi bi-calculator"></i> Accounting Dashboard</h4>
+    <div class="d-flex gap-2">
+        <a href="{% url 'accounting:trial_balance' %}" class="btn btn-sm btn-outline-purple"><i class="bi bi-list-columns"></i> Trial Balance</a>
+        <a href="{% url 'accounting:income_statement' %}" class="btn btn-sm btn-outline-purple"><i class="bi bi-graph-up"></i> Income Statement</a>
+        <a href="{% url 'accounting:balance_sheet' %}" class="btn btn-sm btn-outline-purple"><i class="bi bi-pie-chart"></i> Balance Sheet</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4 col-lg-3">
+        <div class="stat-card bg-income p-3 text-white">
+            <div class="icon"><i class="bi bi-arrow-up-circle"></i></div>
+            <div class="stat-value">R{{ total_income|floatformat:2 }}</div>
+            <div class="stat-label">Total Income</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-3">
+        <div class="stat-card bg-profit p-3 text-white">
+            <div class="icon"><i class="bi bi-graph-up-arrow"></i></div>
+            <div class="stat-value">R{{ net_profit|floatformat:2 }}</div>
+            <div class="stat-label">Net Profit</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-3">
+        <div class="stat-card bg-receivable p-3 text-white">
+            <div class="icon"><i class="bi bi-cash-coin"></i></div>
+            <div class="stat-value">R{{ total_receivables|floatformat:2 }}</div>
+            <div class="stat-label">Outstanding Receivables</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-3">
+        <div class="stat-card bg-collected p-3 text-white">
+            <div class="icon"><i class="bi bi-check-circle"></i></div>
+            <div class="stat-value">R{{ total_collected|floatformat:2 }}</div>
+            <div class="stat-label">Total Collected</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-3">
+        <div class="stat-card bg-expense p-3 text-white">
+            <div class="icon"><i class="bi bi-arrow-down-circle"></i></div>
+            <div class="stat-value">R{{ total_expense_incurred|floatformat:2 }}</div>
+            <div class="stat-label">Expenses Incurred</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-3">
+        <div class="stat-card bg-paid-provider p-3 text-white">
+            <div class="icon"><i class="bi bi-send"></i></div>
+            <div class="stat-value">R{{ total_paid_to_providers|floatformat:2 }}</div>
+            <div class="stat-label">Paid to Providers</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-3">
+        <div class="stat-card bg-payable p-3 text-white">
+            <div class="icon"><i class="bi bi-credit-card-2-back"></i></div>
+            <div class="stat-value">R{{ total_unpaid_expenses|floatformat:2 }}</div>
+            <div class="stat-label">Outstanding Payables</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-3">
+        <div class="stat-card bg-pending p-3 text-white">
+            <div class="icon"><i class="bi bi-clock-history"></i></div>
+            <div class="stat-value">{{ unpaid_expense_count }}</div>
+            <div class="stat-label">Unpaid Expenses</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-journal-text"></i> Recent Journal Entries</h6>
+                <a href="{% url 'accounting:journal_entries' %}" class="btn btn-sm btn-gold">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-accounting"><tr>
+                            <th>Entry #</th><th>Date</th><th>Description</th><th>Debit</th><th>Credit</th><th>Status</th>
+                        </tr></thead>
+                        <tbody>
+                            {% for entry in recent_entries %}
+                            <tr class="entry-row">
+                                <td><strong>{{ entry.entry_number }}</strong></td>
+                                <td>{{ entry.date|date:"d M Y" }}</td>
+                                <td>{{ entry.description|truncatewords:8 }}</td>
+                                <td>R{{ entry.total_debit|floatformat:2 }}</td>
+                                <td>R{{ entry.total_credit|floatformat:2 }}</td>
+                                <td>{% if entry.is_balanced %}<span class="badge bg-success">Balanced</span>{% else %}<span class="badge bg-danger">Unbalanced</span>{% endif %}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted py-3">No journal entries yet. <a href="{% url 'accounting:create_journal_entry' %}">Create one</a></td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-header bg-purple text-white">
+                <h6 class="mb-0"><i class="bi bi-bar-chart"></i> Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-auto"><a href="{% url 'accounting:chart_of_accounts' %}" class="btn btn-sm btn-outline-purple"><i class="bi bi-journal"></i> Chart of Accounts</a></div>
+                    <div class="col-auto"><a href="{% url 'accounting:create_journal_entry' %}" class="btn btn-sm btn-purple"><i class="bi bi-plus-circle"></i> New Journal Entry</a></div>
+                    <div class="col-auto"><a href="{% url 'accounting:trial_balance' %}" class="btn btn-sm btn-outline-purple"><i class="bi bi-list-columns"></i> Trial Balance</a></div>
+                    <div class="col-auto"><a href="{% url 'accounting:income_statement' %}" class="btn btn-sm btn-outline-purple"><i class="bi bi-graph-up"></i> Income Statement</a></div>
+                    <div class="col-auto"><a href="{% url 'accounting:balance_sheet' %}" class="btn btn-sm btn-outline-purple"><i class="bi bi-pie-chart"></i> Balance Sheet</a></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="card mb-3">
+            <div class="card-header bg-purple text-white">
+                <h6 class="mb-0"><i class="bi bi-wallet2"></i> Financial Summary</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><td>Total Income</td><td class="text-end fw-bold text-success">R{{ total_income|floatformat:2 }}</td></tr>
+                    <tr><td><strong>Net Profit / (Loss)</strong></td>
+                        <td class="text-end fw-bold {% if net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            R{{ net_profit|floatformat:2 }}
+                        </td>
+                    </tr>
+                    <tr class="border-top"><td>Outstanding Receivables</td><td class="text-end fw-bold text-warning">R{{ total_receivables|floatformat:2 }}</td></tr>
+                    <tr><td>Total Collected</td><td class="text-end fw-bold text-success">R{{ total_collected|floatformat:2 }}</td></tr>
+                    <tr><td>Unpaid Invoices</td><td class="text-end fw-bold">{{ unpaid_invoices }}</td></tr>
+                    <tr><td>Payments Pending Verification</td><td class="text-end fw-bold">{{ pending_payments }}</td></tr>
+                    <tr class="border-top"><td>Expenses Incurred</td><td class="text-end fw-bold text-danger">R{{ total_expense_incurred|floatformat:2 }}</td></tr>
+                    <tr><td>Paid to Providers</td><td class="text-end fw-bold text-info">R{{ total_paid_to_providers|floatformat:2 }}</td></tr>
+                    <tr><td>Outstanding Payables</td><td class="text-end fw-bold text-danger">R{{ total_unpaid_expenses|floatformat:2 }}</td></tr>
+                    <tr><td>Unpaid Expenses</td><td class="text-end fw-bold">{{ unpaid_expense_count }}</td></tr>
+                </table>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header bg-purple text-white">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> About</h6>
+            </div>
+            <div class="card-body small text-muted">
+                <p class="mb-1"><strong>Double-Entry Accounting System</strong></p>
+                <p class="mb-0">All income and expenses are tracked via journal entries. Invoices and payments are automatically posted to the general ledger when created and verified. The chart of accounts follows standard accounting categories.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

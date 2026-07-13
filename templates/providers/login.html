@@ -1,0 +1,30 @@
+{% extends 'providers/provider_base.html' %}
+{% load static %}
+{% block title %}Provider Login - {{ site_name }}{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow">
+                <div class="card-header bg-purple text-white text-center">
+                    <h4 class="mb-0"><i class="bi bi-tools"></i> Provider Portal</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" name="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-purple w-100">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

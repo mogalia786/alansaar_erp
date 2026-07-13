@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px;">
+<div style="max-width:600px;margin:auto;background:#fff;border-radius:8px;overflow:hidden;">
+<div style="background:#5B2C6F;padding:30px 20px;text-align:center;">
+<h1 style="color:#D4AF37;margin:0;font-size:24px;">Al Ansaar Foundation</h1>
+<p style="color:#fff;margin:8px 0 0 0;font-size:16px;">Proposal Accepted</p>
+</div>
+<div style="padding:25px;">
+<div style="text-align:center;margin:20px 0;">
+<div style="font-size:48px;color:#28a745;">&#10003;</div>
+<h2 style="color:#5B2C6F;margin:10px 0;">Congratulations!</h2>
+</div>
+<p>Dear <strong>{{ quotation.provider.company_name }}</strong>,</p>
+<p>We are pleased to inform you that your proposal <strong>{{ quotation.quotation_number }}</strong> in response to <strong>{{ rfq.rfq_number }} - {{ rfq.title }}</strong> has been <strong style="color:#28a745;">accepted</strong>.</p>
+<p>Your total quoted amount of <strong>R{{ quotation.total_amount_incl|floatformat:2 }}</strong> has been approved.</p>
+<h3 style="color:#5B2C6F;margin-top:25px;">Next Steps</h3>
+<p>We would like to arrange an <strong>on-site meeting</strong> to discuss the scope of work, timelines, and finalize the service agreement. A member of our procurement team will contact you within 3 business days.</p>
+<p>You are now registered as an approved service provider with Al Ansaar Foundation.{% if provider_password %}</p>
+<div style="background:#f8f9fa;border:1px solid #ddd;border-radius:6px;padding:15px;margin:15px 0;">
+<h4 style="color:#5B2C6F;margin:0 0 10px;">Your Provider Portal Credentials</h4>
+<p style="margin:5px 0;"><strong>Portal URL:</strong> <a href="{{ site_url }}/providers/login/" style="color:#5B2C6F;">{{ site_url }}/providers/login/</a></p>
+<p style="margin:5px 0;"><strong>Username/Email:</strong> {{ quotation.provider.email }}</p>
+<p style="margin:5px 0;"><strong>Password:</strong> {{ provider_password }}</p>
+<p style="margin:10px 0 0;font-size:12px;color:#888;">Your default password is based on your contact person's name. You will be required to change your password on first login.</p>
+</div>
+{% else %}
+<p>You can log in to your provider portal to access service logs and manage your engagements.</p>
+{% endif %}
+<table style="width:100%;border-collapse:collapse;margin:20px 0;">
+<tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;width:140px;">Quotation #</td><td style="padding:8px;border:1px solid #ddd;">{{ quotation.quotation_number }}</td></tr>
+<tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">RFQ #</td><td style="padding:8px;border:1px solid #ddd;">{{ rfq.rfq_number }}</td></tr>
+<tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Amount</td><td style="padding:8px;border:1px solid #ddd;">R{{ quotation.total_amount_incl|floatformat:2 }} (incl VAT)</td></tr>
+</table>
+<a href="{{ site_url }}/providers/rfqs/{{ rfq.pk }}/" style="display:inline-block;background:#5B2C6F;color:#fff;padding:12px 25px;text-decoration:none;border-radius:6px;margin-top:15px;">View in Provider Portal</a>
+<hr style="border:none;border-top:1px solid #eee;margin:25px 0;">
+<p style="color:#888;font-size:12px;">Al Ansaar Foundation &bull; 207 West Road, Overport, Durban &bull; www.alansaar.org.za<br>Tel: 031 208 1601 &bull; Email: info@alansaar.org.za</p>
+<p style="color:#888;font-size:11px;">This is an automated message. Please do not reply directly.</p>
+</div>
+</div>
+</body>
+</html>

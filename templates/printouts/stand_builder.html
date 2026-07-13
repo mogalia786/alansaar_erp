@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Stand Builder Report - {{ event.name }}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    @page { size: A4 landscape; margin: 10mm; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; color: #222; }
+    .header { border-bottom: 3px solid #5B2C6F; padding-bottom: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-left img { height: 45px; width: auto; }
+    .header-left h1 { color: #5B2C6F; font-size: 20px; margin: 0; }
+    .header-left .sub { color: #D4AF37; font-size: 11px; font-weight: 600; }
+    .header .meta { font-size: 9px; color: #888; text-align: right; }
+    .section-title { background: #5B2C6F; color: #fff; padding: 5px 10px; font-size: 11px; border-radius: 4px; margin: 12px 0 8px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 9px; }
+    th { background: #f0e8f5; padding: 5px 6px; border: 1px solid #ddd; font-weight: 600; text-align: center; vertical-align: middle; }
+    td { padding: 4px 6px; border: 1px solid #ddd; vertical-align: middle; }
+    .text-end { text-align: right; }
+    .text-center { text-align: center; }
+    .yes { background: #d4edda; color: #155724; font-weight: 700; text-align: center; }
+    .no { text-align: center; color: #999; }
+    .special td { background: #fff8e1; }
+    .summary-row td { font-weight: 700; background: #f8f4fc; border-top: 2px solid #5B2C6F; }
+    .footer { margin-top: 15px; border-top: 2px solid #5B2C6F; padding-top: 8px; font-size: 8px; color: #aaa; text-align: center; }
+    .badge-new { background: #e74c3c; color: #fff; padding: 2px 7px; border-radius: 3px; font-size: 8px; font-weight: 700; }
+    .badge-food { background: #f39c12; color: #fff; padding: 1px 6px; border-radius: 3px; font-size: 7px; }
+    .note-text { font-size: 8px; color: #666; max-width: 120px; overflow: hidden; }
+    .req-new { background: #ffe0e0 !important; color: #c0392b !important; font-weight: 700; }
+    .req-new td { background: #ffe0e0 !important; color: #c0392b; }
+    .req-new .badge-new { background: #c0392b; }
+    .completed { background: #d5f5e3 !important; }
+    .completed td { background: #d5f5e3 !important; }
+    .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+    .dot-done { background: #27ae60; }
+    .dot-pending { background: #e67e22; }
+    @media print { .no-print { display: none; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="header">
+    <div class="header-left">
+        <img src="{{ MEDIA_URL }}logo/al_ansaar_logo.png" alt="Al Ansaar Logo" onerror="this.style.display='none'">
+        <div>
+            <h1>STAND BUILDER REPORT</h1>
+            <div class="sub">{{ event.name }}</div>
+        </div>
+    </div>
+    <div class="meta">
+        <strong>Venue:</strong> {{ event.venue.name }}<br>
+        <strong>Dates:</strong> {{ event.start_date|date:"d F Y" }} to {{ event.end_date|date:"d F Y" }}<br>
+        <strong>Printed:</strong> {% now "d F Y H:i" %}
+    </div>
+</div>
+
+{% regroup bookings by stall.zone.name as zone_list %}
+
+<div class="section-title">SHELL SCHEME SPECIFICATIONS</div>
+<table>
+    <tr><th style="width:18%;">Component</th><th style="width:82%;">Specification</th></tr>
+    <tr><td>Wall Height</td><td>2.5m high back wall, 1.2m high side walls (standard) / 1m high front wall (food court)</td></tr>
+    <tr><td>Wall Material</td><td>White melamine faced board, 8mm thick, fire-resistant. R140/panel for modifications.</td></tr>
+    <tr><td>Frame</td><td>Aluminium extrusion system, silver anodised (max load: 15kg/m on horizontal beams)</td></tr>
+    <tr><td>Fascia Board</td><td>White PVC, 300mm height, max 28 characters per exhibitor name. Arial Bold font, dark text on white.</td></tr>
+    <tr><td>Flooring</td><td>Standard grey loop pile carpet (included). Additional carpet at R180/m².</td></tr>
+    <tr><td>Lighting</td><td>2 x LED spotlights per standard stand (included). Additional: pin spots, LED long arms, fluorescent tubes.</td></tr>
+    <tr><td>Power</td><td>1 x 15A single phase socket per stand (included). Upgrade to 30A/60A three-phase available.</td></tr>
+    <tr><td>Furniture</td><td>1 x Trestle table (1800x750mm), 2 x Folding chairs per standard package.</td></tr>
+</table>
+
+<div class="section-title">EXHIBITORS &amp; STAND REQUIREMENTS</div>
+<table>
+    <thead>
+        <tr>
+            <th rowspan="2" style="width:3%;">#</th>
+            <th rowspan="2" style="width:11%;">Exhibitor</th>
+            <th rowspan="2" style="width:5%;">Stall</th>
+            <th rowspan="2" style="width:4%;">Size</th>
+            <th rowspan="2" style="width:4%;">Zone</th>
+            <th rowspan="2" style="width:9%;">Fascia Name</th>
+            <th colspan="5" style="background:#e8dff5;">Stand Build</th>
+            <th colspan="3" style="background:#fff3cd;">Electrical</th>
+            <th colspan="2" style="background:#d4edda;">Furniture</th>
+            <th rowspan="2" style="width:8%;">Instructions</th>
+            <th rowspan="2" style="width:5%;">Status</th>
+        </tr>
+        <tr>
+            <th style="font-size:8px;">Build</th>
+            <th style="font-size:8px;">Walls</th>
+            <th style="font-size:8px;">Mat</th>
+            <th style="font-size:8px;">Carpet</th>
+            <th style="font-size:8px;">Shelving</th>
+            <th style="font-size:8px;">Amps</th>
+            <th style="font-size:8px;">Plugs</th>
+            <th style="font-size:8px;">Lights</th>
+            <th style="font-size:8px;">Tables</th>
+            <th style="font-size:8px;">Chairs</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for b in bookings %}
+        {% if b.requirements_version > 0 and b.requirements_updated_at > b.booking_date %}
+        <tr class="req-new">
+        {% elif b.stand_build_completed %}
+        <tr class="completed">
+        {% else %}
+        <tr class="{% if b.require_stand_build or b.side_wall_removal != 'none' or b.require_extra_plugs %}special{% endif %}">
+        {% endif %}
+            <td class="text-center">{{ forloop.counter }}</td>
+            <td><strong>{{ b.exhibitor.company_name|truncatechars:22 }}</strong>{% if b.requirements_version > 0 and b.requirements_updated_at > b.booking_date %} <span class="badge-new">NEW</span>{% endif %}</td>
+            <td class="text-center"><strong>{{ b.stall.name }}</strong></td>
+            <td class="text-center">{{ b.stall.size_sqm }}m²</td>
+            <td class="text-center">{{ b.stall.zone.name|truncatechars:10 }}</td>
+            <td style="font-size:9px;">{{ b.fascia_name|default:"-" }}</td>
+            <td class="{% if b.require_stand_build %}yes{% else %}no{% endif %}">{% if b.require_stand_build %}YES{% else %}-{% endif %}</td>
+            <td class="text-center">{% if b.side_wall_removal != 'none' %}{{ b.get_side_wall_removal_display }}{% else %}-{% endif %}</td>
+            <td class="{% if b.require_floor_mat %}yes{% else %}no{% endif %}">{% if b.require_floor_mat %}YES{% else %}-{% endif %}</td>
+            <td class="{% if b.require_carpet %}yes{% else %}no{% endif %}">{% if b.require_carpet %}YES{% else %}-{% endif %}</td>
+            <td class="{% if b.require_stand_build %}yes{% else %}no{% endif %}">{% if b.require_stand_build %}YES{% else %}-{% endif %}</td>
+            <td class="text-center">{% if b.require_additional_power_amps %}{{ b.require_additional_power_amps }}A{% else %}{{ b.stall.max_electricity_amps }}A{% endif %}</td>
+            <td class="{% if b.require_extra_plugs %}yes{% else %}no{% endif %}">{% if b.require_extra_plugs %}YES{% else %}-{% endif %}</td>
+            <td class="{% if b.require_extra_lights %}yes{% else %}no{% endif %}">{% if b.require_extra_lights %}YES{% else %}-{% endif %}</td>
+            <td class="text-center">{{ b.stall.num_tables }}</td>
+            <td class="text-center">{{ b.stall.num_chairs }}</td>
+            <td class="note-text">{% with notes=b.stand_build_instructions|default:b.special_requirements|default:"" %}{% if notes %}{{ notes|truncatechars:40 }}{% endif %}{% if b.accessories.exists %}{% if notes %}<br>{% endif %}{% for a in b.accessories.all %}{{ a.accessory.name }} x{{ a.quantity }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}{% if not notes and not b.accessories.exists %}-{% endif %}{% endwith %}</td>
+            <td class="text-center">
+                {% if b.stand_build_completed %}
+                <span class="status-dot dot-done"></span>Done
+                {% else %}
+                <span class="status-dot dot-pending"></span>Pending
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="18" class="text-center text-muted py-3">No bookings for this event</td></tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr class="summary-row">
+            <td colspan="6" class="text-end">TOTALS: {{ bookings|length }} stalls</td>
+            <td class="text-center">{{ bookings|length }}</td>
+            <td class="text-center">{{ bookings|dictsortreversed:"require_remove_side_walls"|first|default:0 }}</td>
+            <td class="text-center">{{ bookings|dictsortreversed:"require_floor_mat"|first|default:0 }}</td>
+            <td class="text-center">{{ bookings|dictsortreversed:"require_carpet"|first|default:0 }}</td>
+            <td colspan="3" class="text-center">-</td>
+            <td class="text-center">{{ total_tables }}</td>
+            <td class="text-center">{{ total_chairs }}</td>
+            <td></td>
+        </tr>
+    </tfoot>
+</table>
+
+<div class="section-title">IMPORTANT NOTES FOR STAND BUILDERS</div>
+<table>
+    <tr><th style="width:20%;">Item</th><th>Detail</th></tr>
+    <tr><td>Wall Modifications</td><td>R140 per panel removed/installed. Modifications only if time, stock allow, and payment received.</td></tr>
+    <tr><td>No Adhesives</td><td>No double-sided tape, duct tape, glue, or adhesive substances on walls/fascia. Only prestick permitted.</td></tr>
+    <tr><td>No Painting</td><td>Panels and fascia boards may NOT be painted.</td></tr>
+    <tr><td>No Hanging</td><td>Nothing may be hung from walls without prior approval from stand builders.</td></tr>
+    <tr><td>Electrical Cables</td><td>Only double-insulated cables with correct current-carrying capacity. No ripcord, speaker wire, or twin flex.</td></tr>
+    <tr><td>Connections</td><td>Block connectors or ferrules only. No twisted wire joins or sticky tape as insulation.</td></tr>
+    <tr><td>Gas Safety</td><td>All food stalls must provide a valid gas compliance certificate. Bottles away from electrical points.</td></tr>
+    <tr><td>Fire Safety</td><td>All cooking/heating stalls must have a fire extinguisher and fire blanket.</td></tr>
+    <tr><td>Food Equipment</td><td>Complete equipment list must be submitted 1 week before build-up. Late: 20% surcharge.</td></tr>
+    <tr><td>Damage</td><td>Any damage to structure/panels/fascia will be charged to stall holder.</td></tr>
+</table>
+
+<div class="footer">
+    Al Ansaar Foundation &bull; Durban, South Africa &bull; www.alansaar.org<br>
+    This is a computer-generated document. Developed by Mogalia Enterprises&trade; &copy; 2026
+</div>
+<div class="no-print text-center mt-3"><button onclick="window.print()" class="btn btn-primary">Print</button></div>
+</body>
+</html>

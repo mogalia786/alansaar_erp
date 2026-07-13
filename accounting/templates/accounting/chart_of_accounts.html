@@ -1,0 +1,44 @@
+{% extends 'portal/base.html' %}
+{% block title %}Chart of Accounts - Accounting{% endblock %}
+{% block extra_head %}
+<style>
+.type-header { padding: .5rem 1rem; border-radius: 8px; margin-bottom: .5rem; display: flex; justify-content: space-between; align-items: center; }
+.type-asset { background: #e8f4fd; border-left: 4px solid #3498db; }
+.type-liability { background: #fef9e7; border-left: 4px solid #f1c40f; }
+.type-equity { background: #eafaf1; border-left: 4px solid #27ae60; }
+.type-income { background: #f5fcf5; border-left: 4px solid #2ecc71; }
+.type-expense { background: #fdedec; border-left: 4px solid #e74c3c; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold mb-0"><i class="bi bi-journal"></i> Chart of Accounts</h4>
+    <a href="{% url 'accounting:create_journal_entry' %}" class="btn btn-sm btn-purple"><i class="bi bi-plus-circle"></i> New Journal Entry</a>
+</div>
+{% for group in grouped %}
+<div class="card mb-3">
+    <div class="type-header type-{{ group.type }}">
+        <span><strong>{{ group.type|title }}s</strong> <span class="text-muted">({{ group.accounts|length }} accounts)</span></span>
+        <span class="fw-bold">R{{ group.total|floatformat:2 }}</span>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+            <thead><tr><th>Code</th><th>Account Name</th><th>Description</th><th class="text-end">Balance</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for account in group.accounts %}
+                <tr>
+                    <td><code>{{ account.code }}</code></td>
+                    <td><strong>{{ account.name }}</strong></td>
+                    <td>{{ account.description|default:"-" }}</td>
+                    <td class="text-end fw-bold">R{{ account.balance|floatformat:2 }}</td>
+                    <td>{% if account.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-3">No accounts in this category</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

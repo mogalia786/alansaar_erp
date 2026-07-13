@@ -1,0 +1,32 @@
+{% if opening_balance is not None %}
+<div class="row mb-3 small">
+    <div class="col-auto"><strong>Opening balance:</strong> <span class="text-muted">R{{ opening_balance|floatformat:2 }}</span></div>
+    <div class="col-auto"><strong>Closing balance:</strong> <span class="fw-bold">R{{ closing_balance|floatformat:2 }}</span></div>
+</div>
+{% endif %}
+<div class="table-responsive">
+    <table class="table table-hover table-sm mb-0">
+        <thead class="table-purple">
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Reference</th>
+                <th>Money Out (Debit)</th>
+                <th>Money In (Credit)</th>
+                <th>Mapped</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in fetched_transactions %}
+            <tr{% if t.mapped_to %} style="background:#e8f5e9;"{% endif %}>
+                <td>{{ t.transaction_date|date:"Y-m-d" }}</td>
+                <td>{{ t.description|truncatechars:50 }}</td>
+                <td><small class="text-muted">{{ t.reference|default:"-"|truncatechars:25 }}</small></td>
+                <td class="text-danger">{% if t.debit_amount and t.debit_amount > 0 %}-R{{ t.debit_amount|floatformat:2 }}{% endif %}</td>
+                <td class="text-success">{% if t.credit_amount and t.credit_amount > 0 %}R{{ t.credit_amount|floatformat:2 }}{% endif %}</td>
+                <td>{% if t.mapped_to %}<span class="badge bg-success">{{ t.mapped_to }}</span>{% else %}<span class="badge bg-secondary">Unmapped</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

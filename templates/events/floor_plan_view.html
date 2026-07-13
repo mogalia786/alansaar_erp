@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+{% block title %}Floor Plan - {{ event.name }}{% endblock %}
+{% block extra_head %}
+<style>
+:root { --purple: #5B2C6F; --gold: #D4AF37; --purple-light: #7B3F95; }
+body { background: #0d0d1a !important; margin: 0; padding: 0; }
+.top-bar {
+    background: linear-gradient(135deg, #1a0a2e 0%, var(--purple) 50%, #2c1640 100%);
+    padding: 14px 20px; border-bottom: 3px solid var(--gold);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+}
+.top-bar h1 { color: #fff; font-size: 20px; font-weight: 900; margin: 0; }
+.top-bar .sub { color: rgba(255,255,255,0.5); font-size: 12px; margin: 2px 0 0; }
+.top-bar .sub b { color: var(--gold); }
+.top-bar .right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.top-bar .avail-badge {
+    background: rgba(46,204,113,0.15); border: 1px solid rgba(46,204,113,0.3);
+    color: #2ecc71; padding: 5px 14px; border-radius: 20px; font-weight: 700; font-size: 12px;
+}
+.legend { display: flex; gap: 12px; font-size: 11px; color: rgba(255,255,255,0.5); align-items: center; }
+.legend .d { display: flex; align-items: center; gap: 4px; }
+.legend .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.zoom-g { display: flex; gap: 2px; background: rgba(255,255,255,0.08); border-radius: 8px; padding: 3px; }
+.zoom-g button {
+    width: 30px; height: 30px; border: none; border-radius: 6px; background: transparent;
+    color: #bbb; font-size: 14px; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; transition: all .15s;
+}
+.zoom-g button:hover { background: var(--gold); color: #000; }
+.zoom-g .zl { padding: 0 8px; font-size: 11px; font-weight: 700; color: var(--gold); min-width: 40px; text-align: center; display:flex; align-items:center; }
+#fp-wrap {
+    overflow: auto; background: #1a1a1a;
+    height: calc(100vh - 70px); position: relative;
+    display: flex; align-items: flex-start; justify-content: flex-start;
+}
+#fp-inner { position: relative; line-height: 0; }
+#fp-inner svg { display: block; overflow: visible !important; }
+#fp-inner svg path { stroke-opacity: 1 !important; }
+#grid-bg { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 1; }
+.stall {
+    position: absolute; border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: #fff; white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0,0,0,.6); line-height: 1;
+    cursor: pointer; z-index: 5; transition: all .15s ease;
+}
+.stall.avail {
+    background: rgba(39,174,96,0.82); border: 2px solid #27ae60;
+    box-shadow: 0 1px 6px rgba(39,174,96,0.4);
+    animation: gpulse 2s ease-in-out infinite;
+}
+.stall.avail:hover { transform: scale(1.1); z-index: 20; box-shadow: 0 0 0 3px rgba(39,174,96,0.4), 0 4px 16px rgba(39,174,96,0.5); }
+@keyframes gpulse { 0%,100%{box-shadow:0 1px 6px rgba(39,174,96,0.4)} 50%{box-shadow:0 1px 12px rgba(39,174,96,0.7)} }
+.stall.reserved { background: rgba(243,156,18,0.8); border: 2px solid #f39c12; }
+.stall.confirmed { background: rgba(231,76,60,0.8); border: 2px solid #e74c3c; }
+.stall.blocked { background: rgba(120,120,140,0.6); border: 2px solid #78788c; }
+.ttip {
+    position: fixed; z-index: 9999; pointer-events: none;
+    background: #fff; border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.3); padding: 0; min-width: 240px;
+    opacity: 0; transition: opacity .12s; font-size: 13px; overflow: hidden;
+}
+.ttip.show { opacity: 1; }
+.ttip .th { padding: 10px 14px; color: #fff; font-weight: 800; font-size: 15px; }
+.ttip .tb { padding: 10px 14px; }
+.ttip .tr { display: flex; justify-content: space-between; padding: 3px 0; }
+.ttip .tl { color: #999; } .ttip .tv { font-weight: 700; }
+.ttip .tf { padding: 8px 14px; text-align: center; font-size: 11px; color: #888; border-top: 1px solid #f0f0f0; }
+.ttip .tf.book { background: linear-gradient(135deg, #27ae60, #2ecc71); color: #fff; font-weight: 800; font-size: 12px; cursor: pointer; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="top-bar">
+    <div>
+        <h1>{{ event.name }}</h1>
+        <p class="sub">Pick your <b>perfect stand</b> and book online</p>
+    </div>
+    <div class="right">
+        <div class="legend">
+            <div class="d"><span class="sw" style="background:#27ae60;"></span> Available</div>
+            <div class="d"><span class="sw" style="background:#f39c12;"></span> Reserved</div>
+            <div class="d"><span class="sw" style="background:#e74c3c;"></span> Booked</div>
+            <div class="d"><span class="sw" style="background:#78788c;"></span> Blocked</div>
+        </div>
+        <span class="avail-badge" id="avail-ct">0 Available</span>
+        <div class="zoom-g">
+            <button onclick="zo()"><i class="bi bi-dash-lg"></i></button>
+            <span class="zl" id="zpct">100%</span>
+            <button onclick="zi()"><i class="bi bi-plus-lg"></i></button>
+            <button onclick="zf()" style="width:auto;padding:0 10px;font-size:11px;">Fit</button>
+        </div>
+    </div>
+</div>
+
+<div id="fp-wrap">
+    <div id="fp-inner">
+        {{ svg_content|safe }}
+        <div id="grid-bg"></div>
+    </div>
+</div>
+
+<div class="ttip" id="tt">
+    <div class="th" id="tth"></div>
+    <div class="tb">
+        <div class="tr"><span class="tl">Size</span><span class="tv" id="tsz"></span></div>
+        <div class="tr"><span class="tl">Zone</span><span class="tv" id="tzn"></span></div>
+        <div class="tr"><span class="tl">Status</span><span class="tv" id="tst"></span></div>
+        <div class="tr" style="border-top:1px solid #eee;margin-top:4px;padding-top:6px;">
+            <span class="tl" style="font-size:14px;">Price</span>
+            <span class="tv" style="color:#27ae60;font-size:18px;font-weight:900;" id="tpr"></span>
+        </div>
+    </div>
+    <div class="tf" id="tft"></div>
+</div>
+
+<div class="modal fade" id="bookingModal" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:var(--purple);color:#fff;">
+                <h6 class="mb-0"><i class="bi bi-shop"></i> Confirm Booking</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <div style="font-size:48px;color:var(--purple);"><i class="bi bi-shop"></i></div>
+                    <h5 id="modal-stall-name" class="fw-bold mt-2" style="color:var(--purple);">-</h5>
+                </div>
+                <table class="table table-sm table-borderless">
+                    <tr><td class="text-muted">Size:</td><td class="fw-bold" id="modal-size">-</td></tr>
+                    <tr><td class="text-muted">Price:</td><td class="fw-bold text-success" id="modal-price">-</td></tr>
+                    <tr><td class="text-muted">Status:</td><td><span class="badge bg-success" id="modal-status">Available</span></td></tr>
+                </table>
+                <hr class="my-2">
+                {% if not user.is_authenticated %}
+                <div class="alert alert-warning py-2 mb-0" style="font-size:13px;">
+                    <i class="bi bi-exclamation-triangle"></i> Please <a href="{% url 'login' %}?next={% url 'floor_plan_view' event.id %}" class="alert-link">login</a> or <a href="{% url 'register' %}" class="alert-link">register</a> to book.
+                </div>
+                {% else %}
+                <p class="small fw-bold text-muted mb-2"><i class="bi bi-gear"></i> Additional Requirements</p>
+                <form id="booking-form" method="POST" action="">
+                    {% csrf_token %}
+                    <div class="row g-1 small mb-2">
+                        <div class="col-6">
+                            <div class="form-check"><input class="form-check-input" type="checkbox" name="requires_power"><label class="form-check-label">Power</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" name="requires_water"><label class="form-check-label">Water</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" name="require_stand_build"><label class="form-check-label">Stand Build</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" name="require_remove_side_walls"><label class="form-check-label">Remove Walls</label></div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check"><input class="form-check-input" type="checkbox" name="require_floor_mat"><label class="form-check-label">Floor Mat</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" name="require_carpet"><label class="form-check-label">Carpet</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" name="require_extra_plugs"><label class="form-check-label">Extra Plugs</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" name="require_extra_lights"><label class="form-check-label">Extra Lights</label></div>
+                        </div>
+                    </div>
+                    <div class="mb-2 small">
+                        <label class="form-label fw-bold">Fascia / Company Name</label>
+                        <input type="text" class="form-control form-control-sm" name="fascia_name" maxlength="28" placeholder="Max 28 characters">
+                    </div>
+                    <div class="mb-2 small">
+                        <label class="form-label fw-bold">Special Requirements</label>
+                        <textarea class="form-control form-control-sm" name="special_requirements" rows="2"></textarea>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-sm" style="background:var(--purple);color:#fff;"><i class="bi bi-check-lg"></i> Confirm Booking</button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+(function(){
+    var VW = {{ svg_w }}, VH = {{ svg_h }};
+    var stalls = {{ stalls_data|safe }};
+    var wrap = document.getElementById('fp-wrap');
+    var inner = document.getElementById('fp-inner');
+    var gridBg = document.getElementById('grid-bg');
+    var zm = 1, baseZ = 1;
+
+    var ac = stalls.filter(function(s){return s.status==='available';}).length;
+    document.getElementById('avail-ct').textContent = ac + ' Available';
+
+    function calcBase() { baseZ = wrap.clientWidth / VW; }
+    function getCssZoom() { return zm * baseZ; }
+
+    function drawGrid() {
+        var cssZ = getCssZoom();
+        var lineW = Math.max(0.5, 1 / cssZ);
+        var gridMm = 1000;
+        gridBg.style.backgroundImage = [
+            'repeating-linear-gradient(to right, rgba(255,255,255,0.25) 0 ' + lineW + 'px, transparent ' + lineW + 'px ' + gridMm + 'px)',
+            'repeating-linear-gradient(to bottom, rgba(255,255,255,0.25) 0 ' + lineW + 'px, transparent ' + lineW + 'px ' + gridMm + 'px)'
+        ].join(',');
+        gridBg.style.backgroundSize = gridMm + 'px ' + gridMm + 'px';
+        gridBg.style.backgroundPosition = '0 0';
+    }
+
+    function layout() {
+        inner.querySelectorAll('.stall').forEach(function(e){e.remove();});
+        var fs = Math.max(6, Math.round(10 / getCssZoom()));
+        stalls.forEach(function(s) {
+            var d = document.createElement('div');
+            var cls = s.status === 'available' ? 'avail' : s.status;
+            d.className = 'stall ' + cls;
+            d.style.left = (s.x / VW * 100) + '%';
+            d.style.top = (s.y / VH * 100) + '%';
+            d.style.width = (s.w / VW * 100) + '%';
+            d.style.height = (s.h / VH * 100) + '%';
+            d.style.fontSize = fs + 'px';
+            var m = s.name.match(/^(\w+)\s+(\d+)$/);
+            d.textContent = m ? m[1].charAt(0) + m[2] : s.name;
+            d.dataset.n = s.name; d.dataset.p = s.price; d.dataset.sq = s.size_sqm;
+            d.dataset.w = s.w; d.dataset.h = s.h; d.dataset.st = s.status; d.dataset.z = s.zone; d.dataset.id = s.id;
+            inner.appendChild(d);
+        });
+        inner.querySelectorAll('.stall.avail').forEach(function(el){
+            el.onmouseenter = function(e){showTT(e,el);};
+            el.onmousemove = moveTT;
+            el.onmouseleave = hideTT;
+            el.onclick = function(){ showBookingModal(el.dataset); };
+        });
+        inner.querySelectorAll('.stall:not(.avail)').forEach(function(el){
+            el.onmouseenter = function(e){showTT(e,el);};
+            el.onmousemove = moveTT;
+            el.onmouseleave = hideTT;
+        });
+    }
+
+    function applyZoom() {
+        calcBase();
+        var cz = getCssZoom();
+        inner.style.zoom = cz;
+        document.getElementById('zpct').textContent = Math.round(zm * 100) + '%';
+        layout();
+        drawGrid();
+    }
+    window.zi = function(){ zm = Math.min(12, zm * 1.25); applyZoom(); };
+    window.zo = function(){ zm = Math.max(0.1, zm / 1.25); applyZoom(); };
+    window.zf = function(){
+        zm = 1; applyZoom();
+        var iw = VW * baseZ, ih = VH * baseZ;
+        wrap.scrollLeft = Math.max(0, (iw - wrap.clientWidth) / 2);
+        wrap.scrollTop = Math.max(0, (ih - wrap.clientHeight) / 2);
+    };
+
+    wrap.addEventListener('wheel', function(e){
+        if(e.ctrlKey||e.metaKey){e.preventDefault();e.deltaY<0?zi():zo();}
+    }, {passive:false});
+
+    var drag = null;
+    wrap.addEventListener('mousedown', function(e){
+        if(e.button!==0||e.target.closest('.stall'))return;
+        drag={sx:e.clientX,sy:e.clientY,sl:wrap.scrollLeft,st:wrap.scrollTop};
+        wrap.style.cursor='grabbing';e.preventDefault();
+    });
+    document.addEventListener('mousemove',function(e){if(!drag)return;wrap.scrollLeft=drag.sl-(e.clientX-drag.sx);wrap.scrollTop=drag.st-(e.clientY-drag.sy);});
+    document.addEventListener('mouseup',function(){if(drag){drag=null;wrap.style.cursor='';}});
+    wrap.addEventListener('mousemove',function(e){if(!drag&&!e.target.closest('.stall'))wrap.style.cursor='grab';});
+
+    var tt = document.getElementById('tt');
+    function showTT(e,el){
+        var d=el.dataset, c={available:'#27ae60',reserved:'#f39c12',confirmed:'#c0392b',blocked:'#78788c'};
+        document.getElementById('tth').textContent=d.n;
+        document.getElementById('tth').style.background=c[d.st]||'#666';
+        document.getElementById('tsz').textContent=(d.w/1000).toFixed(1)+'m x '+(d.h/1000).toFixed(1)+'m ('+d.sq+' m\u00B2)';
+        document.getElementById('tzn').textContent=d.z||'General';
+        var se=document.getElementById('tst');se.textContent=d.st.charAt(0).toUpperCase()+d.st.slice(1);se.style.color=c[d.st]||'#666';
+        document.getElementById('tpr').textContent='R'+parseFloat(d.p).toLocaleString();
+        var f=document.getElementById('tft');
+        if(d.st==='available'){f.textContent='CLICK TO BOOK';f.className='tf book';}
+        else{f.textContent=d.st==='reserved'?'Currently reserved':d.st==='confirmed'?'Already booked':'Not available';f.className='tf';}
+        moveTT(e);tt.classList.add('show');
+    }
+    function moveTT(e){var x=e.clientX+14,y=e.clientY+14;if(x+260>innerWidth)x=e.clientX-274;if(y+220>innerHeight)y=e.clientY-234;tt.style.left=x+'px';tt.style.top=y+'px';}
+    function hideTT(){tt.classList.remove('show');}
+
+    var modal = document.getElementById('bookingModal');
+    var bsModal = new bootstrap.Modal(modal);
+    var form = document.getElementById('booking-form');
+    function showBookingModal(d) {
+        document.getElementById('modal-stall-name').textContent = d.n;
+        document.getElementById('modal-size').textContent = (d.w/1000).toFixed(1) + 'm x ' + (d.h/1000).toFixed(1) + 'm (' + d.sq + ' m\u00B2)';
+        document.getElementById('modal-price').textContent = 'R' + parseFloat(d.p).toLocaleString();
+        var ms = document.getElementById('modal-status');
+        ms.className = 'badge bg-success';
+        ms.textContent = 'Available';
+        form.action = '/events/{{ event.id }}/stall/' + d.id + '/book/';
+        bsModal.show();
+    }
+
+    zm = 4; applyZoom();
+    setTimeout(zf, 100);
+    window.addEventListener('resize', function(){ applyZoom(); });
+})();
+</script>
+{% endblock %}

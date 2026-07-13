@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:30px 10px;">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+
+<!-- Header -->
+<tr><td style="background:linear-gradient(135deg,#5B2C6F,#7B3F95);padding:30px 40px;text-align:center;">
+<img src="{{ site_url }}/media/logo/al_ansaar_logo.png" alt="Al Ansaar Foundation" height="50" style="margin-bottom:10px;">
+<h1 style="color:#fff;font-size:20px;margin:8px 0 0;letter-spacing:1px;">Al Ansaar Foundation</h1>
+<p style="color:rgba(255,255,255,0.8);font-size:13px;margin:4px 0 0;">Durban Summer Souk 2026</p>
+</td></tr>
+
+<!-- Body -->
+<tr><td style="padding:40px;">
+<h2 style="color:#5B2C6F;font-size:22px;margin:0 0 6px;">Payment Verified</h2>
+<p style="color:#666;font-size:14px;margin:0 0 25px;">Dear <strong>{{ exhibitor.company_name }}</strong>,</p>
+<p style="color:#444;font-size:14px;line-height:1.6;margin:0 0 20px;">
+We are pleased to inform you that your payment has been successfully verified and processed.
+</p>
+
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f6fc;border-radius:6px;padding:20px;margin:0 0 20px;">
+<tr><td style="padding:8px 12px;border-bottom:1px solid #e8dff0;color:#666;font-size:13px;">Invoice</td>
+<td style="padding:8px 12px;border-bottom:1px solid #e8dff0;color:#333;font-size:13px;font-weight:600;">{{ invoice.invoice_number }}</td></tr>
+<tr><td style="padding:8px 12px;border-bottom:1px solid #e8dff0;color:#666;font-size:13px;">Amount Paid</td>
+<td style="padding:8px 12px;border-bottom:1px solid #e8dff0;color:#27ae60;font-size:13px;font-weight:700;">R{{ payment.amount|floatformat:2 }}</td></tr>
+<tr><td style="padding:8px 12px;border-bottom:1px solid #e8dff0;color:#666;font-size:13px;">Payment Method</td>
+<td style="padding:8px 12px;border-bottom:1px solid #e8dff0;color:#333;font-size:13px;">{{ payment.get_payment_method_display }}</td></tr>
+<tr><td style="padding:8px 12px;border-bottom:1px solid #e8dff0;color:#666;font-size:13px;">Reference</td>
+<td style="padding:8px 12px;border-bottom:1px solid #e8dff0;color:#333;font-size:13px;">{{ payment.reference_number }}</td></tr>
+<tr><td style="padding:8px 12px;color:#666;font-size:13px;">Balance Due</td>
+<td style="padding:8px 12px;color:#e74c3c;font-size:13px;font-weight:700;">R{{ invoice.balance_due|floatformat:2 }}</td></tr>
+</table>
+
+<p style="color:#444;font-size:14px;line-height:1.6;margin:0 0 20px;">
+Your receipt <strong>{{ receipt.receipt_number }}</strong> has been generated. You can view and download it from your portal.
+</p>
+
+<p style="color:#444;font-size:14px;line-height:1.6;margin:0 0 20px;">
+Thank you for your prompt payment. Should you have any queries, please contact us.
+</p>
+
+<p style="color:#444;font-size:14px;margin:0 0 4px;">Warm regards,</p>
+<p style="color:#5B2C6F;font-size:14px;font-weight:600;margin:0 0 20px;">Al Ansaar Foundation Events Team</p>
+</td></tr>
+
+<!-- Footer -->
+<tr><td style="background:#2c3e50;padding:20px 40px;text-align:center;">
+<p style="color:rgba(255,255,255,0.5);font-size:11px;margin:0 0 6px;">
+11 Walnut Road, Durban, KwaZulu-Natal<br>
+Tel: +27 (0)31 123 4567 | Email: info@alansaar.org.za
+</p>
+<p style="color:rgba(255,255,255,0.3);font-size:10px;margin:0;">
+Developed by Mogalia Enterprises™ | &copy; 2026 All Rights Reserved
+</p>
+</td></tr>
+
+</table>
+</td></tr></table>
+</body>
+</html>

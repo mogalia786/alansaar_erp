@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Receipt - {{ receipt.receipt_number }}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    @page { size: A4; margin: 12mm; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #222; }
+    .receipt-box { max-width: 210mm; margin: 0 auto; padding: 15px; }
+    .top-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand img { height: 50px; width: auto; }
+    .brand .brand-text h1 { color: #5B2C6F; font-size: 20px; margin: 0; letter-spacing: 1px; }
+    .brand .sub { color: #D4AF37; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; }
+    .brand .details { font-size: 10px; color: #666; margin-top: 8px; line-height: 1.6; }
+    .title-area h2 { color: #5B2C6F; font-size: 28px; margin: 0; letter-spacing: 3px; text-transform: uppercase; }
+    .title-area .paid-stamp { display: inline-block; padding: 4px 20px; background: #27ae60; color: #fff; font-size: 14px; font-weight: bold; border-radius: 4px; margin-top: 5px; }
+    .receipt-body { border: 2px solid #5B2C6F; border-radius: 8px; padding: 25px; background: #fff; }
+    .receipt-header { text-align: center; border-bottom: 2px dashed #ddd; padding-bottom: 15px; margin-bottom: 20px; }
+    .receipt-header h3 { color: #5B2C6F; font-size: 18px; margin: 0; }
+    .receipt-header .receipt-no { font-size: 13px; color: #888; letter-spacing: 1px; }
+    .info-grid { display: flex; justify-content: space-between; margin-bottom: 20px; }
+    .info-grid .col { flex: 1; }
+    .info-grid .label { color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
+    .info-grid .value { font-weight: 600; font-size: 13px; }
+    .amount-row { text-align: center; padding: 20px 0; border-top: 2px dashed #ddd; border-bottom: 2px dashed #ddd; margin: 15px 0; }
+    .amount-row .label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 2px; }
+    .amount-row .amount { font-size: 42px; font-weight: 800; color: #5B2C6F; line-height: 1.2; }
+    .amount-row .method { font-size: 12px; color: #666; }
+    .details-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 10px; }
+    .details-table td { padding: 4px 10px; }
+    .details-table .lbl { color: #888; }
+    .footer { margin-top: 25px; border-top: 2px solid #5B2C6F; padding-top: 10px; font-size: 9px; color: #aaa; text-align: center; }
+    .watermark { position: absolute; opacity: 0.06; font-size: 120px; font-weight: 900; color: #5B2C6F; top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(-30deg); pointer-events: none; z-index: 0; }
+    .receipt-body { position: relative; overflow: hidden; }
+    @media print { .no-print { display: none; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="receipt-box">
+    <div class="top-section">
+    <div class="brand">
+        <img src="{{ MEDIA_URL }}logo/al_ansaar_logo.png" alt="Al Ansaar Logo" onerror="this.style.display='none'">
+        <div>
+            <div class="brand-text"><h1>Al Ansaar Foundation</h1></div>
+            <div class="sub">{{ receipt.payment.booking.event.name }}</div>
+            <div class="details">
+                Durban Exhibition Centre, 11 Walnut Road, Durban<br>
+                info@alansaar.org.za
+            </div>
+        </div>
+    </div>
+        <div class="title-area">
+            <h2>OFFICIAL RECEIPT</h2>
+            <div class="paid-stamp">PAID</div>
+        </div>
+    </div>
+
+    <div class="receipt-body">
+        <div class="watermark">PAID</div>
+        <div class="receipt-header">
+            <h3>RECEIPT OF PAYMENT</h3>
+            <div class="receipt-no">{{ receipt.receipt_number }}</div>
+        </div>
+
+        <div class="info-grid">
+            <div class="col">
+                <div class="label">Received From</div>
+                <div class="value">{{ receipt.exhibitor.company_name }}</div>
+                <div style="font-size:10px;color:#666;">{{ receipt.exhibitor.email }}</div>
+            </div>
+            <div class="col text-end">
+                <div class="label">Date of Issue</div>
+                <div class="value">{{ receipt.issue_date|date:"d F Y" }}</div>
+                <div style="font-size:10px;color:#666;">{{ receipt.issue_date|date:"l" }}</div>
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="col">
+                <div class="label">Invoice Reference</div>
+                <div class="value">{{ receipt.payment.invoice.invoice_number }}</div>
+            </div>
+            <div class="col text-end">
+                <div class="label">Booking Reference</div>
+                <div class="value">{{ receipt.payment.booking.booking_reference }}</div>
+            </div>
+        </div>
+
+        <div class="amount-row">
+            <div class="label">Amount Received</div>
+            <div class="amount">R{{ receipt.amount|floatformat:2 }}</div>
+            <div class="method">via {{ receipt.payment_method }}
+                {% if receipt.reference_number %} &bull; Ref: {{ receipt.reference_number }}{% endif %}
+            </div>
+        </div>
+
+        <div style="font-size:10px;color:#666;text-align:center;">
+            <p style="margin:0;">The sum of <strong>R{{ receipt.amount|floatformat:2 }}</strong> has been credited to the account of</p>
+            <p style="margin:0;"><strong>{{ receipt.exhibitor.company_name }}</strong> for {{ receipt.payment.booking.event.name }}</p>
+        </div>
+
+        <table class="details-table">
+            <tr>        <td class="lbl">Payment Method</td><td>{{ receipt.payment_method }}</td>
+            <td class="lbl">Reference</td><td>{{ receipt.reference_number|default:"-" }}</td></tr>
+            <tr><td class="lbl">Invoice Amount</td><td>R{{ receipt.payment.invoice.amount_incl|floatformat:2 }}</td>
+            <td class="lbl">Balance Remaining</td><td>R{{ receipt.payment.invoice.balance_due|floatformat:2 }}</td></tr>
+            <tr><td class="lbl">Stall</td><td>{{ receipt.payment.booking.stall.name }}</td>
+            <td class="lbl">Event</td><td>{{ receipt.payment.booking.event.name }}</td></tr>
+        </table>
+
+        {% if receipt.notes %}
+        <div style="font-size:10px;color:#666;margin-top:10px;padding-top:10px;border-top:1px solid #eee;">
+            <strong>Notes:</strong> {{ receipt.notes }}
+        </div>
+        {% endif %}
+
+        <div style="margin-top:25px;display:flex;justify-content:space-between;font-size:10px;">
+            <div>
+                <div style="border-top:1px solid #333;width:200px;padding-top:4px;margin-top:30px;">Authorised Signature</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:9px;color:#888;">Al Ansaar Foundation</div>
+                <div style="font-size:9px;color:#888;">accounts@alansaar.org</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Al Ansaar Foundation &bull; VAT: 4870261234 &bull; Durban, South Africa &bull; www.alansaar.org<br>
+        This is a computer-generated receipt. Valid without signature.
+    </div>
+
+    <div class="no-print text-center mt-3">
+        <button onclick="window.print()" class="btn btn-success">Print / Save PDF</button>
+        <button onclick="window.close()" class="btn btn-secondary">Close</button>
+    </div>
+</div>
+</body>
+</html>

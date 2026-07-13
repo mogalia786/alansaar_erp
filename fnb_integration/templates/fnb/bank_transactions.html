@@ -1,0 +1,67 @@
+{% extends 'portal/base.html' %}
+{% block title %}Bank Transactions - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="bi bi-list-check"></i> Bank Transactions</h3>
+    <div>
+        <a href="{% url 'fnb:sync' %}" class="btn btn-sm btn-purple"><i class="bi bi-arrow-repeat"></i> Sync</a>
+        <a href="{% url 'fnb:dashboard' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="small text-muted">Filter Account</label>
+                <select name="account" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Accounts</option>
+                    {% for a in accounts %}
+                    <option value="{{ a.id }}" {% if selected_account == a.id %}selected{% endif %}>{{ a.account_number }} ({{ a.get_account_type_display }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="small text-muted">Total: {{ total }} transactions</label>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0">
+                <thead class="table-purple">
+                    <tr>
+                        <th>Date</th>
+                        <th>Account</th>
+                        <th>Description</th>
+                        <th>Reference</th>
+                        <th>Type</th>
+                        <th>Debit</th>
+                        <th>Credit</th>
+                        <th>Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr>
+                        <td>{{ t.transaction_date|date:"Y-m-d H:i" }}</td>
+                        <td><small>{{ t.account.account_number }}</small></td>
+                        <td>{{ t.description|truncatechars:40 }}</td>
+                        <td><small class="text-muted">{{ t.reference|default:"-"|truncatechars:15 }}</small></td>
+                        <td><span class="badge bg-{% if t.transaction_type == 'Debit' %}danger{% else %}success{% endif %}">{{ t.transaction_type }}</span></td>
+                        <td class="text-danger">{% if t.debit_amount > 0 %}R{{ t.debit_amount|floatformat:2 }}{% endif %}</td>
+                        <td class="text-success">{% if t.credit_amount > 0 %}R{{ t.credit_amount|floatformat:2 }}{% endif %}</td>
+                        <td>{% if t.balance %}R{{ t.balance|floatformat:2 }}{% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8" class="text-center text-muted py-4">No transactions found. Sync statements from FNB.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

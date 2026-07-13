@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - Al Ansaar Foundation{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-purple mb-0">
+            <i class="bi bi-speedometer2"></i> Welcome, {{ user.company_name|default:user.first_name }}
+        </h2>
+        <a href="{% url 'account_statement' %}" class="btn btn-outline-purple btn-sm" target="_blank">
+            <i class="bi bi-file-earmark-text"></i> Account Statement
+        </a>
+    </div>
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card text-center border-gold">
+                <div class="card-body">
+                    <i class="bi bi-bag-check display-4 text-gold"></i>
+                    <h3 class="mt-2">{{ bookings|length }}</h3>
+                    <p class="text-muted mb-0">My Bookings</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-gold">
+                <div class="card-body">
+                    <i class="bi bi-file-text display-4 text-gold"></i>
+                    <h3 class="mt-2">{{ user.invoices.count }}</h3>
+                    <p class="text-muted mb-0">Invoices</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-gold">
+                <div class="card-body">
+                    <i class="bi bi-bell display-4 text-gold"></i>
+                    <h3 class="mt-2">{{ user.notifications.count }}</h3>
+                    <p class="text-muted mb-0">Notifications</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <h4 class="fw-bold mb-3">My Bookings</h4>
+    {% if bookings %}
+    <div class="table-responsive">
+        <table class="table table-hover bg-white rounded shadow-sm">
+            <thead class="table-purple text-white">
+                <tr>
+                    <th>Reference</th>
+                    <th>Event</th>
+                    <th>Stall</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in bookings %}
+                <tr>
+                    <td><strong>{{ b.booking_reference }}</strong></td>
+                    <td>{{ b.event.name }}</td>
+                    <td>{{ b.stall.name }}</td>
+                    <td>R{{ b.total_amount|floatformat:2 }}</td>
+                    <td><span class="badge bg-{% if b.status == 'pending' %}warning{% elif b.status == 'approved' %}info{% elif b.status == 'confirmed' %}success{% elif b.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ b.get_status_display }}</span></td>
+                    <td><span class="badge bg-{% if b.payment_status == 'paid' %}success{% elif b.payment_status == 'unpaid' %}danger{% else %}warning{% endif %}">{{ b.get_payment_status_display }}</span></td>
+                    <td>
+                        <a href="{% url 'booking_detail' b.id %}" class="btn btn-sm btn-purple">View</a>
+                        {% if b.status == 'pending' or b.status == 'approved' %}
+                        <a href="{% url 'cancel_booking' b.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel this booking?')">Cancel</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-4 bg-white rounded shadow-sm">
+        <i class="bi bi-inbox display-4 text-muted"></i>
+        <p class="mt-2">No bookings yet. <a href="{% url 'event_list' %}">Browse events</a> to get started!</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

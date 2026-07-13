@@ -1,0 +1,70 @@
+{% extends 'portal/base.html' %}
+{% block title %}{% if edit %}Edit{% else %}New{% endif %} User - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="bi bi-person"></i> {% if edit %}Edit{% else %}New{% endif %} User</h3>
+    <a href="{% url 'erp:user_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+<div class="card"><div class="card-header bg-purple text-white"><h6 class="mb-0">User Details</h6></div>
+<div class="card-body">
+<form method="post">
+    {% csrf_token %}
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" required value="{% if edit %}{{ edit_user.username }}{% endif %}">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" required value="{% if edit %}{{ edit_user.email }}{% endif %}">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" placeholder="{% if edit %}Leave blank to keep current{% else %}Default: changeme123{% endif %}">
+            {% if edit %}<small class="text-muted">Leave blank to keep current password.</small>{% endif %}
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">User Type</label>
+            <select name="user_type" class="form-select">
+                <option value="exhibitor" {% if edit and edit_user.user_type == 'exhibitor' %}selected{% endif %}>Exhibitor</option>
+                <option value="staff" {% if edit and edit_user.user_type == 'staff' %}selected{% endif %}>Staff</option>
+                <option value="director" {% if edit and edit_user.user_type == 'director' %}selected{% endif %}>Director</option>
+                <option value="finance" {% if edit and edit_user.user_type == 'finance' %}selected{% endif %}>Finance</option>
+                <option value="service_provider" {% if edit and edit_user.user_type == 'service_provider' %}selected{% endif %}>Service Provider</option>
+                <option value="admin" {% if edit and edit_user.user_type == 'admin' %}selected{% endif %}>Admin</option>
+                <option value="superadmin" {% if edit and edit_user.user_type == 'superadmin' %}selected{% endif %}>Super Admin</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Phone</label>
+            <input type="text" name="phone" class="form-control" value="{% if edit %}{{ edit_user.phone }}{% endif %}">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Company Name</label>
+            <input type="text" name="company_name" class="form-control" value="{% if edit %}{{ edit_user.company_name }}{% endif %}">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Role</label>
+            <select name="role_id" class="form-select">
+                <option value="">-- None --</option>
+                {% for r in roles %}
+                <option value="{{ r.id }}" {% if edit and edit_user.role_id == r.id %}selected{% endif %}>{{ r.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% if edit %}
+        <div class="col-12">
+            <div class="form-check">
+                <input type="checkbox" name="is_active" id="id_is_active" class="form-check-input" {% if edit_user.is_active %}checked{% endif %}>
+                <label class="form-check-label" for="id_is_active">Is Active</label>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    <div class="mt-3">
+        <button type="submit" class="btn btn-purple"><i class="bi bi-check-lg"></i> {% if edit %}Update{% else %}Create{% endif %} User</button>
+        <a href="{% url 'erp:user_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+</div></div>
+{% endblock %}

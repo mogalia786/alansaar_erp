@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block title %}Invoice {{ invoice.invoice_number }}{% endblock %}
+{% block content %}
+{% load invoice_extras %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'my_invoices' %}">Invoices</a></li>
+            <li class="breadcrumb-item active">{{ invoice.invoice_number }}</li>
+        </ol>
+    </nav>
+    {% with pending_total=invoice|pending_payments_total effective_balance=invoice|effective_balance %}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Invoice {{ invoice.invoice_number }}</h4>
+                    <span class="badge bg-{% if invoice.status == 'paid' %}success{% elif invoice.status == 'overdue' %}danger{% elif invoice.status == 'sent' %}info{% elif invoice.status == 'partial' %}warning{% else %}secondary{% endif %} fs-6">{{ invoice.get_status_display }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <h6>Bill To</h6>
+                            <p>{{ invoice.exhibitor.company_name }}<br>
+                            {{ invoice.exhibitor.email }}</p>
+                        </div>
+                        <div class="col-6 text-end">
+                            <h6>Invoice Details</h6>
+                            <p>Issued: {{ invoice.issue_date|date:"d M Y" }}<br>
+                            Due: {{ invoice.due_date|date:"d M Y" }}</p>
+                        </div>
+                    </div>
+                    <table class="table table-bordered">
+                        <thead class="table-light"><tr><th>Description</th><th class="text-end">Amount</th></tr></thead>
+                        <tbody>
+                            <tr><td>Stall {{ invoice.booking.stall.name }}</td><td class="text-end">R{{ invoice.booking.stall_price|floatformat:2 }}</td></tr>
+                            {% if invoice.booking.accessories_total > 0 %}
+                            <tr><td>Accessories</td><td class="text-end">R{{ invoice.booking.accessories_total|floatformat:2 }}</td></tr>
+                            {% endif %}
+                            {% if invoice.booking.requires_power %}
+                            <tr><td>Electricity Deposit</td><td class="text-end">R{{ invoice.booking.electricity_deposit|floatformat:2 }}</td></tr>
+                            {% endif %}
+                        </tbody>
+                        <tfoot>
+                            <tr><td>Subtotal (excl. VAT)</td><td class="text-end">R{{ invoice.amount_excl|floatformat:2 }}</td></tr>
+                            <tr><td>VAT (15%)</td><td class="text-end">R{{ invoice.vat_amount|floatformat:2 }}</td></tr>
+                            <tr class="fw-bold"><td>Total Incl. VAT</td><td class="text-end">R{{ invoice.amount_incl|floatformat:2 }}</td></tr>
+                            <tr><td>Verified Payments</td><td class="text-end text-success">R{{ invoice.amount_paid|floatformat:2 }}</td></tr>
+                            {% if pending_total > 0 %}
+                            <tr><td>Pending Payments</td><td class="text-end text-warning">R{{ pending_total|floatformat:2 }} <span class="badge bg-warning text-dark">awaiting verification</span></td></tr>
+                            {% endif %}
+                            <tr class="fw-bold {% if effective_balance > 0 %}table-danger{% else %}table-success{% endif %}">
+                                <td>Balance Due</td>
+                                <td class="text-end">R{{ effective_balance|floatformat:2 }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    {% if invoice.notes %}
+                    <p><strong>Notes:</strong> {{ invoice.notes }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% if payments %}
+            <div class="card mt-3">
+                <div class="card-header bg-purple text-white">
+                    <h5 class="mb-0">Payment History</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th><th>Reference</th></tr></thead>
+                        <tbody>
+                            {% for p in payments %}
+                            <tr>
+                                <td>{{ p.payment_date|date:"d M Y" }}</td>
+                                <td>R{{ p.amount|floatformat:2 }}</td>
+                                <td>{{ p.get_payment_method_display }}</td>
+                                <td><span class="badge bg-{% if p.status == 'verified' %}success{% elif p.status == 'pending' %}warning{% else %}danger{% endif %}">{{ p.get_status_display }}</span></td>
+                                <td>{{ p.reference_number|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-purple text-white">
+                    <h5 class="mb-0">Actions</h5>
+                </div>
+                <div class="card-body">
+                    {% if effective_balance > 0 %}
+                    <a href="{% url 'make_payment' invoice.id %}" class="btn btn-gold text-dark fw-bold w-100 mb-2">
+                        <i class="bi bi-credit-card"></i> Make Payment
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'print_invoice' invoice.id %}" class="btn btn-purple w-100 mb-2" target="_blank">
+                        <i class="bi bi-printer"></i> Print / Download Invoice
+                    </a>
+                    {% for p in payments %}
+                    {% if p.receipt %}
+                    <a href="{% url 'print_receipt' p.receipt.id %}" class="btn btn-outline-success w-100 mb-2" target="_blank">
+                        <i class="bi bi-receipt"></i> View Receipt ({{ p.receipt.receipt_number }})
+                    </a>
+                    {% endif %}
+                    {% endfor %}
+                    {% if effective_balance <= 0 %}
+                    <a href="{% url 'print_invoice' invoice.id %}" class="btn btn-outline-purple w-100 mb-2" target="_blank">
+                        <i class="bi bi-file-pdf"></i> Paid Invoice
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'booking_detail' invoice.booking.id %}" class="btn btn-outline-purple w-100">
+                        View Booking
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endwith %}
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Requests for Proposals - Al Ansaar Foundation{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="text-center mb-5">
+        <h2 class="text-purple"><i class="bi bi-file-earmark-text"></i> Requests for Proposals</h2>
+        <p class="text-muted">Al Ansaar Foundation invites qualified service providers and contractors to submit proposals for the following opportunities.</p>
+    </div>
+
+    {% if rfqs_open %}
+    <div class="card mb-4">
+        <div class="card-header bg-purple text-white">
+            <h4 class="mb-0"><i class="bi bi-megaphone"></i> Open RFQs</h4>
+        </div>
+        <div class="list-group list-group-flush">
+            {% for rfq in rfqs_open %}
+            <a href="{% url 'rfq_detail' rfq.id %}" class="list-group-item list-group-item-action py-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="mb-1 text-purple">{{ rfq.title }}</h5>
+                        <small class="text-muted">
+                            <strong>{{ rfq.rfq_number }}</strong>
+                            {% if rfq.category %}&bull; {{ rfq.category.name }}{% endif %}
+                        </small>
+                        <br>
+                        <span class="badge bg-danger mt-1">
+                            <i class="bi bi-clock"></i> Closes: {{ rfq.closing_date|date:"l, d F Y H:i" }}
+                        </span>
+                    </div>
+                    <div class="text-end">
+                        {% if rfq.estimated_budget %}
+                        <div class="fw-bold text-success">Budget: R{{ rfq.estimated_budget|floatformat:0 }}</div>
+                        {% endif %}
+                        {% if rfq.priority == 'urgent' %}
+                        <span class="badge bg-danger">Urgent</span>
+                        {% elif rfq.priority == 'high' %}
+                        <span class="badge bg-warning text-dark">High Priority</span>
+                        {% endif %}
+                        <div><small class="text-muted">Click to view details</small></div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card mb-4">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-inbox" style="font-size:4rem;color:#dee2e6;"></i>
+            <h4 class="mt-3 text-muted">No Open RFQs</h4>
+            <p class="text-muted">There are currently no open requests for proposals. Please check back later or <a href="{% url 'home' %}">browse our events</a>.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if rfqs_closed %}
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            <h4 class="mb-0"><i class="bi bi-archive"></i> Recently Closed / Awarded</h4>
+        </div>
+        <div class="list-group list-group-flush">
+            {% for rfq in rfqs_closed %}
+            <a href="{% url 'rfq_detail' rfq.id %}" class="list-group-item list-group-item-action py-2">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <strong>{{ rfq.rfq_number }}</strong> - {{ rfq.title|truncatewords:15 }}
+                        <span class="badge {% if rfq.status == 'awarded' %}bg-info{% else %}bg-secondary{% endif %} ms-2">{{ rfq.get_status_display }}</span>
+                    </div>
+                    <small class="text-muted">{{ rfq.closing_date|date:"d M Y" }}</small>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

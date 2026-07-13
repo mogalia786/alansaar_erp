@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Payment to Verify</title></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:30px 10px;">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+<tr><td style="background:#5B2C6F;padding:25px 30px;text-align:center;">
+<h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:2px;">AL ANSAAR FOUNDATION</h1>
+<p style="color:#D4AF37;margin:5px 0 0;font-size:13px;letter-spacing:1px;">ADMIN NOTIFICATION</p>
+</td></tr>
+<tr><td style="padding:30px;">
+<h2 style="color:#e67e22;margin:0 0 15px;">Payment Pending Verification</h2>
+<table width="100%" cellpadding="8" cellspacing="0" style="background:#fef9e7;border-radius:6px;margin:15px 0;">
+<tr><td style="border-bottom:1px solid #f0e5c0;"><strong>Exhibitor:</strong></td><td>{{ exhibitor.company_name }}</td></tr>
+<tr><td style="border-bottom:1px solid #f0e5c0;"><strong>Email:</strong></td><td>{{ exhibitor.email }}</td></tr>
+<tr><td style="border-bottom:1px solid #f0e5c0;"><strong>Invoice:</strong></td><td>{{ invoice.invoice_number }}</td></tr>
+<tr><td style="border-bottom:1px solid #f0e5c0;"><strong>Booking:</strong></td><td>{{ booking.booking_reference }}</td></tr>
+<tr><td style="border-bottom:1px solid #f0e5c0;"><strong>Amount:</strong></td><td><strong>R{{ payment.amount|floatformat:2 }}</strong></td></tr>
+<tr><td style="border-bottom:1px solid #f0e5c0;"><strong>Method:</strong></td><td>{{ payment.get_payment_method_display }}</td></tr>
+<tr><td><strong>Reference:</strong></td><td>{{ payment.reference_number|default:"Not provided" }}</td></tr>
+</table>
+<p><a href="{{ site_url }}/erp/payments/" style="display:inline-block;background:#5B2C6F;color:#ffffff;padding:12px 30px;border-radius:6px;text-decoration:none;font-weight:bold;">Verify Now</a></p>
+</td></tr>
+<tr><td style="background:#f8f4fc;padding:20px 30px;text-align:center;border-top:2px solid #5B2C6F;font-size:12px;color:#888;">
+<p style="margin:0;">Al Ansaar Foundation &bull; Durban, South Africa</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>

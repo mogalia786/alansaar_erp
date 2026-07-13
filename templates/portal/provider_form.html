@@ -1,0 +1,96 @@
+{% extends 'portal/base.html' %}
+{% block title %}{% if edit %}Edit{% else %}New{% endif %} Provider - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="bi bi-truck"></i> {% if edit %}Edit{% else %}New{% endif %} Service Provider</h3>
+    <a href="{% url 'erp:provider_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+<form method="post">
+    {% csrf_token %}
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card mb-3"><div class="card-header bg-purple text-white"><h6 class="mb-0"><i class="bi bi-building"></i> Company Info</h6></div>
+            <div class="card-body">
+                <div class="mb-2"><label class="form-label">Company Name</label><input type="text" name="company_name" class="form-control" required value="{% if edit %}{{ provider.company_name }}{% endif %}"></div>
+                {% if not edit %}
+                <div class="mb-2"><label class="form-label">Login Password</label>
+                    <input type="text" name="password" class="form-control" placeholder="Leave blank for auto-generated">
+                    <small class="text-muted">Provider logs in at /providers/login/</small>
+                </div>
+                {% endif %}
+                <div class="mb-2"><label class="form-label">Company Type</label>
+                    <select name="company_type" class="form-select">
+                        <option value="sole" {% if edit and provider.company_type == 'sole' %}selected{% endif %}>Sole Proprietor</option>
+                        <option value="ptyltd" {% if edit and provider.company_type == 'ptyltd' %}selected{% endif %}>PTY LTD</option>
+                        <option value="cc" {% if edit and provider.company_type == 'cc' %}selected{% endif %}>Close Corporation</option>
+                        <option value="other" {% if edit and provider.company_type == 'other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+                <div class="mb-2"><label class="form-label">Registration Number</label><input type="text" name="registration_number" class="form-control" value="{% if edit %}{{ provider.registration_number }}{% endif %}"></div>
+                <div class="mb-2"><label class="form-label">VAT Number</label><input type="text" name="vat_number" class="form-control" value="{% if edit %}{{ provider.vat_number }}{% endif %}"></div>
+                <div class="mb-2"><label class="form-label">Service Type</label>
+                    <select name="service_type" class="form-select">
+                        <option value="catering" {% if edit and provider.service_type == 'catering' %}selected{% endif %}>Catering</option>
+                        <option value="security" {% if edit and provider.service_type == 'security' %}selected{% endif %}>Security</option>
+                        <option value="cleaning" {% if edit and provider.service_type == 'cleaning' %}selected{% endif %}>Cleaning</option>
+                        <option value="stand_builder" {% if edit and provider.service_type == 'stand_builder' %}selected{% endif %}>Stand Builder</option>
+                        <option value="electrical" {% if edit and provider.service_type == 'electrical' %}selected{% endif %}>Electrical</option>
+                        <option value="audio_visual" {% if edit and provider.service_type == 'audio_visual' %}selected{% endif %}>Audio/Visual</option>
+                        <option value="logistics" {% if edit and provider.service_type == 'logistics' %}selected{% endif %}>Logistics</option>
+                        <option value="other" {% if edit and provider.service_type == 'other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+            </div></div>
+            <div class="card mb-3"><div class="card-header bg-purple text-white"><h6 class="mb-0"><i class="bi bi-telephone"></i> Contact</h6></div>
+            <div class="card-body">
+                <div class="mb-2"><label class="form-label">Email</label><input type="email" name="email" class="form-control" required value="{% if edit %}{{ provider.email }}{% endif %}"></div>
+                <div class="mb-2"><label class="form-label">Phone</label><input type="text" name="phone" class="form-control" required value="{% if edit %}{{ provider.phone }}{% endif %}"></div>
+                <div class="mb-2"><label class="form-label">Alternative Phone</label><input type="text" name="alternative_phone" class="form-control" value="{% if edit %}{{ provider.alternative_phone }}{% endif %}"></div>
+                <div class="mb-2"><label class="form-label">Contact Person</label><input type="text" name="contact_person" class="form-control" value="{% if edit %}{{ provider.contact_person }}{% endif %}"></div>
+            </div></div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-3"><div class="card-header bg-purple text-white"><h6 class="mb-0"><i class="bi bi-geo-alt"></i> Address</h6></div>
+            <div class="card-body">
+                <div class="mb-2"><label class="form-label">Physical Address</label><textarea name="physical_address" class="form-control" rows="3">{% if edit %}{{ provider.physical_address }}{% endif %}</textarea></div>
+                <div class="mb-2"><label class="form-label">Postal Address</label><textarea name="postal_address" class="form-control" rows="3">{% if edit %}{{ provider.postal_address }}{% endif %}</textarea></div>
+            </div></div>
+            <div class="card mb-3"><div class="card-header bg-purple text-white"><h6 class="mb-0"><i class="bi bi-bank"></i> Banking</h6></div>
+            <div class="card-body">
+                <div class="mb-2"><label class="form-label">Bank Name</label><input type="text" name="bank_name" class="form-control" value="{% if edit %}{{ provider.bank_name }}{% endif %}"></div>
+                <div class="mb-2"><label class="form-label">Branch</label><input type="text" name="bank_branch" class="form-control" value="{% if edit %}{{ provider.bank_branch }}{% endif %}"></div>
+                <div class="mb-2"><label class="form-label">Account Number</label><input type="text" name="bank_account_number" class="form-control" value="{% if edit %}{{ provider.bank_account_number }}{% endif %}"></div>
+                <div class="mb-2"><label class="form-label">Account Type</label>
+                    <select name="bank_account_type" class="form-select">
+                        <option value="cheque" {% if edit and provider.bank_account_type == 'cheque' %}selected{% endif %}>Cheque Account</option>
+                        <option value="savings" {% if edit and provider.bank_account_type == 'savings' %}selected{% endif %}>Savings Account</option>
+                        <option value="current" {% if edit and provider.bank_account_type == 'current' %}selected{% endif %}>Current Account</option>
+                        <option value="business" {% if edit and provider.bank_account_type == 'business' %}selected{% endif %}>Business Account</option>
+                    </select>
+                </div>
+                <div class="mb-2"><label class="form-label">Branch Code</label><input type="text" name="bank_branch_code" class="form-control" value="{% if edit %}{{ provider.bank_branch_code }}{% endif %}"></div>
+            </div></div>
+            {% if edit %}
+            <div class="card mb-3"><div class="card-header bg-purple text-white"><h6 class="mb-0"><i class="bi bi-shield-check"></i> Verification</h6></div>
+            <div class="card-body">
+                <div class="form-check">
+                    <input type="checkbox" name="is_verified" id="id_is_verified" class="form-check-input" {% if provider.is_verified %}checked{% endif %}>
+                    <label class="form-check-label" for="id_is_verified">Is Verified</label>
+                </div>
+            </div></div>
+            <div class="card"><div class="card-header bg-purple text-white"><h6 class="mb-0"><i class="bi bi-key"></i> Password Reset</h6></div>
+            <div class="card-body">
+                <div class="mb-2"><label class="form-label">New Password</label>
+                    <input type="text" name="new_password" class="form-control" placeholder="Leave blank to keep current">
+                    <small class="text-muted">Provider logs in at /providers/login/ with email + password</small>
+                </div>
+            </div></div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="mt-3">
+        <button type="submit" class="btn btn-purple"><i class="bi bi-check-lg"></i> {% if edit %}Update{% else %}Create{% endif %} Provider</button>
+        <a href="{% url 'erp:provider_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}

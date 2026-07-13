@@ -1,0 +1,125 @@
+{% load static erp_tags %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ERP - Al Ansaar Foundation{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root { --purple: #5B2C6F; --gold: #D4AF37; --sidebar: #2c1640; }
+        .bg-purple { background-color: var(--purple); }
+        .text-gold { color: var(--gold); }
+        .sidebar { min-height: 100vh; background: var(--sidebar); padding-top: 1rem; }
+        .sidebar .nav-link { color: rgba(255,255,255,.7); padding: .6rem 1rem; border-radius: 8px; margin: 2px 8px; font-size: .9rem; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background: rgba(212,175,55,.15); }
+        .sidebar .nav-link i { width: 22px; }
+        .sidebar .nav-section { color: var(--gold); font-size: .7rem; text-transform: uppercase; letter-spacing: 1px; padding: 1rem 1rem .3rem; }
+        .main-content { padding: 1.5rem; }
+        .stat-card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+        .stat-card .icon { font-size: 2rem; opacity: .3; position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); }
+        .stat-card { position: relative; overflow: hidden; }
+        .table-purple { background: var(--purple); color: #fff; }
+        .table-purple th { font-weight: 500; }
+        .btn-purple { background: var(--purple); border-color: var(--purple); color: #fff; }
+        .btn-purple:hover { background: #7B3F95; border-color: #7B3F95; color: #fff; }
+        .btn-gold { background: var(--gold); border-color: var(--gold); color: #2c1640; }
+        .btn-gold:hover { background: #E8C84A; border-color: #E8C84A; }
+        .card { border-radius: 12px; border: none; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+        .card-header { border-radius: 12px 12px 0 0 !important; }
+        a { color: var(--purple); }
+        .badge-purple { background: var(--purple); color: #fff; }
+        @media print { .sidebar, .no-print { display: none !important; } .main-content { margin-left: 0 !important; } }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-auto p-0 sidebar d-none d-md-block" style="width:240px;">
+                <div class="text-center py-3 border-bottom border-secondary">
+                    <a href="{% url 'erp:dashboard' %}" class="text-white text-decoration-none fw-bold">
+                        <i class="bi bi-building"></i> Al Ansaar ERP
+                    </a>
+                </div>
+                <div class="nav-section">Management</div>
+                <a href="{% url 'erp:dashboard' %}" class="nav-link"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                {% if request.user|has_perm:'events' %}<a href="{% url 'erp:event_list' %}" class="nav-link"><i class="bi bi-calendar-event"></i> Events</a>{% endif %}
+                {% if request.user|has_perm:'bookings' %}<a href="{% url 'erp:booking_list' %}" class="nav-link"><i class="bi bi-bag-check"></i> Bookings</a>{% endif %}
+                {% if request.user|has_perm:'invoices' %}<a href="{% url 'erp:invoice_list' %}" class="nav-link"><i class="bi bi-file-text"></i> Invoices</a>{% endif %}
+                {% if request.user|has_perm:'payments' %}<a href="{% url 'erp:payment_list' %}" class="nav-link"><i class="bi bi-credit-card"></i> Payments</a>{% endif %}
+                <div class="nav-section">People</div>
+                {% if request.user|has_perm:'exhibitors' %}<a href="{% url 'erp:exhibitor_list' %}" class="nav-link"><i class="bi bi-people"></i> Exhibitors</a>{% endif %}
+                {% if request.user|has_perm:'users' %}<a href="{% url 'erp:user_list' %}" class="nav-link"><i class="bi bi-person-badge"></i> Users</a>{% endif %}
+                {% if request.user|has_perm:'users' %}
+                <a href="{% url 'erp:role_list' %}" class="nav-link"><i class="bi bi-shield-lock"></i> Roles &amp; Permissions</a>
+                {% endif %}
+                {% if request.user|has_perm:'providers' %}<a href="{% url 'erp:provider_list' %}" class="nav-link"><i class="bi bi-truck"></i> Service Providers</a>{% endif %}
+                <div class="nav-section">Finance</div>
+                {% if request.user|has_perm:'expenses' %}<a href="{% url 'erp:expense_list' %}" class="nav-link"><i class="bi bi-cash-stack"></i> Expenses</a>{% endif %}
+                {% if request.user|has_perm:'rfq' %}<a href="{% url 'erp:rfq_list' %}" class="nav-link"><i class="bi bi-file-earmark-text"></i> RFQ / Procurement</a>{% endif %}
+                <a href="{% url 'fnb:dashboard' %}" class="nav-link"><i class="bi bi-bank"></i> Banking</a>
+                <div class="nav-section">Configuration</div>
+                <a href="{% url 'erp:accessory_list' %}" class="nav-link"><i class="bi bi-box"></i> Accessories</a>
+                <a href="{% url 'erp:discount_list' %}" class="nav-link"><i class="bi bi-percent"></i> Discounts</a>
+                {% if request.user|has_perm:'accounting' %}
+                <div class="nav-section">Accounting</div>
+                <a href="{% url 'accounting:dashboard' %}" class="nav-link"><i class="bi bi-calculator"></i> Dashboard</a>
+                <a href="{% url 'accounting:chart_of_accounts' %}" class="nav-link"><i class="bi bi-journal"></i> Chart of Accounts</a>
+                <a href="{% url 'accounting:journal_entries' %}" class="nav-link"><i class="bi bi-journal-text"></i> Journal Entries</a>
+                <a href="{% url 'accounting:trial_balance' %}" class="nav-link"><i class="bi bi-list-columns"></i> Trial Balance</a>
+                <a href="{% url 'accounting:income_statement' %}" class="nav-link"><i class="bi bi-graph-up"></i> Income Statement</a>
+                <a href="{% url 'accounting:balance_sheet' %}" class="nav-link"><i class="bi bi-pie-chart"></i> Balance Sheet</a>
+                {% endif %}
+                <div class="nav-section">Reports</div>
+                {% if request.user|has_perm:'reports' %}<a href="{% url 'erp:reports' %}" class="nav-link"><i class="bi bi-graph-up"></i> Reports</a>{% endif %}
+                <hr class="border-secondary mx-3">
+                <a href="{% url 'erp:logout' %}" class="nav-link"><i class="bi bi-box-arrow-right"></i> Logout</a>
+            </div>
+            <div class="col" style="flex:1;min-width:0;">
+                <nav class="navbar navbar-light bg-white shadow-sm d-md-none">
+                    <div class="container-fluid">
+                        <a class="navbar-brand fw-bold text-purple d-flex align-items-center gap-2" href="{% url 'erp:dashboard' %}">
+                            <img src="{{ MEDIA_URL }}logo/al_ansaar_logo.png" alt="" height="32" style="border-radius:4px;" onerror="this.style.display='none'">
+                            Al Ansaar ERP
+                        </a>
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mobileNav">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                    </div>
+                    <div class="collapse navbar-collapse" id="mobileNav">
+                        <div class="p-3">
+                            <a href="{% url 'erp:dashboard' %}" class="d-block py-1">Dashboard</a>
+                            {% if request.user|has_perm:'events' %}<a href="{% url 'erp:event_list' %}" class="d-block py-1">Events</a>{% endif %}
+                            {% if request.user|has_perm:'bookings' %}<a href="{% url 'erp:booking_list' %}" class="d-block py-1">Bookings</a>{% endif %}
+                            {% if request.user|has_perm:'invoices' %}<a href="{% url 'erp:invoice_list' %}" class="d-block py-1">Invoices</a>{% endif %}
+                            {% if request.user|has_perm:'payments' %}<a href="{% url 'erp:payment_list' %}" class="d-block py-1">Payments</a>{% endif %}
+                            {% if request.user|has_perm:'exhibitors' %}<a href="{% url 'erp:exhibitor_list' %}" class="d-block py-1">Exhibitors</a>{% endif %}
+                            {% if request.user|has_perm:'users' %}<a href="{% url 'erp:user_list' %}" class="d-block py-1">Users</a>{% endif %}
+                            {% if request.user|has_perm:'users' %}
+                            <a href="{% url 'erp:role_list' %}" class="d-block py-1">Roles & Permissions</a>
+                            {% endif %}
+                            {% if request.user|has_perm:'providers' %}<a href="{% url 'erp:provider_list' %}" class="d-block py-1">Service Providers</a>{% endif %}
+                            {% if request.user|has_perm:'expenses' %}<a href="{% url 'erp:expense_list' %}" class="d-block py-1">Expenses</a>{% endif %}
+                            {% if request.user|has_perm:'rfq' %}<a href="{% url 'erp:rfq_list' %}" class="d-block py-1">RFQ / Procurement</a>{% endif %}
+                            <a href="{% url 'fnb:dashboard' %}" class="d-block py-1">Banking</a>
+                            {% if request.user|has_perm:'reports' %}<a href="{% url 'erp:reports' %}" class="d-block py-1">Reports</a>{% endif %}
+                            <a href="{% url 'erp:logout' %}" class="d-block py-1">Logout</a>
+                        </div>
+                    </div>
+                </nav>
+                <div class="main-content">
+                    {% if messages %}
+                    {% for m in messages %}
+                    <div class="alert alert-{{ m.tags }} alert-dismissible fade show">{{ m }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+                    {% endfor %}
+                    {% endif %}
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

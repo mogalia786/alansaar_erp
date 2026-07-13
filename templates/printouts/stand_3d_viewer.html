@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Stand View - {{ booking.booking_reference }}</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', Arial, sans-serif; }
+    #info {
+        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+        background: rgba(0,0,0,0.7); color: #fff; padding: 10px 24px;
+        border-radius: 30px; z-index: 100; font-size: 14px;
+        backdrop-filter: blur(8px); border: 1px solid rgba(212,175,55,0.3);
+        text-align: center; pointer-events: none;
+    }
+    #info strong { color: #D4AF37; }
+    #controls-hint {
+        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+        background: rgba(0,0,0,0.5); color: rgba(255,255,255,0.6);
+        padding: 8px 20px; border-radius: 20px; z-index: 100;
+        font-size: 12px; backdrop-filter: blur(4px);
+        text-align: center; pointer-events: none;
+    }
+    #req-panel {
+        position: fixed; bottom: 80px; left: 20px; z-index: 100;
+        background: rgba(0,0,0,0.75); color: #fff; padding: 12px 18px;
+        border-radius: 10px; font-size: 12px; backdrop-filter: blur(8px);
+        border: 1px solid rgba(212,175,55,0.2); max-width: 280px;
+        pointer-events: none;
+    }
+    #req-panel h6 { color: #D4AF37; margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    #req-panel .req-item { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
+    #req-panel .req-icon { width: 18px; text-align: center; }
+    #loading {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+        color: #D4AF37; font-size: 18px; z-index: 50;
+        text-align: center;
+    }
+    #loading .spinner { width: 40px; height: 40px; border: 3px solid rgba(212,175,55,0.2); border-top-color: #D4AF37; border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 15px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #nav {
+        position: fixed; top: 20px; right: 20px; z-index: 100;
+        display: flex; flex-direction: column; gap: 6px;
+    }
+    #nav button {
+        width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2);
+        background: rgba(0,0,0,0.5); color: #fff; font-size: 16px;
+        cursor: pointer; transition: all .2s; backdrop-filter: blur(4px);
+    }
+    #nav button:hover { background: rgba(91,44,111,0.6); border-color: #D4AF37; }
+</style>
+</head>
+<body>
+<div id="loading"><div class="spinner"></div>Loading 3D Stand...</div>
+<div id="info">
+    <strong>{{ booking.exhibitor.company_name }}</strong> &mdash;
+    Stall {{ booking.stall.name }} ({{ booking.stall.size_sqm }}m&sup2;)
+    {% if booking.stall.is_corner %}<span style="color:#D4AF37;">&#9733; Corner Stand</span>{% endif %}
+</div>
+<div id="nav">
+    <button onclick="resetCamera()" title="Reset View">&#8982;</button>
+    <button onclick="toggleWireframe()" title="Toggle Wireframe">&#9671;</button>
+</div>
+<div id="controls-hint">Drag to rotate &bull; Scroll to zoom</div>
+<div id="req-panel">
+    <h6>Requirements</h6>
+    {% if booking.require_floor_mat %}<div class="req-item"><span class="req-icon">&#9632;</span> Floor Mat</div>{% endif %}
+    {% if booking.require_carpet %}<div class="req-item"><span class="req-icon">&#9643;</span> Carpet</div>{% endif %}
+    {% if booking.requires_power %}<div class="req-item"><span class="req-icon">&#9889;</span> Power: {{ booking.power_amps|default:15 }}A</div>{% endif %}
+    {% if booking.require_extra_plugs %}<div class="req-item"><span class="req-icon">&#128268;</span> Extra Plug Points</div>{% endif %}
+    {% if booking.require_extra_lights %}<div class="req-item"><span class="req-icon">&#128161;</span> Extra Spot Lights</div>{% endif %}
+    {% if booking.require_stand_build %}<div class="req-item"><span class="req-icon">&#65039;</span> Stand Build + Shelving</div>{% endif %}
+    {% if resolved_side_wall != 'none' %}<div class="req-item"><span class="req-icon">&#8596;&#65039;</span> Remove Side Walls</div>{% endif %}
+    {% if booking.requires_water %}<div class="req-item"><span class="req-icon">&#128166;</span> Water Supply</div>{% endif %}
+    {% if booking.special_requirements %}
+    <hr style="border-color:rgba(255,255,255,0.1);margin:6px 0;">
+    <div style="font-size:11px;color:rgba(255,255,255,0.7);">{{ booking.special_requirements|linebreaksbr }}</div>
+    {% endif %}
+    {% if booking.accessories.exists %}
+    <hr style="border-color:rgba(255,255,255,0.1);margin:6px 0;">
+    <div style="font-size:10px;color:rgba(212,175,55,0.7);">
+    {% for a in booking.accessories.all %}&bull; {{ a.accessory.name }} x{{ a.quantity }}<br>{% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// --- Configuration from booking ---
+const FASCIA_NAME = "{{ booking.fascia_name|default:booking.exhibitor.company_name|escapejs }}";
+const W = Math.max(parseFloat({{ booking.stall.width|default:"3000" }}) / 1000, 3);
+const D = Math.max(parseFloat({{ booking.stall.height|default:"3000" }}) / 1000, 3);
+const IS_CORNER = {{ booking.stall.is_corner|yesno:"true,false" }};
+const HAS_WATER = {{ booking.stall.has_water|yesno:"true,false" }};
+{% with zone_type=booking.stall.zone.zone_type|default:"exhibition" %}
+const IS_FOOD = "{{ zone_type|escapejs }}" === 'food';
+{% endwith %}
+const REQ_CARPET = {{ booking.require_carpet|yesno:"true,false" }};
+const REQ_FLOOR_MAT = {{ booking.require_floor_mat|yesno:"true,false" }};
+const REQ_PLUGS = {{ booking.require_extra_plugs|yesno:"true,false" }};
+const REQ_LIGHTS = {{ booking.require_extra_lights|yesno:"true,false" }};
+const REQ_STAND_BUILD = {{ booking.require_stand_build|yesno:"true,false" }};
+const POWER_AMPS = {{ booking.power_amps|default:"15" }};
+const BASE_CHAIRS = Math.max(2, {{ booking.stall.num_chairs|default:"2" }});
+const SIDE_WALL = "{{ resolved_side_wall|default:'none' }}";
+
+// Accessories from booking
+const ACCESSORIES = {{ accessories_json|safe }};
+let EXTRA_TABLES = 0;
+let EXTRA_CHAIRS = 0;
+let EXTRA_SHELVING = false;
+for (const a of ACCESSORIES) {
+    if (a.name === 'Table (Extra)') EXTRA_TABLES += a.quantity;
+    if (a.name === 'Chair (Extra)') EXTRA_CHAIRS += a.quantity;
+    if (a.name === 'Additional Shelving') EXTRA_SHELVING = true;
+}
+const TOTAL_CHAIRS = BASE_CHAIRS + EXTRA_CHAIRS;
+
+const WALL_H = 2.5;
+const FASCIA_H = 0.3;
+const POST_SIZE = 0.08;
+const WALL_THICK = 0.05;
+const CARPET_H = 0.02;
+
+// --- Scene ---
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+scene.fog = new THREE.Fog(0x1a1a2e, 20, 40);
+
+// --- Camera ---
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 50);
+camera.position.set(W + 4, WALL_H + 2, D + 4);
+
+// --- Renderer ---
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+document.body.appendChild(renderer.domElement);
+document.getElementById('loading').style.display = 'none';
+
+// --- Controls ---
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(W / 2, 0.5, D / 2);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 2;
+controls.maxDistance = 20;
+controls.maxPolarAngle = Math.PI / 2.1;
+controls.update();
+
+// --- Lighting ---
+const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambient);
+const main = new THREE.DirectionalLight(0xffffff, 1.2);
+main.position.set(5, 12, 8);
+main.castShadow = true;
+main.shadow.mapSize.width = 2048;
+main.shadow.mapSize.height = 2048;
+scene.add(main);
+const fill = new THREE.DirectionalLight(0xD4AF37, 0.3);
+fill.position.set(-3, 4, -2);
+scene.add(fill);
+const rim = new THREE.DirectionalLight(0x5B2C6F, 0.2);
+rim.position.set(2, 1, -5);
+scene.add(rim);
+
+// --- Floor ---
+const floorMat = new THREE.MeshStandardMaterial({ color: 0x2a2a3e, roughness: 0.8, metalness: 0.1 });
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), floorMat);
+floor.rotation.x = -Math.PI / 2;
+floor.position.set(W / 2, -0.01, D / 2);
+floor.receiveShadow = true;
+scene.add(floor);
+
+const grid = new THREE.GridHelper(12, 12, 0xD4AF37, 0x333355);
+grid.position.set(W / 2, 0, D / 2);
+scene.add(grid);
+
+// --- Stand Materials ---
+const wallMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 });
+const carpetMat = new THREE.MeshStandardMaterial({ color: REQ_CARPET ? 0x6B3A2A : 0x3a3a3a, roughness: 0.9 });
+const floorMatMat = new THREE.MeshStandardMaterial({ color: 0x1a5276, roughness: 0.4, metalness: 0.1 });
+const fasciaMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.05 });
+const postMat = new THREE.MeshStandardMaterial({ color: 0xC0C0C0, roughness: 0.25, metalness: 0.95 });
+const trimMat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, roughness: 0.3, metalness: 0.6 });
+const tableMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.8 });
+
+function makeTableLeg(legGroup, x, z) {
+    const leg = new THREE.Mesh(
+        new THREE.BoxGeometry(0.04, 0.72, 0.04),
+        tableMat
+    );
+    leg.position.set(x, 0.36, z);
+    legGroup.add(leg);
+}
+
+function createTable(tx, tz, tableWidth, tableDepth) {
+    const group = new THREE.Group();
+    const top = new THREE.Mesh(
+        new THREE.BoxGeometry(tableWidth, 0.03, tableDepth),
+        new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 })
+    );
+    top.position.set(tx, 0.75, tz);
+    group.add(top);
+    const hw = tableWidth / 2 - 0.05;
+    const hd = tableDepth / 2 - 0.05;
+    makeTableLeg(group, tx - hw, tz - hd);
+    makeTableLeg(group, tx + hw, tz - hd);
+    makeTableLeg(group, tx - hw, tz + hd);
+    makeTableLeg(group, tx + hw, tz + hd);
+    return group;
+}
+
+function makeChair(cx, cz) {
+    const chairMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.7 });
+    const group = new THREE.Group();
+    const seat = new THREE.Mesh(
+        new THREE.BoxGeometry(0.4, 0.04, 0.4),
+        chairMat
+    );
+    seat.position.set(cx, 0.44, cz);
+    group.add(seat);
+    const back = new THREE.Mesh(
+        new THREE.BoxGeometry(0.4, 0.4, 0.04),
+        chairMat
+    );
+    back.position.set(cx, 0.66, cz - 0.2);
+    group.add(back);
+    for (let lx of [-0.15, 0.15]) for (let lz of [-0.15, 0.15]) {
+        const leg = new THREE.Mesh(
+            new THREE.BoxGeometry(0.03, 0.42, 0.03),
+            chairMat
+        );
+        leg.position.set(cx + lx, 0.21, cz + lz);
+        group.add(leg);
+    }
+    return group;
+}
+
+function createStall() {
+    const group = new THREE.Group();
+
+    // --- Floor ---
+    const carpet = new THREE.Mesh(
+        new THREE.BoxGeometry(W, CARPET_H, D),
+        carpetMat
+    );
+    carpet.position.set(W / 2, CARPET_H / 2, D / 2);
+    carpet.receiveShadow = true;
+    group.add(carpet);
+
+    if (REQ_FLOOR_MAT) {
+        const matMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(0.8, 0.01, 0.6),
+            floorMatMat
+        );
+        matMesh.position.set(W / 2, CARPET_H + 0.005, D * 0.85);
+        matMesh.receiveShadow = true;
+        group.add(matMesh);
+    }
+
+    // --- Back wall (always present) ---
+    const backWallMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 });
+    const backWall = new THREE.Mesh(
+        new THREE.BoxGeometry(W, WALL_H, WALL_THICK),
+        backWallMat
+    );
+    backWall.position.set(W / 2, WALL_H / 2, -WALL_THICK / 2);
+    backWall.receiveShadow = true;
+    backWall.castShadow = true;
+    group.add(backWall);
+
+    // --- Side walls ---
+    const leftRemoved = IS_CORNER || SIDE_WALL === 'left' || SIDE_WALL === 'both';
+    const rightRemoved = SIDE_WALL === 'right' || SIDE_WALL === 'both';
+
+    if (!leftRemoved) {
+        const leftWall = new THREE.Mesh(
+            new THREE.BoxGeometry(WALL_THICK, WALL_H, D),
+            wallMat
+        );
+        leftWall.position.set(-WALL_THICK / 2, WALL_H / 2, D / 2);
+        leftWall.receiveShadow = true;
+        leftWall.castShadow = true;
+        group.add(leftWall);
+    } else {
+        const beam = new THREE.Mesh(
+            new THREE.BoxGeometry(0.12, 0.12, D),
+            postMat
+        );
+        beam.position.set(-0.06, WALL_H + 0.06, D / 2);
+        group.add(beam);
+    }
+
+    if (!rightRemoved) {
+        const rightWall = new THREE.Mesh(
+            new THREE.BoxGeometry(WALL_THICK, WALL_H, D),
+            wallMat
+        );
+        rightWall.position.set(W + WALL_THICK / 2, WALL_H / 2, D / 2);
+        rightWall.receiveShadow = true;
+        rightWall.castShadow = true;
+        group.add(rightWall);
+    } else {
+        const beam = new THREE.Mesh(
+            new THREE.BoxGeometry(0.12, 0.12, D),
+            postMat
+        );
+        beam.position.set(W + 0.06, WALL_H + 0.06, D / 2);
+        group.add(beam);
+    }
+
+    // --- Front fascia board ---
+    const fascia = new THREE.Mesh(
+        new THREE.BoxGeometry(W, FASCIA_H, 0.1),
+        fasciaMat
+    );
+    fascia.position.set(W / 2, WALL_H - FASCIA_H / 2, D + 0.05);
+    group.add(fascia);
+
+    const trim = new THREE.Mesh(
+        new THREE.BoxGeometry(W, 0.03, 0.12),
+        trimMat
+    );
+    trim.position.set(W / 2, WALL_H + 0.015, D + 0.05);
+    group.add(trim);
+
+    // --- Brand name on fascia ---
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 1024, 128);
+    ctx.fillStyle = '#1a1a2e';
+    ctx.font = 'bold 72px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    let displayName = FASCIA_NAME;
+    if (ctx.measureText(displayName).width > 900) {
+        while (ctx.measureText(displayName + '\u2026').width > 900 && displayName.length > 1) {
+            displayName = displayName.slice(0, -1);
+        }
+        displayName += '\u2026';
+    }
+    ctx.fillText(displayName, 512, 64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    const nameMat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+    const namePlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(W - 0.2, FASCIA_H - 0.05),
+        nameMat
+    );
+    namePlane.position.set(W / 2, WALL_H - FASCIA_H / 2, D + 0.11);
+    group.add(namePlane);
+
+    // --- Corner posts ---
+    const postPositions = [
+        [-POST_SIZE/2, -POST_SIZE/2],
+        [-POST_SIZE/2, D + POST_SIZE/2],
+        [W + POST_SIZE/2, -POST_SIZE/2],
+        [W + POST_SIZE/2, D + POST_SIZE/2],
+    ];
+    postPositions.forEach(([px, pz]) => {
+        const post = new THREE.Mesh(
+            new THREE.BoxGeometry(POST_SIZE, WALL_H + 0.1, POST_SIZE),
+            postMat
+        );
+        post.position.set(px, (WALL_H + 0.1) / 2, pz);
+        group.add(post);
+    });
+
+    // --- Food court front wall ---
+    if (IS_FOOD) {
+        const frontWall = new THREE.Mesh(
+            new THREE.BoxGeometry(W, 1.0, WALL_THICK),
+            wallMat
+        );
+        frontWall.position.set(W / 2, 0.5, D);
+        frontWall.receiveShadow = true;
+        frontWall.castShadow = true;
+        group.add(frontWall);
+    }
+
+    // --- Ceiling strip lights ---
+    const lightHousingMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.5, metalness: 0.3 });
+    const bulbMat = new THREE.MeshStandardMaterial({ color: 0xfffde0, emissive: 0xfffde0, emissiveIntensity: 0.5 });
+    for (let li = 0; li < 2; li++) {
+        const lz = D / 2 - 0.5 + li * 1.0;
+        const housing = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.06, 0.14), lightHousingMat);
+        housing.position.set(W / 2, WALL_H - 0.03, lz);
+        group.add(housing);
+        const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.0, 8), bulbMat);
+        tube.rotation.x = Math.PI / 2;
+        tube.position.set(W / 2, WALL_H - 0.06, lz);
+        group.add(tube);
+    }
+
+    // --- Extra spot lights ---
+    if (REQ_LIGHTS) {
+        const spotLightMat = new THREE.MeshStandardMaterial({ color: 0xffffcc, emissive: 0xffdd44, emissiveIntensity: 0.8 });
+        const spotHousingMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4, metalness: 0.6 });
+        for (let spi = 0; spi < 2; spi++) {
+            const spz = D * (0.2 + spi * 0.6);
+            for (let side of [-0.3, 0.3]) {
+                const housing = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.12, 12), spotHousingMat);
+                housing.position.set(W / 2 + side, WALL_H - 0.06, spz);
+                group.add(housing);
+                const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), spotLightMat);
+                bulb.position.set(W / 2 + side, WALL_H - 0.12, spz);
+                group.add(bulb);
+            }
+        }
+    }
+
+    // --- Furniture (non-food) ---
+    if (!IS_FOOD) {
+        // Primary table centered at back
+        const mainTable = createTable(W / 2, D * 0.6, 1.2, 0.6);
+        group.add(mainTable);
+
+        // Extra tables as corner tables (rotated 90 degrees to main)
+        if (EXTRA_TABLES > 0) {
+            for (let ti = 0; ti < Math.min(EXTRA_TABLES, 2); ti++) {
+                // Place extra tables perpendicular to main: at 90 degrees
+                // First extra: left side of main table, rotated 90
+                // Second extra: right side of main table, rotated 90
+                const side = ti === 0 ? -1 : 1;
+                const extraTable = createTable(W / 2 + side * 0.9, D * 0.6 + 0.1, 0.6, 1.2);
+                extraTable.rotation.y = Math.PI / 2;
+                extraTable.position.x = W / 2 + side * 0.9;
+                extraTable.position.z = D * 0.6 + 0.1;
+                group.add(extraTable);
+            }
+        }
+
+        // Chairs behind desk (between desk and back wall)
+        let chairPositions = [
+            [W/2 - 0.5, D*0.6 - 0.5],
+            [W/2 + 0.5, D*0.6 - 0.5],
+        ];
+        for (let i = 2; i < TOTAL_CHAIRS; i++) {
+            const row = Math.floor((i - 2) / 2);
+            const col = (i - 2) % 2;
+            chairPositions.push([
+                W/2 - 0.3 + col * 0.6,
+                D*0.6 - 1.0 - row * 0.5,
+            ]);
+        }
+        chairPositions.forEach(([cx, cz]) => {
+            const chair = makeChair(cx, cz);
+            group.add(chair);
+        });
+    }
+
+    // --- Shelving ---
+    if (REQ_STAND_BUILD || EXTRA_SHELVING) {
+        const shelfMat = new THREE.MeshStandardMaterial({ color: 0xC0C0C0, roughness: 0.4, metalness: 0.7 });
+        const shelfSideMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.6 });
+        const shelfCount = REQ_STAND_BUILD ? 2 : 1;
+        for (let si = 0; si < shelfCount; si++) {
+            const sx = W * 0.25 + si * W * 0.4;
+            const sw = 0.6, sh = 1.2, sd = 0.3;
+            const back = new THREE.Mesh(new THREE.BoxGeometry(sw, sh, 0.02), shelfSideMat);
+            back.position.set(sx, 0.3 + sh/2, 0.04);
+            group.add(back);
+            for (let t = 0; t < 3; t++) {
+                const shelf = new THREE.Mesh(new THREE.BoxGeometry(sw, 0.02, sd), shelfMat);
+                shelf.position.set(sx, 0.3 + t * 0.4, sd/2 + 0.04);
+                group.add(shelf);
+            }
+            for (let side of [-1, 1]) {
+                const sidePanel = new THREE.Mesh(new THREE.BoxGeometry(0.02, sh, sd), shelfSideMat);
+                sidePanel.position.set(sx + side * sw/2, 0.3 + sh/2, sd/2 + 0.04);
+                group.add(sidePanel);
+            }
+        }
+    }
+
+    // --- Plug points ---
+    if (REQ_PLUGS) {
+        const plugMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5 });
+        const socketMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+        for (let pi = 0; pi < 2; pi++) {
+            const pz = D * (0.3 + pi * 0.4);
+            const plate = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.08, 0.06), plugMat);
+            plate.position.set(W + 0.03, 0.7, pz);
+            group.add(plate);
+            for (let hi = 0; hi < 2; hi++) {
+                const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.01, 6), socketMat);
+                hole.rotation.x = Math.PI/2;
+                hole.position.set(W + 0.04, 0.68 + hi * 0.03, pz);
+                group.add(hole);
+            }
+        }
+    }
+
+    // --- Water icon ---
+    if (HAS_WATER || IS_FOOD) {
+        const drop = new THREE.Mesh(
+            new THREE.SphereGeometry(0.08, 8, 8),
+            new THREE.MeshStandardMaterial({ color: 0x3498db, emissive: 0x3498db, emissiveIntensity: 0.3 })
+        );
+        drop.position.set(W - 0.2, WALL_H + 0.2, D / 2);
+        group.add(drop);
+    }
+
+    return group;
+}
+
+const stand = createStall();
+scene.add(stand);
+
+// --- Ambient lights ---
+for (let i = 0; i < 4; i++) {
+    const l = new THREE.PointLight(0xD4AF37, 0.1, 8);
+    l.position.set(2 + i * 2, 3, -1);
+    scene.add(l);
+}
+
+// --- Animation ---
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+}
+animate();
+
+// --- Window resize ---
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// --- Controls ---
+window.resetCamera = function() {
+    camera.position.set(W + 4, WALL_H + 2, D + 4);
+    controls.target.set(W / 2, 0.5, D / 2);
+    controls.update();
+};
+
+window.toggleWireframe = function() {
+    stand.traverse(child => {
+        if (child.isMesh && child.material) {
+            if (Array.isArray(child.material)) {
+                child.material.forEach(m => m.wireframe = !m.wireframe);
+            } else {
+                child.material.wireframe = !child.material.wireframe;
+            }
+        }
+    });
+};
+</script>
+</body>
+</html>

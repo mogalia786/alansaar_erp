@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Submit Proposal - {{ rfq.rfq_number }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'rfq_list' %}">RFQs</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rfq_detail' rfq.id %}">{{ rfq.rfq_number }}</a></li>
+            <li class="breadcrumb-item active">Submit Proposal</li>
+        </ol>
+    </nav>
+
+    <div class="card mb-4">
+        <div class="card-header bg-purple text-white">
+            <h3 class="mb-0">Submit Proposal</h3>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <strong>{{ rfq.rfq_number }}</strong> - {{ rfq.title }}<br>
+                <i class="bi bi-clock"></i> Closing: <strong>{{ rfq.closing_date|date:"l, d F Y H:i" }}</strong>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <h5 class="text-purple">1. Company Information</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Company Name <span class="text-danger">*</span></label>
+                        <input type="text" name="company_name" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Company Type</label>
+                        <select name="company_type" class="form-select">
+                            <option value="">-- Select --</option>
+                            <option value="sole">Sole Proprietor</option>
+                            <option value="ptyltd">PTY LTD</option>
+                            <option value="cc">Close Corporation</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Registration #</label>
+                        <input type="text" name="registration_number" class="form-control">
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4">
+                        <label class="form-label">Contact Person <span class="text-danger">*</span></label>
+                        <input type="text" name="contact_person" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Email <span class="text-danger">*</span></label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Phone <span class="text-danger">*</span></label>
+                        <input type="text" name="phone" class="form-control" required>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4">
+                        <label class="form-label">VAT Number</label>
+                        <input type="text" name="vat_number" class="form-control">
+                    </div>
+                </div>
+
+                <h5 class="text-purple mt-4">2. Proposal Details</h5>
+                <div class="mb-2">
+                    <label class="form-label">Executive Summary / Cover Letter</label>
+                    <textarea name="cover_letter" rows="4" class="form-control" placeholder="Introduce your company and summarize why you are the best fit for this opportunity."></textarea>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Technical Approach &amp; Methodology</label>
+                    <textarea name="methodology" rows="5" class="form-control" placeholder="Describe your approach, resource allocation, schedule, and execution plan."></textarea>
+                </div>
+
+                <h5 class="text-purple mt-4">3. Pricing &amp; Terms</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="form-label">Total (excl VAT) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">R</span>
+                            <input type="number" name="total_amount_excl" class="form-control" required step="0.01" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Delivery Timeline</label>
+                        <input type="text" name="delivery_timeline" class="form-control" placeholder="e.g. 30 days">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Validity Period</label>
+                        <input type="text" name="validity_period" class="form-control" placeholder="e.g. 30 days">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Payment Terms</label>
+                        <input type="text" name="payment_terms" class="form-control" placeholder="e.g. 50% upfront">
+                    </div>
+                </div>
+
+                <h5 class="text-purple mt-4">4. Upload Proposal</h5>
+                <p class="text-muted small">Upload your proposal document, company profile, tax clearance, and any supporting documents.</p>
+                <input type="file" name="documents" class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.png,.zip" multiple>
+                <div class="form-text">Multiple files allowed. Accepted formats: PDF, Word, Excel, PowerPoint, Images, ZIP.</div>
+
+                <div class="mt-4 d-flex justify-content-between">
+                    <a href="{% url 'rfq_detail' rfq.id %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-purple btn-lg px-5">
+                        <i class="bi bi-send"></i> Submit Proposal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

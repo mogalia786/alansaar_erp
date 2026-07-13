@@ -1,0 +1,30 @@
+{% extends 'portal/base.html' %}
+{% block title %}Discounts - ERP{% endblock %}
+{% block content %}
+<h3 class="fw-bold mb-3"><i class="bi bi-percent"></i> Discount Approvals</h3>
+<div class="card"><div class="card-body p-0">
+<div class="table-responsive"><table class="table table-hover mb-0">
+<thead class="table-purple"><tr><th>Booking</th><th>Requested By</th><th>Discount %</th><th>Amount</th><th>Reason</th><th>Status</th><th>Approval Trail</th><th>Actions</th></tr></thead>
+<tbody>{% for d in discounts %}<tr>
+    <td><a href="{% url 'erp:booking_detail' d.booking.id %}">{{ d.booking.booking_reference }}</a></td>
+    <td>{{ d.requested_by.company_name|default:d.requested_by.username }}</td>
+    <td>{{ d.discount_percent }}%</td>
+    <td>R{{ d.discount_amount|floatformat:2 }}</td>
+    <td>{{ d.reason|truncatechars:40 }}</td>
+    <td><span class="badge bg-{% if d.status == 'pending' %}warning{% elif d.status == 'approved_by_first' %}info{% elif d.status == 'approved' %}success{% else %}danger{% endif %}">{{ d.get_status_display }}</span></td>
+    <td class="small">
+        {% if d.approved_by_first %}Approved 1: {{ d.approved_by_first.username }}<br>{% endif %}
+        {% if d.approved_by_second %}Approved 2: {{ d.approved_by_second.username }}<br>{% endif %}
+        {% if d.rejected_by %}Rejected: {{ d.rejected_by.username }}{% endif %}
+        {% if d.status == 'pending' %}<span class="text-muted">Awaiting 1st approval</span>{% endif %}
+        {% if d.status == 'approved_by_first' %}<span class="text-muted">Awaiting 2nd approval</span>{% endif %}
+    </td>
+    <td class="text-nowrap">
+        {% if d.status == 'pending' or d.status == 'approved_by_first' %}
+        <a href="{% url 'erp:approve_discount' d.id %}" class="btn btn-sm btn-success" title="Approve"><i class="bi bi-check-lg"></i></a>
+        <a href="{% url 'erp:reject_discount' d.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Reject this discount request?')" title="Reject"><i class="bi bi-x-lg"></i></a>
+        {% endif %}
+    </td>
+</tr>{% empty %}<tr><td colspan="8" class="text-center text-muted py-4">No discount requests</td></tr>{% endfor %}</tbody>
+</table></div></div></div>
+{% endblock %}

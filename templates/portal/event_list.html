@@ -1,0 +1,24 @@
+{% extends 'portal/base.html' %}
+{% block title %}Events - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="bi bi-calendar-event"></i> Events</h3>
+    <a href="{% url 'admin:events_event_add' %}" class="btn btn-purple btn-sm"><i class="bi bi-plus-lg"></i> New Event</a>
+</div>
+<div class="card"><div class="card-body p-0">
+<div class="table-responsive"><table class="table table-hover mb-0">
+    <thead class="table-purple"><tr><th>Name</th><th>Venue</th><th>Dates</th><th>Status</th><th>Stalls</th><th>Bookings</th><th>Actions</th></tr></thead>
+    <tbody>{% for e in events %}<tr>
+        <td><a href="{% url 'erp:event_detail' e.id %}"><strong>{{ e.name }}</strong></a></td>
+        <td>{{ e.venue.name|truncatechars:25 }}</td>
+        <td>{{ e.start_date|date:"d/m" }} - {{ e.end_date|date:"d/m/y" }}</td>
+        <td><span class="badge bg-{% if e.status == 'published' %}success{% elif e.status == 'ongoing' %}info{% elif e.status == 'draft' %}secondary{% elif e.status == 'completed' %}dark{% else %}danger{% endif %}">{{ e.get_status_display }}</span></td>
+        <td>{{ e.stalls.count }}</td>
+        <td>{{ e.bookings.count }}</td>
+        <td>
+            <a href="{% url 'erp:event_detail' e.id %}" class="btn btn-sm btn-purple"><i class="bi bi-eye"></i></a>
+            <a href="{% url 'erp:floor_plan' e.id %}" class="btn btn-sm btn-gold"><i class="bi bi-map"></i></a>
+        </td>
+    </tr>{% empty %}<tr><td colspan="7" class="text-center text-muted py-4">No events</td></tr>{% endfor %}</tbody>
+</table></div></div></div>
+{% endblock %}

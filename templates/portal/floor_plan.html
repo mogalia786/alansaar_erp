@@ -1,0 +1,499 @@
+{% extends 'portal/base.html' %}
+{% load static %}
+{% block title %}Floor Plan Editor - {{ event.name }}{% endblock %}
+{% block extra_head %}
+<style>
+:root { --purple: #5B2C6F; --gold: #D4AF37; }
+#editor-wrap { display: flex; gap: 15px; height: calc(100vh - 110px); }
+#toolbox { width: 220px; flex-shrink: 0; overflow-y: auto; }
+#toolbox .card { border-radius: 10px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+#toolbox .card-header { background: var(--purple); color: #fff; border-radius: 10px 10px 0 0 !important; padding: 8px 12px; font-size: 12px; font-weight: 600; }
+#toolbox .card-body { padding: 8px; }
+#toolbox .stall-type-card { cursor: grab; padding: 6px 8px; margin-bottom: 4px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; transition: all .15s; }
+#toolbox .stall-type-card:hover { border-color: var(--purple); background: #f8f4fc; }
+#toolbox .stall-type-card:active { cursor: grabbing; }
+#toolbox .stall-type-card .size { font-weight: 700; color: var(--purple); }
+#toolbox .stall-type-card .price { color: #888; font-size: 10px; }
+#toolbox .tool-btn { padding: 6px 8px; margin-bottom: 3px; border: 1px solid #ddd; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all .15s; background: #fff; display: flex; align-items: center; gap: 6px; }
+#toolbox .tool-btn:hover { border-color: var(--purple); }
+#toolbox .tool-btn.active { background: var(--purple); color: #fff; border-color: var(--purple); }
+#canvas-wrap {
+    flex: 1; overflow: auto; background: #1a1a1a; border-radius: 10px;
+    display: flex; align-items: flex-start; justify-content: flex-start;
+}
+#canvas-inner { position: relative; }
+#canvas-inner > .fp-svg { display: block; overflow: visible !important; background: #1a1a1a; }
+#canvas-inner svg.fp-svg path { stroke: #999 !important; }
+#canvas-inner svg.fp-svg * { stroke-opacity: 1 !important; }
+#grid-bg {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none; z-index: 1;
+}
+.stall-el {
+    position: absolute; cursor: move;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff; border-radius: 2px;
+    user-select: none; z-index: 5; transition: box-shadow .15s;
+    text-shadow: 0 1px 1px rgba(0,0,0,.5);
+    white-space: nowrap;
+}
+.stall-el.available { background: rgba(40,167,69,0.7); border: 2px solid #28a745; }
+.stall-el.reserved { background: rgba(255,193,7,0.7); border: 2px solid #ffc107; }
+.stall-el.confirmed { background: rgba(220,53,69,0.7); border: 2px solid #dc3545; }
+.stall-el.blocked { background: rgba(108,117,125,0.7); border: 2px solid #6c757d; cursor: not-allowed; }
+.stall-el:hover { box-shadow: 0 0 0 2px rgba(91,44,111,0.6); z-index: 10; }
+.stall-el.selected { box-shadow: 0 0 0 3px var(--gold); z-index: 15; }
+.stall-el .label { pointer-events: none; }
+.walkway-el {
+    position: absolute; background: rgba(149,165,166,0.15); border: 2px dashed rgba(149,165,166,0.5);
+    pointer-events: none; z-index: 2; border-radius: 3px;
+}
+.exit-el {
+    position: absolute; background: #e74c3c; color: #fff; border-radius: 20px;
+    display: flex; align-items: center; justify-content: center; z-index: 3;
+    font-size: 11px; font-weight: 700; padding: 4px 12px; cursor: default;
+}
+#status-bar { padding: 5px 0; display: flex; gap: 15px; font-size: 11px; color: #888; align-items: center; }
+#status-bar .badge { font-size: 10px; }
+#toast-msg { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; background: #333; color: #fff; padding: 8px 20px; border-radius: 6px; font-size: 13px; opacity: 0; transition: opacity .3s; }
+#toast-msg.show { opacity: 1; }
+#canvas-inner.drag-over { outline: 3px dashed var(--gold); outline-offset: -3px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="d-flex align-items-center gap-3">
+        <h4 class="fw-bold mb-0">{{ event.name }}</h4>
+        <span id="status-bar">
+            <span><i class="bi bi-grid-3x3"></i> Grid: <span id="grid-status">1m</span></span>
+            <span><i class="bi bi-bounding-box"></i> <span id="stall-count">0</span> stalls</span>
+            <span><i class="bi bi-arrows-move"></i> <span id="snap-status" class="badge bg-success">SNAP ON</span></span>
+        </span>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+        <button onclick="autoGenerate()" class="btn btn-sm btn-outline-purple"><i class="bi bi-grid"></i> Auto Grid</button>
+        <button onclick="undoLast()" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i></button>
+        <button onclick="toggleSnap()" class="btn btn-sm btn-outline-warning"><i class="bi bi-magnet"></i></button>
+        <span class="vr mx-1"></span>
+        <button onclick="zoomOut()" class="btn btn-sm btn-outline-secondary" title="Zoom Out"><i class="bi bi-dash"></i></button>
+        <span id="zoom-pct" class="text-muted" style="font-size:11px;min-width:40px;text-align:center;">100%</span>
+        <button onclick="zoomIn()" class="btn btn-sm btn-outline-secondary" title="Zoom In"><i class="bi bi-plus"></i></button>
+        <button onclick="zoomFit()" class="btn btn-sm btn-outline-info" title="Fit to Screen"><i class="bi bi-arrows-fullscreen"></i> Fit</button>
+        <button onclick="saveLayout()" class="btn btn-sm btn-purple"><i class="bi bi-save"></i> Save</button>
+    </div>
+</div>
+
+<div id="editor-wrap">
+    <div id="toolbox">
+        <div class="card mb-2">
+            <div class="card-header"><i class="bi bi-tools"></i> Tools</div>
+            <div class="card-body">
+                <div class="tool-btn active" data-tool="select" onclick="setTool('select')"><i class="bi bi-arrow-up"></i> Select & Move</div>
+                <div class="tool-btn" data-tool="walkway" onclick="setTool('walkway')"><i class="bi bi-signpost-2"></i> Draw Walkway</div>
+                <div class="tool-btn" data-tool="exit" onclick="setTool('exit')"><i class="bi bi-exclamation-triangle"></i> Mark Exit</div>
+            </div>
+        </div>
+        <div class="card mb-2">
+            <div class="card-header"><i class="bi bi-layers"></i> Zone</div>
+            <div class="card-body">
+                <select id="zone-select" class="form-select form-select-sm" style="font-size:11px;">
+                    {% for z in event.zones.all %}
+                    <option value="{{ z.id }}" style="background:{{ z.color }}20;color:#333;">{{ z.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="card mb-2">
+            <div class="card-header"><i class="bi bi-shop"></i> Stall Types</div>
+            <div class="card-body">
+                <div class="stall-type-card" draggable="true" data-w="3" data-h="3" data-sqm="9" data-price="5000" data-prefix="Stand" onclick="addStall(3,3,9,5000,'Stand')">
+                    <span><span class="size">3×3m</span> <span class="text-muted">(9m²)</span></span>
+                    <span class="price">R5,000</span>
+                </div>
+                <div class="stall-type-card" draggable="true" data-w="3" data-h="4" data-sqm="12" data-price="6500" data-prefix="Stand" onclick="addStall(3,4,12,6500,'Stand')">
+                    <span><span class="size">3×4m</span> <span class="text-muted">(12m²)</span></span>
+                    <span class="price">R6,500</span>
+                </div>
+                <div class="stall-type-card" draggable="true" data-w="3" data-h="6" data-sqm="18" data-price="9000" data-prefix="Stand" onclick="addStall(3,6,18,9000,'Stand')">
+                    <span><span class="size">3×6m</span> <span class="text-muted">(18m²)</span></span>
+                    <span class="price">R9,000</span>
+                </div>
+                <div class="stall-type-card" draggable="true" data-w="2" data-h="3" data-sqm="6" data-price="3500" data-prefix="Stand" onclick="addStall(2,3,6,3500,'Stand')">
+                    <span><span class="size">2×3m</span> <span class="text-muted">(6m²)</span></span>
+                    <span class="price">R3,500</span>
+                </div>
+                <div class="stall-type-card" draggable="true" data-w="4" data-h="3" data-sqm="12" data-price="8000" data-prefix="Food" onclick="addStall(4,3,12,8000,'Food')" style="border-left:3px solid #f39c12;">
+                    <span><span class="size">Food 4×3m</span> <span class="text-muted">(12m²)</span></span>
+                    <span class="price">R8,000</span>
+                </div>
+                <div class="stall-type-card" draggable="true" data-w="6" data-h="6" data-sqm="36" data-price="15000" data-prefix="Kiddies" onclick="addStall(6,6,36,15000,'Kiddies')" style="border-left:3px solid #3498db;">
+                    <span><span class="size">Kiddies 6×6m</span> <span class="text-muted">(36m²)</span></span>
+                    <span class="price">R15,000</span>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><i class="bi bi-palette"></i> Legend</div>
+            <div class="card-body" style="font-size:10px;">
+                <div class="d-flex align-items-center mb-1"><span style="display:inline-block;width:16px;height:12px;background:rgba(40,167,69,0.7);border:1px solid #28a745;border-radius:2px;margin-right:6px;"></span> Available</div>
+                <div class="d-flex align-items-center mb-1"><span style="display:inline-block;width:16px;height:12px;background:rgba(255,193,7,0.7);border:1px solid #ffc107;border-radius:2px;margin-right:6px;"></span> Reserved</div>
+                <div class="d-flex align-items-center mb-1"><span style="display:inline-block;width:16px;height:12px;background:rgba(220,53,69,0.7);border:1px solid #dc3545;border-radius:2px;margin-right:6px;"></span> Booked</div>
+                <div class="d-flex align-items-center mb-1"><span style="display:inline-block;width:16px;height:12px;background:rgba(108,117,125,0.7);border:1px solid #6c757d;border-radius:2px;margin-right:6px;"></span> Blocked</div>
+                <div class="d-flex align-items-center"><span style="display:inline-block;width:16px;height:12px;background:rgba(149,165,166,0.15);border:2px dashed rgba(149,165,166,0.5);border-radius:2px;margin-right:6px;"></span> Walkway</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-wrap">
+        <div id="canvas-inner">
+            {{ svg_content|safe }}
+            <div id="grid-bg"></div>
+        </div>
+    </div>
+</div>
+
+<div id="toast-msg"></div>
+
+<div class="modal fade" id="autoGridModal"><div class="modal-dialog modal-sm"><div class="modal-content">
+    <div class="modal-header bg-purple text-white"><h6 class="mb-0">Auto-Generate Grid</h6><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+    <form onsubmit="doAutoGenerate(event)">
+    <div class="modal-body">
+        <div class="mb-2"><label class="form-label">Hall Width (m)</label><input type="number" id="auto-w" class="form-control form-control-sm" value="50" step="1"></div>
+        <div class="mb-2"><label class="form-label">Hall Height (m)</label><input type="number" id="auto-h" class="form-control form-control-sm" value="50" step="1"></div>
+        <div class="mb-2"><label class="form-label">Stall Width (m)</label><input type="number" id="auto-sw" class="form-control form-control-sm" value="3" step="0.5"></div>
+        <div class="mb-2"><label class="form-label">Stall Height (m)</label><input type="number" id="auto-sh" class="form-control form-control-sm" value="3" step="0.5"></div>
+        <div class="mb-2"><label class="form-label">Aisle Width (m)</label><input type="number" id="auto-aw" class="form-control form-control-sm" value="2" step="0.5"></div>
+        <div class="mb-2"><label class="form-label">Base Price (R)</label><input type="number" id="auto-price" class="form-control form-control-sm" value="5000" step="100"></div>
+        <div class="mb-2"><label class="form-label">Stall Prefix</label><select id="auto-prefix" class="form-select form-select-sm"><option value="Stand">Stand</option><option value="Food">Food</option><option value="Kiddies">Kiddies</option></select></div>
+        <div class="form-check"><input type="checkbox" id="auto-snap" class="form-check-input" checked><label class="form-check-label"> Snap to grid</label></div>
+    </div>
+    <div class="modal-footer"><button type="submit" class="btn btn-purple btn-sm">Generate</button></div>
+    </form>
+</div></div></div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+    const VB_W = {{ svg_w }};
+    const VB_H = {{ svg_h }};
+    const GRID = 1000;
+    let stalls = {{ stalls_data|safe }};
+    let walkways = {{ walkways_data|safe }};
+    let exits = {{ exits_data|safe }};
+    let undoStack = [];
+    let selectedId = null;
+    let currentTool = 'select';
+    let snapEnabled = true;
+    let dragData = null;
+    let idCounter = stalls.reduce((a,b) => Math.max(a, b.id), 0) + 1;
+
+    let zoomLevel = 1;
+    const ZOOM_STEP = 0.15;
+    const ZOOM_MIN = 0.1;
+    const ZOOM_MAX = 20;
+
+    const canvasWrap = document.getElementById('canvas-wrap');
+    const canvasInner = document.getElementById('canvas-inner');
+    const gridBg = document.getElementById('grid-bg');
+    const svgEl = canvasInner.querySelector('svg');
+
+    function getBaseZoom() { return canvasWrap.clientWidth / VB_W; }
+    function getCssZoom() { return zoomLevel * getBaseZoom(); }
+
+    function applyZoom() {
+        canvasInner.style.zoom = getCssZoom();
+        document.getElementById('zoom-pct').textContent = Math.round(zoomLevel * 100) + '%';
+        renderAll();
+    }
+
+    function zoomIn() { zoomLevel = Math.min(ZOOM_MAX, zoomLevel * (1 + ZOOM_STEP)); applyZoom(); }
+    function zoomOut() { zoomLevel = Math.max(ZOOM_MIN, zoomLevel * (1 - ZOOM_STEP)); applyZoom(); }
+    function zoomFit() {
+        zoomLevel = 4;
+        applyZoom();
+        const innerW = VB_W * getBaseZoom() * zoomLevel;
+        const innerH = VB_H * getBaseZoom() * zoomLevel;
+        if (stalls.length > 0) {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            stalls.forEach(s => {
+                if (s.x < minX) minX = s.x;
+                if (s.y < minY) minY = s.y;
+                if (s.x + s.w > maxX) maxX = s.x + s.w;
+                if (s.y + s.h > maxY) maxY = s.y + s.h;
+            });
+            const centerMmX = (minX + maxX) / 2;
+            const centerMmY = (minY + maxY) / 2;
+            canvasWrap.scrollLeft = Math.max(0, (centerMmX / VB_W) * innerW - canvasWrap.clientWidth / 2);
+            canvasWrap.scrollTop = Math.max(0, (centerMmY / VB_H) * innerH - canvasWrap.clientHeight / 2);
+        } else {
+            canvasWrap.scrollLeft = Math.max(0, (innerW - canvasWrap.clientWidth) / 2);
+            canvasWrap.scrollTop = Math.max(0, (innerH - canvasWrap.clientHeight) / 2);
+        }
+    }
+
+    canvasWrap.addEventListener('wheel', e => {
+        if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            if (e.deltaY < 0) zoomIn(); else zoomOut();
+        }
+    }, { passive: false });
+
+    let panDrag = null;
+    canvasWrap.addEventListener('mousedown', e => {
+        if (e.button !== 0) return;
+        if (e.target.closest('.stall-el, .exit-el')) return;
+        panDrag = { sx: e.clientX, sy: e.clientY, sl: canvasWrap.scrollLeft, st: canvasWrap.scrollTop };
+        canvasWrap.style.cursor = 'grabbing';
+        e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+        if (!panDrag) return;
+        canvasWrap.scrollLeft = panDrag.sl - (e.clientX - panDrag.sx);
+        canvasWrap.scrollTop = panDrag.st - (e.clientY - panDrag.sy);
+    });
+    document.addEventListener('mouseup', () => {
+        if (panDrag) { panDrag = null; canvasWrap.style.cursor = ''; }
+    });
+    canvasWrap.addEventListener('mousemove', e => {
+        if (!panDrag && !e.target.closest('.stall-el, .exit-el')) canvasWrap.style.cursor = 'grab';
+    });
+
+    function snap(v) { return snapEnabled ? Math.round(v / GRID) * GRID : v; }
+    function mmToPct(mm) { return (mm / VB_W * 100); }
+    function mmToPctH(mm) { return (mm / VB_H * 100); }
+
+    function screenToMm(clientX, clientY) {
+        const rect = canvasInner.getBoundingClientRect();
+        const x = (clientX - rect.left) / rect.width * VB_W;
+        const y = (clientY - rect.top) / rect.height * VB_H;
+        return { x: Math.max(0, x), y: Math.max(0, y) };
+    }
+
+    function setTool(t) {
+        currentTool = t;
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
+        canvasInner.style.cursor = t === 'select' ? 'default' : t === 'walkway' ? 'crosshair' : 'pointer';
+    }
+
+    function toast(msg) {
+        const el = document.getElementById('toast-msg');
+        el.textContent = msg; el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 2000);
+    }
+
+    function shortName(name) {
+        const m = name.match(/^(\w+)\s+(\d+)$/);
+        return m ? m[1].charAt(0) + m[2] : name;
+    }
+
+    function renderAll() {
+        document.querySelectorAll('.stall-el, .walkway-el, .exit-el').forEach(el => el.remove());
+        const cssZoom = getCssZoom();
+        const fs = Math.max(8, Math.round(11 / cssZoom));
+
+        stalls.forEach(s => {
+            const d = document.createElement('div');
+            d.className = `stall-el ${s.status}`;
+            if (s.id === selectedId) d.classList.add('selected');
+            d.style.cssText = `left:${mmToPct(s.x)}%;top:${mmToPctH(s.y)}%;width:${mmToPct(s.w)}%;height:${mmToPctH(s.h)}%;font-size:${fs}px;`;
+            d.innerHTML = `<span class="label">${shortName(s.name)}</span>`;
+            d.dataset.id = s.id;
+            d.addEventListener('mousedown', e => onStallMouseDown(e, s));
+            canvasInner.appendChild(d);
+        });
+
+        walkways.forEach(w => {
+            const d = document.createElement('div');
+            d.className = 'walkway-el';
+            d.style.cssText = `left:${mmToPct(w.x)}%;top:${mmToPctH(w.y)}%;width:${mmToPct(w.w)}%;height:${mmToPctH(w.h)}%;`;
+            canvasInner.appendChild(d);
+        });
+
+        exits.forEach(e => {
+            const d = document.createElement('div');
+            d.className = 'exit-el';
+            d.style.cssText = `left:${mmToPct(e.x)}%;top:${mmToPctH(e.y)}%;font-size:${Math.max(8, Math.round(11 / cssZoom))}px;padding:${Math.max(2, Math.round(4/cssZoom))}px ${Math.max(4, Math.round(12/cssZoom))}px;`;
+            d.textContent = e.label || 'EXIT';
+            canvasInner.appendChild(d);
+        });
+
+        updateCounts();
+        drawGrid();
+    }
+
+    function drawGrid() {
+        if (!svgEl) return;
+        const cssZoom = getCssZoom();
+        const svgRect = svgEl.getBoundingClientRect();
+        const w = svgRect.width;
+        const h = svgRect.height;
+        if (w === 0 || h === 0) return;
+
+        const gridMm = GRID;
+        const lineW = Math.max(0.5, 1 / cssZoom);
+        const major = `rgba(255,255,255,0.3)`;
+
+        gridBg.style.backgroundImage = [
+            `repeating-linear-gradient(to right, ${major} 0 ${lineW}px, transparent ${lineW}px ${gridMm}px)`,
+            `repeating-linear-gradient(to bottom, ${major} 0 ${lineW}px, transparent ${lineW}px ${gridMm}px)`,
+        ].join(',');
+        gridBg.style.backgroundSize = `${gridMm}px ${gridMm}px`;
+        gridBg.style.backgroundPosition = '0 0';
+
+        document.getElementById('grid-status').textContent = '1m';
+    }
+
+    function onStallMouseDown(e, stall) {
+        if (currentTool === 'select') {
+            e.stopPropagation();
+            selectedId = stall.id;
+            renderAll();
+            const el = canvasInner.querySelector(`.stall-el[data-id="${stall.id}"]`);
+            if (!el) return;
+            const offMm = screenToMm(e.clientX, e.clientY);
+            const offRelX = offMm.x - stall.x;
+            const offRelY = offMm.y - stall.y;
+            dragData = { id: stall.id, startX: stall.x, startY: stall.y, moved: false };
+
+            const onMove = (ev) => {
+                dragData.moved = true;
+                const mm = screenToMm(ev.clientX, ev.clientY);
+                stall.x = Math.max(0, snap(mm.x - offRelX));
+                stall.y = Math.max(0, snap(mm.y - offRelY));
+                el.style.left = mmToPct(stall.x) + '%';
+                el.style.top = mmToPctH(stall.y) + '%';
+            };
+            const onUp = () => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                if (dragData.moved && (stall.x !== dragData.startX || stall.y !== dragData.startY)) {
+                    undoStack.push({type:'move', id:stall.id, fromX:dragData.startX, fromY:dragData.startY, toX:stall.x, toY:stall.y});
+                }
+                dragData = null;
+                renderAll();
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        }
+    }
+
+    function addStall(w, h, sqm, price, prefix, dropX, dropY) {
+        const sw = w * 1000, sh = h * 1000;
+        const x = dropX !== undefined ? snap(dropX) : snap(3000);
+        const y = dropY !== undefined ? snap(dropY) : snap(3000);
+        const id = idCounter++;
+        const num = stalls.filter(s => s.name.startsWith(prefix)).length + 1;
+        const zoneId = parseInt(document.getElementById('zone-select').value) || null;
+        stalls.push({ id, name: prefix + ' ' + num, x, y, w: sw, h: sh, size_sqm: sqm, base_price: price, corner_premium: 0, entrance_premium: 0, status: 'available', is_corner: false, has_water: false, zone: zoneId, prefix });
+        undoStack.push({type:'add', stall: JSON.parse(JSON.stringify(stalls[stalls.length-1]))});
+        renderAll();
+        toast(`Added ${shortName(prefix + ' ' + num)} (${w}m x ${h}m)`);
+    }
+
+    document.querySelectorAll('.stall-type-card').forEach(card => {
+        card.addEventListener('dragstart', e => {
+            e.dataTransfer.setData('application/json', JSON.stringify({ w: parseInt(card.dataset.w), h: parseInt(card.dataset.h), sqm: parseFloat(card.dataset.sqm), price: parseFloat(card.dataset.price), prefix: card.dataset.prefix }));
+            e.dataTransfer.effectAllowed = 'copy';
+        });
+    });
+
+    canvasInner.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; canvasInner.classList.add('drag-over'); });
+    canvasInner.addEventListener('dragleave', () => canvasInner.classList.remove('drag-over'));
+    canvasInner.addEventListener('drop', e => {
+        e.preventDefault(); canvasInner.classList.remove('drag-over');
+        try {
+            const data = JSON.parse(e.dataTransfer.getData('application/json'));
+            const mm = screenToMm(e.clientX, e.clientY);
+            addStall(data.w, data.h, data.sqm, data.price, data.prefix, mm.x - (data.w * 1000) / 2, mm.y - (data.h * 1000) / 2);
+        } catch(ex) { toast('Drop failed'); }
+    });
+
+    canvasInner.addEventListener('dblclick', e => {
+        if (currentTool !== 'select') return;
+        const mm = screenToMm(e.clientX, e.clientY);
+        addStall(3, 3, 9, 5000, 'S', mm.x - 1500, mm.y - 1500);
+    });
+
+    function autoGenerate() { new bootstrap.Modal(document.getElementById('autoGridModal')).show(); }
+
+    function doAutoGenerate(e) {
+        e.preventDefault();
+        const hw = parseFloat(document.getElementById('auto-w').value) * 1000;
+        const hh = parseFloat(document.getElementById('auto-h').value) * 1000;
+        const sw = parseFloat(document.getElementById('auto-sw').value) * 1000;
+        const sh = parseFloat(document.getElementById('auto-sh').value) * 1000;
+        const aw = parseFloat(document.getElementById('auto-aw').value) * 1000;
+        const price = parseFloat(document.getElementById('auto-price').value);
+        const prefix = document.getElementById('auto-prefix').value;
+        snapEnabled = document.getElementById('auto-snap').checked;
+        const cols = Math.floor(hw / (sw + aw));
+        const rows = Math.floor(hh / (sh + aw));
+        const zoneId = parseInt(document.getElementById('zone-select').value) || null;
+        let num = stalls.filter(s => s.name.startsWith(prefix)).length + 1;
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                let x = col * (sw + aw) + aw / 2;
+                let y = row * (sh + aw) + aw / 2;
+                if (snapEnabled) { x = snap(x); y = snap(y); }
+                stalls.push({ id: idCounter++, name: prefix + ' ' + (num++), x, y, w: sw, h: sh, size_sqm: (sw/1000)*(sh/1000), base_price: price, corner_premium: 0, entrance_premium: 0, status: 'available', is_corner: false, has_water: false, zone: zoneId, prefix });
+            }
+        }
+        renderAll();
+        toast(`Generated ${rows*cols} stalls (${cols}x${rows})`);
+        bootstrap.Modal.getInstance(document.getElementById('autoGridModal')).hide();
+    }
+
+    function toggleSnap() {
+        snapEnabled = !snapEnabled;
+        document.getElementById('snap-status').textContent = snapEnabled ? 'SNAP ON' : 'SNAP OFF';
+        document.getElementById('snap-status').className = `badge bg-${snapEnabled ? 'success' : 'secondary'}`;
+    }
+
+    function undoLast() {
+        const action = undoStack.pop();
+        if (!action) { toast('Nothing to undo'); return; }
+        if (action.type === 'add') stalls = stalls.filter(s => s.id !== action.stall.id);
+        else if (action.type === 'move') { const s = stalls.find(x => x.id === action.id); if (s) { s.x = action.fromX; s.y = action.fromY; } }
+        renderAll(); toast('Undo');
+    }
+
+    function saveLayout() {
+        const stallPayload = stalls.map(s => ({ id: s.id, name: s.name, x: s.x, y: s.y, w: s.w, h: s.h, size_sqm: s.size_sqm, base_price: s.base_price, corner_premium: s.corner_premium||0, is_corner: s.is_corner||false, has_water: s.has_water||false, prefix: s.prefix||s.name.charAt(0), zone: s.zone||null }));
+        const walkwayPayload = walkways.map(w => ({x:w.x,y:w.y,w:w.w,h:w.h}));
+        const exitPayload = exits.map(e => ({x:e.x,y:e.y,label:e.label||'EXIT'}));
+        fetch('{% url "erp:save_stalls" event.id %}', { method:'POST', headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/json'}, body: JSON.stringify(stallPayload) })
+        .then(r => r.json()).then(d => {
+            if (d.ok) {
+                fetch('{% url "erp:save_floor_plan_meta" event.id %}', { method:'POST', headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/json'}, body: JSON.stringify({walkways: walkwayPayload, exits: exitPayload}) })
+                .then(r2 => r2.json()).then(d2 => { if (d2.ok) toast(`Saved ${d.updated||stallPayload.length} stalls`); });
+            } else toast('Save failed');
+        }).catch(() => toast('Save failed'));
+    }
+
+    function updateCounts() { document.getElementById('stall-count').textContent = stalls.length; }
+
+    canvasInner.addEventListener('click', e => {
+        if (currentTool === 'walkway') {
+            const mm = screenToMm(e.clientX, e.clientY);
+            walkways.push({x:snap(mm.x),y:snap(mm.y),w:6000,h:2000});
+            renderAll(); toast('Walkway added');
+        } else if (currentTool === 'exit') {
+            const mm = screenToMm(e.clientX, e.clientY);
+            const label = prompt('Exit label:', 'EXIT');
+            if (label) { exits.push({x:snap(mm.x),y:snap(mm.y),label}); renderAll(); toast('Exit marker added'); }
+        }
+    });
+
+    document.addEventListener('keydown', e => {
+        if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && currentTool === 'select') {
+            const idx = stalls.findIndex(s => s.id === selectedId);
+            if (idx !== -1) { undoStack.push({type:'add',stall:JSON.parse(JSON.stringify(stalls[idx]))}); stalls.splice(idx,1); selectedId=null; renderAll(); toast('Deleted'); }
+        }
+        if (e.key === 'z' && (e.ctrlKey||e.metaKey)) { e.preventDefault(); undoLast(); }
+        if (e.key === 's' && (e.ctrlKey||e.metaKey)) { e.preventDefault(); saveLayout(); }
+    });
+
+    window.addEventListener('resize', () => { applyZoom(); zoomFit(); });
+    renderAll();
+    setTimeout(zoomFit, 100);
+</script>
+{% endblock %}

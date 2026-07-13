@@ -1,0 +1,106 @@
+{% extends 'portal/base.html' %}
+{% block title %}Banking Dashboard - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="bi bi-bank"></i> Banking</h3>
+    <div>
+        <a href="{% url 'fnb:sync' %}" class="btn btn-sm btn-purple"><i class="bi bi-arrow-repeat"></i> Sync Statements</a>
+        <a href="{% url 'fnb:make_payment' %}" class="btn btn-sm btn-gold"><i class="bi bi-send"></i> Make Payment</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card p-3 border-start border-4 border-primary">
+            <div class="stat-value h3 mb-0">{{ debtor_accounts.count }}</div>
+            <div class="text-muted small">Business Accounts</div>
+            <i class="icon bi bi-wallet text-primary"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 border-start border-4 border-success">
+            <div class="stat-value h3 mb-0">{{ creditor_accounts.count }}</div>
+            <div class="text-muted small">Beneficiaries</div>
+            <i class="icon bi bi-people text-success"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 border-start border-4 border-danger">
+            <div class="stat-value h3 mb-0">R{{ total_debits|floatformat:0 }}</div>
+            <div class="text-muted small">Total Debits (Out)</div>
+            <i class="icon bi bi-arrow-up-right text-danger"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 border-start border-4 border-info">
+            <div class="stat-value h3 mb-0">R{{ total_credits|floatformat:0 }}</div>
+            <div class="text-muted small">Total Credits (In)</div>
+            <i class="icon bi bi-arrow-down-left text-info"></i>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Recent Transactions</h6>
+                <a href="{% url 'fnb:transactions' %}" class="text-white small">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr><th>Date</th><th>Account</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for t in transactions %}
+                            <tr>
+                                <td>{{ t.transaction_date|date:"d/m" }}</td>
+                                <td><small>{{ t.account.account_number|slice:":-4" }}****</small></td>
+                                <td>{{ t.description|truncatechars:30 }}</td>
+                                <td>{% if t.debit_amount > 0 %}<span class="text-danger">R{{ t.debit_amount|floatformat:2 }}</span>{% endif %}</td>
+                                <td>{% if t.credit_amount > 0 %}<span class="text-success">R{{ t.credit_amount|floatformat:2 }}</span>{% endif %}</td>
+                                <td>{% if t.balance %}R{{ t.balance|floatformat:2 }}{% endif %}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted py-3">No transactions. Sync statements first.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-purple text-white">
+                <h6 class="mb-0">Recent Payments</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr><th>Amount</th><th>To</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for p in payments %}
+                            <tr>
+                                <td>R{{ p.amount|floatformat:0 }}</td>
+                                <td><small>{{ p.creditor_account.account_number|slice:":-4" }}****</small></td>
+                                <td><span class="badge bg-{% if p.status == 'confirmed' %}success{% elif p.status == 'sent' %}info{% elif p.status == 'failed' %}danger{% else %}warning{% endif %}">{{ p.get_status_display }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-muted py-3">No payments yet</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer text-center p-2">
+                <a href="{% url 'fnb:payments' %}" class="btn btn-sm btn-purple">View All Payments</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

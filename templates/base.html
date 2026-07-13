@@ -1,0 +1,132 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Al Ansaar Foundation - Events{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --purple: #5B2C6F;
+            --gold: #D4AF37;
+            --purple-light: #7B3F95;
+            --gold-light: #E8C84A;
+        }
+        .bg-purple { background-color: var(--purple); }
+        .bg-gold { background-color: var(--gold); }
+        .text-gold { color: var(--gold); }
+        .text-purple { color: var(--purple); }
+        .btn-purple {
+            background-color: var(--purple);
+            border-color: var(--purple);
+            color: white;
+        }
+        .btn-purple:hover {
+            background-color: var(--purple-light);
+            border-color: var(--purple-light);
+            color: white;
+        }
+        .btn-gold {
+            background-color: var(--gold);
+            border-color: var(--gold);
+            color: white;
+        }
+        .btn-gold:hover {
+            background-color: var(--gold-light);
+            border-color: var(--gold-light);
+            color: white;
+        }
+        .border-gold { border-color: var(--gold) !important; }
+        .navbar-purple {
+            background: linear-gradient(135deg, var(--purple) 0%, #2c1640 100%);
+        }
+        .footer-purple {
+            background: linear-gradient(135deg, #2c1640 0%, var(--purple) 100%);
+        }
+        body { background: #f8f9fa; }
+        .card { border-radius: 12px; border: none; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .card-header { border-radius: 12px 12px 0 0 !important; }
+        .badge-purple { background-color: var(--purple); color: white; }
+        a { color: var(--purple); }
+        a:hover { color: var(--purple-light); }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-purple sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="{% url 'home' %}">
+                <img src="{{ MEDIA_URL }}logo/al_ansaar_logo.png" alt="" height="36" style="border-radius:4px;" onerror="this.style.display='none'">
+                Al Ansaar Foundation
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'event_list' %}">Events</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'rfq_list' %}">RFQs</a></li>
+                    {% if user.is_authenticated %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'my_bookings' %}">My Bookings</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'my_invoices' %}">Invoices</a></li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        {% if user.notifications.count %}
+                        <li class="nav-item">
+                            <a class="nav-link position-relative" href="{% url 'notifications' %}">
+                                <i class="bi bi-bell"></i>
+                                {% with unread=user.notifications.count %}
+                                {% if unread %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.6rem;">{{ unread }}</span>
+                                {% endif %}
+                                {% endwith %}
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle"></i> {{ user.company_name|default:user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{% url 'dashboard' %}">Dashboard</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
+                        <li class="nav-item"><a class="nav-link btn btn-gold text-dark px-3 ms-2" href="{% url 'register' %}">Register</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+
+    <footer class="footer-purple text-white py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-1">&copy; 2026 Al Ansaar Foundation. All Rights Reserved.</p>
+            <p class="mb-0 small text-light">Developed by Mogalia Enterprises&trade;</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

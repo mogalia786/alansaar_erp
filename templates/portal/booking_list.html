@@ -1,0 +1,28 @@
+{% extends 'portal/base.html' %}
+{% block title %}Bookings - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="bi bi-bag-check"></i> Bookings</h3>
+    <div class="btn-group btn-group-sm">
+        <a href="{% url 'erp:booking_list' %}" class="btn btn-outline-secondary">All</a>
+        <a href="{% url 'erp:booking_list' %}?status=pending" class="btn btn-outline-warning">Pending</a>
+        <a href="{% url 'erp:booking_list' %}?status=approved" class="btn btn-outline-info">Approved</a>
+        <a href="{% url 'erp:booking_list' %}?status=confirmed" class="btn btn-outline-success">Confirmed</a>
+    </div>
+</div>
+<div class="card"><div class="card-body p-0">
+<div class="table-responsive"><table class="table table-hover mb-0">
+<thead class="table-purple"><tr><th>Ref</th><th>Exhibitor</th><th>Event</th><th>Stall</th><th>Amount</th><th>Status</th><th>Payment</th><th>Date</th><th>Actions</th></tr></thead>
+<tbody>{% for b in bookings %}<tr>
+    <td><a href="{% url 'erp:booking_detail' b.id %}"><strong>{{ b.booking_reference }}</strong></a></td>
+    <td>{{ b.exhibitor.company_name|truncatechars:20 }}</td>
+    <td>{{ b.event.name|truncatechars:20 }}</td>
+    <td>{{ b.stall.name }}</td>
+    <td>R{{ b.total_amount|floatformat:0 }}</td>
+    <td><span class="badge bg-{% if b.status == 'pending' %}warning{% elif b.status == 'approved' %}info{% elif b.status == 'confirmed' %}success{% elif b.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ b.get_status_display }}</span></td>
+    <td><span class="badge bg-{% if b.payment_status == 'paid' %}success{% elif b.payment_status == 'unpaid' %}danger{% else %}warning{% endif %}">{{ b.get_payment_status_display }}</span></td>
+    <td>{{ b.booking_date|date:"d/m" }}</td>
+    <td><a href="{% url 'erp:booking_detail' b.id %}" class="btn btn-sm btn-purple"><i class="bi bi-eye"></i></a></td>
+</tr>{% empty %}<tr><td colspan="9" class="text-center text-muted py-4">No bookings</td></tr>{% endfor %}</tbody>
+</table></div></div></div>
+{% endblock %}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px;">
+<div style="max-width:600px;margin:auto;background:#fff;border-radius:8px;overflow:hidden;">
+<div style="background:#5B2C6F;padding:20px;text-align:center;">
+<h1 style="color:#D4AF37;margin:0;font-size:22px;">Al Ansaar Foundation</h1>
+<p style="color:#fff;margin:5px 0 0;">Quotation Received</p>
+</div>
+<div style="padding:25px;">
+<h2 style="color:#5B2C6F;">Quotation Submitted</h2>
+<table style="width:100%;border-collapse:collapse;margin:15px 0;">
+<tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;width:140px;">Quotation #</td><td style="padding:8px;border:1px solid #ddd;">{{ quotation.quotation_number }}</td></tr>
+<tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">RFQ Reference</td><td style="padding:8px;border:1px solid #ddd;">{{ rfq.rfq_number }}</td></tr>
+<tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Provider</td><td style="padding:8px;border:1px solid #ddd;">{{ quotation.provider.company_name }}</td></tr>
+<tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Amount (excl VAT)</td><td style="padding:8px;border:1px solid #ddd;">R{{ quotation.total_amount_excl|floatformat:2 }}</td></tr>
+<tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Amount (incl VAT)</td><td style="padding:8px;border:1px solid #ddd;">R{{ quotation.total_amount_incl|floatformat:2 }}</td></tr>
+<tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Timeline</td><td style="padding:8px;border:1px solid #ddd;">{{ quotation.delivery_timeline|default:"Not specified" }}</td></tr>
+<tr><td style="padding:8px;border:1px solid #ddd;font-weight:bold;">Submitted</td><td style="padding:8px;border:1px solid #ddd;">{{ quotation.submitted_at|date:"d F Y H:i" }}</td></tr>
+</table>
+<a href="{{ site_url }}/erp/rfqs/{{ rfq.pk }}/" style="display:inline-block;background:#5B2C6F;color:#fff;padding:12px 25px;text-decoration:none;border-radius:6px;margin-top:15px;">View in ERP</a>
+<hr style="border:none;border-top:1px solid #eee;margin:20px 0;">
+<p style="color:#888;font-size:12px;">Al Ansaar Foundation &bull; ERP Notification &bull; This is an automated message.</p>
+</div>
+</div>
+</body>
+</html>

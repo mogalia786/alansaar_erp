@@ -1,0 +1,62 @@
+{% extends 'portal/base.html' %}
+{% block title %}{% if edit %}Edit{% else %}New{% endif %} Expense - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="bi bi-cash-stack"></i> {% if edit %}Edit{% else %}New{% endif %} Expense</h3>
+    <a href="{% url 'erp:expense_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+<div class="card"><div class="card-header bg-purple text-white"><h6 class="mb-0">Expense Details</h6></div>
+<div class="card-body">
+<form method="post">
+    {% csrf_token %}
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Provider</label>
+            <select name="provider" class="form-select">
+                <option value="">-- None --</option>
+                {% for p in providers %}
+                <option value="{{ p.id }}" {% if edit and expense.provider_id == p.id %}selected{% endif %}>{{ p.company_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Category</label>
+            <select name="category" class="form-select" required>
+                <option value="">-- Select --</option>
+                <option value="stand_building" {% if edit and expense.category == 'stand_building' %}selected{% endif %}>Stand Building</option>
+                <option value="electrical" {% if edit and expense.category == 'electrical' %}selected{% endif %}>Electrical</option>
+                <option value="cleaning" {% if edit and expense.category == 'cleaning' %}selected{% endif %}>Cleaning</option>
+                <option value="security" {% if edit and expense.category == 'security' %}selected{% endif %}>Security</option>
+                <option value="catering" {% if edit and expense.category == 'catering' %}selected{% endif %}>Catering</option>
+                <option value="audio_visual" {% if edit and expense.category == 'audio_visual' %}selected{% endif %}>Audio/Visual</option>
+                <option value="logistics" {% if edit and expense.category == 'logistics' %}selected{% endif %}>Logistics</option>
+                <option value="printing" {% if edit and expense.category == 'printing' %}selected{% endif %}>Printing & Signage</option>
+                <option value="marketing" {% if edit and expense.category == 'marketing' %}selected{% endif %}>Marketing & Advertising</option>
+                <option value="admin" {% if edit and expense.category == 'admin' %}selected{% endif %}>Administrative</option>
+                <option value="other" {% if edit and expense.category == 'other' %}selected{% endif %}>Other</option>
+            </select>
+        </div>
+        <div class="col-12">
+            <label class="form-label">Description</label>
+            <input type="text" name="description" class="form-control" required maxlength="300" value="{% if edit %}{{ expense.description }}{% endif %}">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Amount Exclusive (R)</label>
+            <input type="number" name="amount_excl" step="0.01" class="form-control" required value="{% if edit %}{{ expense.amount_excl }}{% endif %}" {% if edit %}readonly{% endif %}>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Due Date</label>
+            <input type="date" name="due_date" class="form-control" value="{% if edit %}{{ expense.due_date|date:'Y-m-d' }}{% endif %}">
+        </div>
+        <div class="col-12">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-control" rows="3">{% if edit %}{{ expense.notes }}{% endif %}</textarea>
+        </div>
+    </div>
+    <div class="mt-3">
+        <button type="submit" class="btn btn-purple"><i class="bi bi-check-lg"></i> {% if edit %}Update{% else %}Create{% endif %} Expense</button>
+        <a href="{% url 'erp:expense_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+</div></div>
+{% endblock %}

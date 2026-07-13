@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Tax Invoice - {{ invoice.invoice_number }}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    @page { size: A4; margin: 12mm; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #222; line-height: 1.5; }
+    .invoice-box { max-width: 210mm; margin: 0 auto; padding: 15px; }
+    .top-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; }
+    .brand { flex: 1; display: flex; align-items: center; gap: 12px; }
+    .brand img { height: 50px; width: auto; }
+    .brand-text h1 { color: #5B2C6F; font-size: 20px; margin: 0 0 2px; letter-spacing: 1px; }
+    .brand .sub { color: #D4AF37; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; }
+    .brand .details { font-size: 10px; color: #666; margin-top: 8px; line-height: 1.6; }
+    .invoice-title { text-align: right; }
+    .invoice-title h2 { color: #5B2C6F; font-size: 28px; margin: 0; letter-spacing: 3px; text-transform: uppercase; }
+    .invoice-title .status-badge { display: inline-block; padding: 4px 16px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-top: 5px; }
+    .status-paid { background: #27ae60; color: #fff; }
+    .status-unpaid { background: #e74c3c; color: #fff; }
+    .status-partial { background: #f39c12; color: #fff; }
+    .status-overdue { background: #c0392b; color: #fff; }
+    .status-sent { background: #2980b9; color: #fff; }
+    .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .info-table td { padding: 3px 0; vertical-align: top; }
+    .info-table .label { color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
+    .info-table .value { font-weight: 600; }
+    .line-items { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
+    .line-items th { background: #5B2C6F; color: #fff; padding: 8px 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; text-align: left; font-weight: 500; }
+    .line-items td { padding: 10px; border-bottom: 1px solid #e0e0e0; }
+    .line-items .item-desc { font-weight: 600; }
+    .line-items .item-sub { font-size: 10px; color: #888; }
+    .line-items tr:last-child td { border-bottom: 2px solid #5B2C6F; }
+    .totals { width: 100%; max-width: 350px; margin-left: auto; }
+    .totals td { padding: 4px 10px; }
+    .totals .label { text-align: right; }
+    .totals .amount { text-align: right; font-weight: 600; }
+    .totals .total-row td { padding-top: 8px; border-top: 2px solid #5B2C6F; font-size: 16px; }
+    .totals .total-row .label, .totals .total-row .amount { font-weight: 800; color: #5B2C6F; }
+    .amount-due-box { background: #f8f4fc; border: 2px solid #5B2C6F; border-radius: 6px; padding: 12px 20px; margin: 15px 0; display: flex; justify-content: space-between; align-items: center; }
+    .amount-due-box .label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+    .amount-due-box .amount { font-size: 28px; font-weight: 800; color: #5B2C6F; }
+    .amount-due-box .amount.negative { color: #27ae60; }
+    .terms { margin-top: 25px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 10px; color: #888; }
+    .terms strong { color: #555; }
+    .footer { margin-top: 25px; border-top: 2px solid #5B2C6F; padding-top: 10px; font-size: 9px; color: #aaa; text-align: center; }
+    .bank-details { background: #f9f9f9; border-radius: 6px; padding: 12px 18px; margin-top: 15px; font-size: 10px; }
+    .bank-details h6 { font-size: 11px; color: #5B2C6F; margin-bottom: 6px; }
+    .bank-details table td { padding: 1px 10px 1px 0; }
+    .payment-history { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10px; }
+    .payment-history th { background: #f0f0f0; padding: 5px 8px; text-align: left; font-size: 9px; text-transform: uppercase; }
+    .payment-history td { padding: 5px 8px; border-bottom: 1px solid #eee; }
+    .no-print { margin-top: 20px; text-align: center; }
+    @media print { .no-print { display: none; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="invoice-box">
+    <div class="top-section">
+    <div class="brand">
+        <img src="{{ MEDIA_URL }}logo/al_ansaar_logo.png" alt="Al Ansaar Logo" onerror="this.style.display='none'">
+        <div>
+            <div class="brand-text"><h1>Al Ansaar Foundation</h1></div>
+            <div class="sub">{{ invoice.booking.event.name }}</div>
+            <div class="details">
+                Durban Exhibition Centre<br>
+                11 Walnut Road, Durban<br>
+                VAT: 1234567890<br>
+                Email: info@alansaar.org.za
+            </div>
+        </div>
+    </div>
+        </div>
+        <div class="invoice-title">
+            <h2>TAX INVOICE</h2>
+            <div class="status-badge status-{{ invoice.status }}">{{ invoice.get_status_display|upper }}</div>
+        </div>
+    </div>
+
+    <table class="info-table">
+        <tr>
+            <td style="width:50%;">
+                <div class="label">Bill To</div>
+                <div class="value">{{ invoice.exhibitor.company_name }}</div>
+                <div style="font-size:10px;color:#666;">{{ invoice.exhibitor.get_full_name }}<br>
+                {{ invoice.exhibitor.email }}<br>
+                {{ invoice.exhibitor.phone|default:"" }}</div>
+            </td>
+            <td style="width:25%;">
+                <div class="label">Invoice No</div>
+                <div class="value">{{ invoice.invoice_number }}</div>
+                <div style="font-size:10px;color:#666;margin-top:8px;">
+                    <div class="label">Issue Date</div>
+                    <div class="value">{{ invoice.issue_date|date:"d F Y" }}</div>
+                </div>
+            </td>
+            <td style="width:25%;">
+                <div class="label">Booking Ref</div>
+                <div class="value">{{ invoice.booking.booking_reference }}</div>
+                <div style="font-size:10px;color:#666;margin-top:8px;">
+                    <div class="label">Due Date</div>
+                    <div class="value" style="{% if invoice.status == 'overdue' %}color:#e74c3c;{% endif %}">{{ invoice.due_date|date:"d F Y" }}</div>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="line-items">
+        <thead><tr>
+            <th style="width:5%;">#</th>
+            <th style="width:40%;">Description</th>
+            <th style="width:10%;text-align:center;">Qty</th>
+            <th style="width:18%;text-align:right;">Unit Price (excl. VAT)</th>
+            <th style="width:12%;text-align:right;">VAT</th>
+            <th style="width:15%;text-align:right;">Total</th>
+        </tr></thead>
+        <tbody>
+            <tr>
+                <td style="text-align:center;">1</td>
+                <td>
+                    <div class="item-desc">Stall Booking - {{ invoice.booking.stall.name }}</div>
+                    <div class="item-sub">{{ invoice.booking.event.name }} &bull; {{ invoice.booking.stall.size_sqm }}m&sup2; &bull; Zone: {{ invoice.booking.stall.zone.name|default:"Main Exhibition" }}</div>
+                </td>
+                <td style="text-align:center;">1</td>
+                <td style="text-align:right;">R{{ invoice.booking.subtotal|floatformat:2 }}</td>
+                <td style="text-align:right;">R{{ invoice.vat_amount|floatformat:2 }}</td>
+                <td style="text-align:right;font-weight:600;">R{{ invoice.amount_incl|floatformat:2 }}</td>
+            </tr>
+            {% if invoice.booking.accessories_total > 0 %}
+            <tr>
+                <td style="text-align:center;">2</td>
+                <td>
+                    <div class="item-desc">Accessories &amp; Additional Services</div>
+                    <div class="item-sub">{% for a in invoice.booking.accessories.all %}{{ a.accessory.name }} x{{ a.quantity }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+                </td>
+                <td style="text-align:center;">1</td>
+                <td style="text-align:right;">R{{ invoice.booking.accessories_total|floatformat:2 }}</td>
+                <td style="text-align:right;">R0.00</td>
+                <td style="text-align:right;font-weight:600;">R{{ invoice.booking.accessories_total|floatformat:2 }}</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <table class="totals">
+        <tr><td class="label">Subtotal (excl. VAT)</td><td class="amount">R{{ invoice.amount_excl|floatformat:2 }}</td></tr>
+        <tr><td class="label">VAT @ 15%</td><td class="amount">R{{ invoice.vat_amount|floatformat:2 }}</td></tr>
+        <tr class="total-row"><td class="label">Total Incl. VAT</td><td class="amount">R{{ invoice.amount_incl|floatformat:2 }}</td></tr>
+    </table>
+
+    <div class="amount-due-box">
+        <div>
+            <div class="label">Amount Due</div>
+            {% if invoice.balance_due <= 0 %}<div style="font-size:11px;color:#27ae60;">Fully Paid</div>{% endif %}
+        </div>
+        <div class="amount {% if invoice.balance_due <= 0 %}negative{% endif %}">
+            R{{ invoice.balance_due|floatformat:2 }}
+        </div>
+    </div>
+
+    {% if invoice.booking.payments.exists %}
+    <div style="margin-top:15px;">
+        <h6 style="font-size:11px;color:#5B2C6F;margin-bottom:5px;">PAYMENT HISTORY</h6>
+        <table class="payment-history">
+            <thead><tr><th>Date</th><th>Receipt</th><th>Method</th><th>Reference</th><th style="text-align:right;">Amount</th></tr></thead>
+            <tbody>{% for p in invoice.payments.all %}<tr>
+                <td>{{ p.payment_date|date:"d M Y" }}</td>
+                <td>{% if p.receipt %}{{ p.receipt.receipt_number }}{% else %}-{% endif %}</td>
+                <td>{{ p.get_payment_method_display }}</td>
+                <td>{{ p.reference_number|default:"-" }}</td>
+                <td style="text-align:right;font-weight:600;">R{{ p.amount|floatformat:2 }}</td>
+            </tr>{% endfor %}</tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="bank-details">
+        <h6>PAYMENT DETAILS</h6>
+        <table><tr><td><strong>Bank:</strong></td><td>First National Bank (FNB)</td><td style="padding-left:20px;"><strong>Account Name:</strong></td><td>Al Ansaar Foundation</td></tr>
+        <tr><td><strong>Account No:</strong></td><td>6284 916 3224</td><td style="padding-left:20px;"><strong>Branch Code:</strong></td><td>255 005</td></tr>
+        <tr><td><strong>Reference:</strong></td><td colspan="3">{{ invoice.invoice_number }} (use this as payment reference)</td></tr></table>
+    </div>
+
+    {% if invoice.notes %}
+    <div style="margin-top:12px;font-size:10px;color:#666;">
+        <strong>Notes:</strong> {{ invoice.notes }}
+    </div>
+    {% endif %}
+
+    <div class="terms">
+        <strong>TERMS &amp; CONDITIONS</strong><br>
+        1. Payment is due within 30 days of the invoice date unless otherwise agreed.<br>
+        2. Late payments may incur a 20% surcharge on the outstanding amount.<br>
+        3. All stall fees are non-refundable after the event commencement date.<br>
+        4. Please quote the invoice number as payment reference for reconciliation purposes.<br>
+        5. This document serves as a valid tax invoice for VAT purposes in South Africa.<br>
+        6. Al Ansaar Foundation reserves the right to cancel bookings for non-payment.
+    </div>
+
+    <div class="footer">
+        Al Ansaar Foundation &bull; VAT: 4870261234 &bull; Reg: 2018/123456/08 &bull; Durban, South Africa<br>
+        www.alansaar.org &bull; accounts@alansaar.org<br>
+        <span style="color:#bbb;">Developed by Mogalia Enterprises&trade; &copy; 2026</span>
+    </div>
+
+    <div class="no-print">
+        <button onclick="window.print()" class="btn btn-purple">Print / Save PDF</button>
+        <button onclick="window.close()" class="btn btn-secondary">Close</button>
+    </div>
+</div>
+</body>
+</html>

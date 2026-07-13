@@ -1,0 +1,18 @@
+{% extends 'providers/provider_base.html' %}
+{% load static %}
+{% block title %}Provider - Events{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h3 class="mb-4"><i class="bi bi-calendar-event"></i> All Events</h3>
+    <div class="list-group">
+        {% for event in events %}
+        <a href="{% url 'providers:event_detail' event.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            {{ event.name }}
+            <small>{{ event.start_date|date:"d M Y" }} - {{ event.end_date|date:"d M Y" }}</small>
+        </a>
+        {% empty %}
+        <div class="text-muted">No events found.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

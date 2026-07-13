@@ -1,0 +1,35 @@
+{% extends 'portal/base.html' %}
+{% block title %}Payments - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="bi bi-credit-card"></i> Payments</h3>
+    <div class="btn-group btn-group-sm">
+        <a href="{% url 'erp:payment_list' %}" class="btn btn-outline-secondary">All</a>
+        <a href="{% url 'erp:payment_list' %}?status=pending" class="btn btn-outline-warning">Pending</a>
+        <a href="{% url 'erp:payment_list' %}?status=verified" class="btn btn-outline-success">Verified</a>
+    </div>
+</div>
+<div class="card"><div class="card-body p-0">
+<div class="table-responsive"><table class="table table-hover mb-0">
+<thead class="table-purple"><tr><th>ID</th><th>Exhibitor</th><th>Invoice</th><th>Amount</th><th>Method</th><th>Ref</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+<tbody>{% for p in payments %}<tr>
+    <td>{{ p.id }}</td>
+    <td>{{ p.booking.exhibitor.company_name|truncatechars:18 }}</td>
+    <td>{{ p.invoice.invoice_number }}</td>
+    <td>R{{ p.amount|floatformat:0 }}</td>
+    <td>{{ p.get_payment_method_display }}</td>
+    <td>{{ p.reference_number|truncatechars:12|default:"-" }}</td>
+    <td><span class="badge bg-{% if p.status == 'verified' %}success{% elif p.status == 'pending' %}warning{% else %}danger{% endif %}">{{ p.get_status_display }}</span></td>
+    <td>{{ p.payment_date|date:"d/m" }}</td>
+    <td>
+        {% if p.status == 'pending' %}
+        <form method="post" action="{% url 'erp:verify_payment' p.id %}" class="d-inline">{% csrf_token %}
+            <button name="action" value="verify" class="btn btn-sm btn-success"><i class="bi bi-check"></i></button>
+            <button name="action" value="reject" class="btn btn-sm btn-danger" onclick="return confirm('Reject?')"><i class="bi bi-x"></i></button>
+        </form>
+        {% endif %}
+        {% if p.proof_of_payment %}<a href="{{ p.proof_of_payment.url }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-paperclip"></i></a>{% endif %}
+    </td>
+</tr>{% empty %}<tr><td colspan="9" class="text-center text-muted py-4">No payments</td></tr>{% endfor %}</tbody>
+</table></div></div></div>
+{% endblock %}

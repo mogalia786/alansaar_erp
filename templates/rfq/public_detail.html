@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ rfq.rfq_number }} - {{ rfq.title }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'rfq_list' %}">RFQs</a></li>
+            <li class="breadcrumb-item active">{{ rfq.rfq_number }}</li>
+        </ol>
+    </nav>
+
+    <div class="card mb-4">
+        <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">{{ rfq.rfq_number }} - {{ rfq.title }}</h3>
+            <span class="badge {% if rfq.status == 'open' %}bg-success{% elif rfq.status == 'closed' %}bg-secondary{% elif rfq.status == 'awarded' %}bg-info{% endif %} fs-6">
+                {{ rfq.get_status_display }}
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <table class="table table-sm table-borderless">
+                        {% if rfq.category %}
+                        <tr><th class="text-muted" style="width:130px;">Category</th><td>{{ rfq.category.name }}</td></tr>
+                        {% endif %}
+                        <tr><th class="text-muted">Closing Date</th><td><strong class="text-danger">{{ rfq.closing_date|date:"l, d F Y H:i" }}</strong></td></tr>
+                        {% if rfq.estimated_budget %}
+                        <tr><th class="text-muted">Est. Budget</th><td>R{{ rfq.estimated_budget|floatformat:2 }}</td></tr>
+                        {% endif %}
+                        <tr><th class="text-muted">Issue Date</th><td>{{ rfq.issue_date|date:"d F Y"|default:"-" }}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-sm table-borderless">
+                        <tr><th class="text-muted" style="width:130px;">Contact</th><td>{{ rfq.contact_person|default:"Procurement Team" }}</td></tr>
+                        {% if rfq.contact_email %}
+                        <tr><th class="text-muted">Email</th><td>{{ rfq.contact_email }}</td></tr>
+                        {% endif %}
+                        {% if rfq.contact_phone %}
+                        <tr><th class="text-muted">Phone</th><td>{{ rfq.contact_phone }}</td></tr>
+                        {% endif %}
+                        <tr><th class="text-muted">Site Visit</th><td>{{ rfq.site_visit_required|yesno:"Required,Not Required" }}</td></tr>
+                        {% if rfq.documents %}
+                        <tr><th class="text-muted">Documents</th><td><a href="{{ rfq.documents.url }}" target="_blank" class="btn btn-sm btn-outline-purple"><i class="bi bi-download"></i> Download TOR</a></td></tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+
+            <h5 class="text-purple border-bottom pb-2">Scope of Work</h5>
+            <p>{{ rfq.description|linebreaksbr }}</p>
+
+            {% if rfq.deliverables %}
+            <h5 class="text-purple border-bottom pb-2 mt-4">Deliverables</h5>
+            <p>{{ rfq.deliverables|linebreaksbr }}</p>
+            {% endif %}
+
+            {% if rfq.terms_and_conditions %}
+            <h5 class="text-purple border-bottom pb-2 mt-4">Terms &amp; Conditions</h5>
+            <p class="small">{{ rfq.terms_and_conditions|linebreaksbr }}</p>
+            {% endif %}
+
+            <hr>
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Evaluation Criteria</h6>
+                    <ul class="small text-muted">
+                        <li>Compliance with scope of work</li>
+                        <li>Competitive pricing</li>
+                        <li>Experience and track record</li>
+                        <li>Proposed timeline and methodology</li>
+                        <li>B-BBEE status (preferred)</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Submission Requirements</h6>
+                    <ul class="small text-muted">
+                        <li>Completed quotation form with pricing</li>
+                        <li>Company profile and registration documents</li>
+                        <li>Proposed methodology and timeline</li>
+                        <li>Tax clearance certificate (if applicable)</li>
+                        <li>Relevant experience / references</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-white text-center py-3">
+            {% if rfq.status == 'open' %}
+            <a href="{% url 'submit_quotation' rfq.id %}" class="btn btn-purple btn-lg"><i class="bi bi-send"></i> Submit Your Proposal</a>
+            {% else %}
+            <span class="text-muted"><i class="bi bi-lock"></i> This RFQ is no longer accepting submissions.</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

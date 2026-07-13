@@ -1,0 +1,54 @@
+{% extends 'providers/provider_base.html' %}
+{% load static %}
+{% block title %}Provider Dashboard{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="mb-0"><i class="bi bi-tools"></i> {{ provider.company_name }}</h3>
+    </div>
+    <div class="row mb-4 g-2">
+        <div class="col-md-4">
+            <div class="card bg-purple text-white text-center h-100">
+                <div class="card-body">
+                    <h6>Service Type</h6>
+                    <h4>{{ provider.get_service_type_display }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white text-center h-100">
+                <div class="card-body">
+                    <h6>Contact</h6>
+                    <h5>{{ provider.phone }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white text-center h-100">
+                <div class="card-body">
+                    <h6>Upcoming Events</h6>
+                    <h4>{{ events|length }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4>Upcoming Events</h4>
+    <div class="list-group">
+        {% for event in events %}
+        <a href="{% url 'providers:event_detail' event.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ event.name }}</strong>
+                <br><small class="text-muted">{{ event.venue.name|default:"" }}</small>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-purple rounded-pill">{{ event.start_date|date:"d M Y" }}</span>
+                <br><small class="text-muted">{{ event.total_bookings }} bookings</small>
+            </div>
+        </a>
+        {% empty %}
+        <div class="text-muted">No upcoming events.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

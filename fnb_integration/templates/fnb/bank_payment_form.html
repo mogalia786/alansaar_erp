@@ -1,0 +1,88 @@
+{% extends 'portal/base.html' %}
+{% block title %}Make Payment - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="bi bi-send"></i> Make Payment</h3>
+    <a href="{% url 'fnb:payments' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            {% if expense %}
+            <div class="alert alert-info">
+                <strong>Paying Expense:</strong> {{ expense.description }} - <strong>Due:</strong> R{{ expense.balance_due|floatformat:2 }}
+                <input type="hidden" name="expense_id" value="{{ expense.id }}">
+            </div>
+            {% endif %}
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Beneficiary (Creditor)</label>
+                    <select name="creditor_account" class="form-select" required>
+                        <option value="">-- Select Beneficiary --</option>
+                        {% for c in creditors %}
+                        <option value="{{ c.id }}">{{ c.account_number }} - {{ c.account_holder|default:c.description }}</option>
+                        {% empty %}
+                        <option value="">No beneficiaries configured. Run seed_fnb_accounts first.</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Amount (R)</label>
+                    <input type="number" name="amount" step="0.01" min="0.01" class="form-control"
+                           value="{{ expense.balance_due|default:'' }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Reference (max 20 chars)</label>
+                    <input type="text" name="reference" class="form-control" maxlength="20" placeholder="e.g. INV-001" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Description (optional)</label>
+                    <input type="text" name="description" class="form-control" placeholder="Payment description">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-gold" onclick="return confirm('Send this payment to FNB?')">
+                        <i class="bi bi-send"></i> Send Payment
+                    </button>
+                    <a href="{% url 'fnb:dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if log_steps %}
+<div class="card mt-3 border-gold">
+    <div class="card-header bg-dark text-white d-flex align-items-center gap-2">
+        <i class="bi bi-terminal"></i> <strong>FNB Payment Log</strong>
+    </div>
+    <div class="card-body p-0" style="background:#1e1e1e;">
+        <div style="font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:0.85rem;padding:1rem;max-height:400px;overflow-y:auto;">
+            {% for s in log_steps %}
+            <div class="mb-1 d-flex align-items-start gap-2" style="color:{% if s.status == 'ok' %}#4ec9b0{% elif s.status == 'error' %}#f14c4c{% elif s.status == 'pending' %}#dcdcaa{% else %}#9cdcfe{% endif %};">
+                <span style="min-width:20px;">{{ s.icon }}</span>
+                <span style="min-width:160px;color:#569cd6;">{{ s.step }}</span>
+                <span style="color:#ce9178;">{{ s.detail }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card mt-3">
+    <div class="card-body">
+        <h6>Test Beneficiaries</h6>
+        <ul class="small text-muted mb-0">
+            {% for c in creditors %}
+            <li>{{ c.account_number }} - {{ c.account_holder|default:c.description }}</li>
+            {% empty %}
+            <li>No creditors found. Run <code>python manage.py seed_fnb_accounts</code>.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Accessories List - {{ event.name }}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    @page { size: A4; margin: 15mm; }
+    body { font-family: 'Segoe UI',Arial,sans-serif; font-size: 12px; }
+    .header { border-bottom: 3px solid #5B2C6F; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
+    .header img { height: 50px; width: auto; }
+    .header-text h1 { color: #5B2C6F; font-size: 22px; margin: 0; }
+    .header-text .sub { color: #888; font-size: 12px; }
+    .section-title { background: #5B2C6F; color: #fff; padding: 6px 12px; font-size: 13px; border-radius: 4px; margin: 15px 0 10px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    td, th { padding: 5px 8px; border: 1px solid #ddd; }
+    th { background: #f5f5f5; font-weight: 600; }
+    .footer { margin-top: 30px; border-top: 2px solid #5B2C6F; padding-top: 10px; font-size: 10px; color: #888; text-align: center; }
+    @media print { .no-print { display: none; } }
+</style>
+</head>
+<body>
+    <div class="header">
+        <img src="{{ MEDIA_URL }}logo/al_ansaar_logo.png" alt="Al Ansaar Logo" onerror="this.style.display='none'">
+        <div class="header-text">
+            <h1>ACCESSORIES & ADDITIONAL REQUIREMENTS</h1>
+            <div class="sub">{{ event.name }} &mdash; Al Ansaar Foundation &bull; {% now "d F Y" %}</div>
+        </div>
+    </div>
+
+    <div class="section-title">ACCESSORIES ORDERED PER EXHIBITOR</div>
+    {% if bookings %}
+    {% for b in bookings %}
+    {% with accessories=b.accessories.all %}
+    {% if accessories %}
+    <div style="margin-bottom:20px;">
+        <p><strong>{{ forloop.counter }}. {{ b.exhibitor.company_name }}</strong> &mdash; Stall {{ b.stall.name }}</p>
+        <table>
+            <tr><th>Accessory</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr>
+            {% for a in accessories %}<tr>
+                <td>{{ a.accessory.name }}</td>
+                <td>{{ a.quantity }}</td>
+                <td>R{{ a.price|floatformat:2 }}</td>
+                <td class="text-end">R{{ a.quantity|add:0|floatformat:"2" }}</td>
+            </tr>{% endfor %}
+            <tr style="font-weight:bold;"><td colspan="3">Subtotal</td><td class="text-end">R{{ b.accessories_total|floatformat:2 }}</td></tr>
+        </table>
+    </div>
+    {% endif %}
+    {% endwith %}
+    {% endfor %}
+    {% else %}
+    <p class="text-muted">No accessories ordered.</p>
+    {% endif %}
+
+    <div class="section-title">PACKAGE INCLUSIONS</div>
+    <table>
+        <tr><th>Package Type</th><th>Inclusions</th></tr>
+        <tr><td>Standard Package (3x3 shell scheme)</td><td>Shell scheme, carpet, fascia board, 2 lights, 15A socket, 1 table, 2 chairs, waste bin</td></tr>
+        <tr><td>Enhanced Package (Corner 3x3)</td><td>All of the above + corner positioning, additional display area</td></tr>
+        <tr><td>Food Court Package (4x3)</td><td>All of the above + water connection, grease trap, extraction (if required)</td></tr>
+        <tr><td>Peninsular Package (3x6)</td><td>Double-width stand, open on 3 sides, 4 lights, 2 tables, 4 chairs</td></tr>
+    </table>
+
+    <div class="section-title">NOTES</div>
+    <ul>
+        <li>Additional accessories must be ordered at least 14 days before the event.</li>
+        <li>Late orders will incur a 20% surcharge.</li>
+        <li>Electrical accessories must comply with SANS 10142-1.</li>
+        <li>All prices are exclusive of VAT unless stated otherwise.</li>
+    </ul>
+
+    <div class="footer">
+        <p>Al Ansaar Foundation &bull; Durban, South Africa &bull; www.alansaar.org</p>
+        <p>Developed by Mogalia Enterprises&trade; &bull; &copy; 2026 All Rights Reserved</p>
+    </div>
+    <div class="no-print text-center mt-3"><button onclick="window.print()" class="btn btn-primary">Print</button></div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}My Invoices - Al Ansaar Foundation{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold text-purple mb-0"><i class="bi bi-file-text"></i> My Invoices</h2>
+        <a href="{% url 'account_statement' %}" class="btn btn-sm btn-outline-purple" target="_blank">
+            <i class="bi bi-file-earmark-text"></i> View Statement
+        </a>
+    </div>
+    {% if invoices %}
+    <div class="table-responsive">
+        <table class="table table-hover bg-white rounded shadow-sm">
+            <thead class="table-purple text-white">
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Event</th>
+                    <th>Amount</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
+                    <th>Status</th>
+                    <th>Due Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr>
+                    <td><strong>{{ inv.invoice_number }}</strong></td>
+                    <td>{{ inv.booking.event.name }}</td>
+                    <td>R{{ inv.amount_incl|floatformat:2 }}</td>
+                    <td>R{{ inv.amount_paid|floatformat:2 }}</td>
+                    <td class="{% if inv.balance_due > 0 %}text-danger fw-bold{% else %}text-success{% endif %}">R{{ inv.balance_due|floatformat:2 }}</td>
+                    <td><span class="badge bg-{% if inv.status == 'paid' %}success{% elif inv.status == 'overdue' %}danger{% elif inv.status == 'sent' %}info{% elif inv.status == 'partial' %}warning{% else %}secondary{% endif %}">{{ inv.get_status_display }}</span></td>
+                    <td>{{ inv.due_date|date:"d M Y" }}</td>
+                    <td>
+                        <a href="{% url 'invoice_detail' inv.id %}" class="btn btn-sm btn-purple">View</a>
+                        {% if inv.balance_due > 0 %}
+                        <a href="{% url 'make_payment' inv.id %}" class="btn btn-sm btn-gold text-dark">Pay</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-file-text display-1 text-muted"></i>
+        <p class="lead mt-3">No invoices yet.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

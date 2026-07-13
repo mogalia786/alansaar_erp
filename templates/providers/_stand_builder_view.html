@@ -1,0 +1,152 @@
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link active" href="#build" data-bs-toggle="tab"><i class="bi bi-building"></i> Stand Build</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="#elec" data-bs-toggle="tab"><i class="bi bi-lightning"></i> Electrical</a>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="build">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="mb-0">Stand Build Requirements</h5>
+            <a href="{% url 'erp:print_stand_builder' event.id %}" class="btn btn-purple btn-sm" target="_blank">
+                <i class="bi bi-printer"></i> Print Report
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Stall</th>
+                        <th>Exhibitor</th>
+                        <th>Fascia</th>
+                        <th>Side Walls</th>
+                        <th>Floor Mat</th>
+                        <th>Carpet</th>
+                        <th>Req Version</th>
+                        <th>Special Reqs &amp; Accessories</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bookings %}
+                    {% if b.require_stand_build %}
+                    <tr class="{% if b.stand_build_completed %}table-success{% elif b.requirements_version > 0 %}table-warning{% endif %}">
+                        <td>{{ b.stall.name }}</td>
+                        <td>{{ b.exhibitor.company_name }}</td>
+                        <td>{{ b.fascia_name }}</td>
+                        <td>{{ b.get_side_wall_removal_display }}</td>
+                        <td>{% if b.require_floor_mat %}<i class="bi bi-check text-success"></i>{% endif %}</td>
+                        <td>{% if b.require_carpet %}<i class="bi bi-check text-success"></i>{% endif %}</td>
+                        <td><span class="badge bg-secondary">v{{ b.requirements_version }}</span></td>
+                        <td>
+                            {% if b.special_requirements %}<small>{{ b.special_requirements|truncatewords:10 }}</small>{% endif %}
+                            {% if b.accessories.exists %}
+                            <div style="font-size:10px;color:#5B2C6F;">
+                            {% for a in b.accessories.all %}&bull; {{ a.accessory.name }} x{{ a.quantity }}<br>{% endfor %}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if b.stand_build_completed %}
+                            <span class="badge bg-success">Complete</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form method="POST" style="display:inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="booking_id" value="{{ b.id }}">
+                                {% if b.stand_build_completed %}
+                                <button type="submit" name="action" value="reset_build" class="btn btn-outline-warning btn-sm">Reset</button>
+                                {% else %}
+                                <button type="submit" name="action" value="complete_build" class="btn btn-success btn-sm">Complete</button>
+                                {% endif %}
+                            </form>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% empty %}
+                    <tr><td colspan="10" class="text-muted">No stand build bookings for this event.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="elec">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="mb-0">Electrical Requirements</h5>
+            <a href="{% url 'erp:print_electrician' event.id %}" class="btn btn-purple btn-sm" target="_blank">
+                <i class="bi bi-printer"></i> Print Report
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Stall</th>
+                        <th>Exhibitor</th>
+                        <th>Power</th>
+                        <th>Amps</th>
+                        <th>Extra Plugs</th>
+                        <th>Extra Lights</th>
+                        <th>Water</th>
+                        <th>Req Version</th>
+                        <th>Special Reqs &amp; Accessories</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bookings %}
+                    {% if b.requires_power or b.requires_water or b.require_extra_plugs or b.require_extra_lights %}
+                    <tr class="{% if b.electrical_completed %}table-success{% endif %}">
+                        <td>{{ b.stall.name }}</td>
+                        <td>{{ b.exhibitor.company_name }}</td>
+                        <td>{% if b.requires_power %}<i class="bi bi-check text-success"></i>{% endif %}</td>
+                        <td>{{ b.power_amps }}</td>
+                        <td>{% if b.require_extra_plugs %}<i class="bi bi-check text-success"></i>{% endif %}</td>
+                        <td>{% if b.require_extra_lights %}<i class="bi bi-check text-success"></i>{% endif %}</td>
+                        <td>{% if b.requires_water %}<i class="bi bi-check text-success"></i>{% endif %}</td>
+                        <td><span class="badge bg-secondary">v{{ b.requirements_version }}</span></td>
+                        <td>
+                            {% if b.special_requirements %}<small>{{ b.special_requirements|truncatewords:10 }}</small>{% endif %}
+                            {% if b.accessories.exists %}
+                            <div style="font-size:10px;color:#5B2C6F;">
+                            {% for a in b.accessories.all %}&bull; {{ a.accessory.name }} x{{ a.quantity }}<br>{% endfor %}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if b.electrical_completed %}
+                            <span class="badge bg-success">Complete</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form method="POST" style="display:inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="booking_id" value="{{ b.id }}">
+                                {% if b.electrical_completed %}
+                                <button type="submit" name="action" value="reset_electrical" class="btn btn-outline-warning btn-sm">Reset</button>
+                                {% else %}
+                                <button type="submit" name="action" value="complete_electrical" class="btn btn-success btn-sm">Complete</button>
+                                {% endif %}
+                            </form>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% empty %}
+                    <tr><td colspan="11" class="text-muted">No electrical bookings for this event.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,98 @@
+{% extends 'portal/base.html' %}
+{% block title %}Booking {{ booking.booking_reference }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div><h3 class="fw-bold mb-0">{{ booking.booking_reference }}</h3><small class="text-muted">{{ booking.exhibitor.company_name }}</small></div>
+    <div class="d-flex gap-2 no-print">
+        {% if booking.status == 'pending' %}
+        <a href="{% url 'erp:approve_booking' booking.id %}" class="btn btn-success btn-sm"><i class="bi bi-check-lg"></i> Approve</a>
+        <a href="{% url 'erp:reject_booking' booking.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Reject?')"><i class="bi bi-x-lg"></i> Reject</a>
+        {% endif %}
+        {% if booking.status == 'approved' %}
+        <a href="{% url 'erp:confirm_booking' booking.id %}" class="btn btn-success btn-sm" onclick="return confirm('Confirm this booking?')"><i class="bi bi-check-all"></i> Confirm</a>
+        <a href="{% url 'erp:create_invoice' booking.id %}" class="btn btn-purple btn-sm"><i class="bi bi-file-text"></i> Create Invoice</a>
+        {% endif %}
+        <a href="{% url 'stand_3d_view' booking.id %}" class="btn btn-gold btn-sm" target="_blank"><i class="bi bi-box"></i> 3D View</a>
+        <a href="{% url 'erp:print_stand_spec' booking.id %}" class="btn btn-purple btn-sm" target="_blank"><i class="bi bi-printer"></i> Stand Spec</a>
+    </div>
+</div>
+<div class="row g-3">
+    <div class="col-md-8">
+        <div class="card mb-3"><div class="card-header bg-purple text-white"><h6 class="mb-0">Booking Details</h6></div>
+        <div class="card-body">
+            <div class="row"><div class="col-md-6">
+                <p><strong>Exhibitor:</strong> {{ booking.exhibitor.company_name }}<br>
+                <strong>Email:</strong> {{ booking.exhibitor.email }}<br>
+                <strong>Phone:</strong> {{ booking.exhibitor.phone|default:"-" }}</p>
+            </div><div class="col-md-6">
+                <p><strong>Event:</strong> {{ booking.event.name }}<br>
+                <strong>Stall:</strong> {{ booking.stall.name }} ({{ booking.stall.size_sqm }} m²)<br>
+                <strong>Status:</strong> <span class="badge bg-{% if booking.status == 'pending' %}warning{% elif booking.status == 'approved' %}info{% elif booking.status == 'confirmed' %}success{% elif booking.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ booking.get_status_display }}</span><br>
+                <strong>Payment:</strong> <span class="badge bg-{% if booking.payment_status == 'paid' %}success{% elif booking.payment_status == 'unpaid' %}danger{% else %}warning{% endif %}">{{ booking.get_payment_status_display }}</span></p>
+            </div></div>
+            {% if booking.fascia_name %}<p><strong>Fascia:</strong> {{ booking.fascia_name }}</p>{% endif %}
+            {% if booking.special_requirements %}<p><strong>Special Reqs:</strong> {{ booking.special_requirements }}</p>{% endif %}
+            {% if booking.admin_notes %}<p><strong>Admin Notes:</strong> {{ booking.admin_notes }}</p>{% endif %}
+        </div></div>
+        <div class="card mb-3"><div class="card-header bg-purple text-white"><h6 class="mb-0">Services</h6></div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-3 border-end">{% if booking.requires_power %}<i class="bi bi-lightning-fill text-warning"></i>{% else %}<i class="bi bi-lightning text-muted"></i>{% endif %}<br><small>Power</small></div>
+                <div class="col-3 border-end">{% if booking.requires_water %}<i class="bi bi-droplet-fill text-info"></i>{% else %}<i class="bi bi-droplet text-muted"></i>{% endif %}<br><small>Water</small></div>
+                <div class="col-3 border-end">{% if booking.require_stand_build %}<i class="bi bi-tools text-purple"></i>{% else %}<i class="bi bi-tools text-muted"></i>{% endif %}<br><small>Stand Build</small></div>
+                <div class="col-3">{% if booking.require_carpet %}<i class="bi bi-grid text-gold"></i>{% else %}<i class="bi bi-grid text-muted"></i>{% endif %}<br><small>Carpet</small></div>
+            </div>
+        </div></div>
+        {% if discount_requests %}
+        <div class="card"><div class="card-header bg-warning"><h6 class="mb-0">Discount Requests</h6></div>
+        <div class="card-body">{% for dr in discount_requests %}
+            <div class="border-bottom pb-2 mb-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div><strong>{{ dr.discount_percent }}%</strong> - R{{ dr.discount_amount|floatformat:2 }}</div>
+                    <span class="badge bg-{% if dr.status == 'pending' %}warning{% elif dr.status == 'approved_by_first' %}info{% elif dr.status == 'approved' %}success{% else %}danger{% endif %}">{{ dr.get_status_display }}</span>
+                </div>
+                <small class="text-muted">Reason: {{ dr.reason }}</small><br>
+                <small class="text-muted">
+                    {% if dr.approved_by_first %}Approved 1: {{ dr.approved_by_first.username }} | {% endif %}
+                    {% if dr.approved_by_second %}Approved 2: {{ dr.approved_by_second.username }} | {% endif %}
+                    {% if dr.rejected_by %}Rejected by: {{ dr.rejected_by.username }} | {% endif %}
+                    Requested: {{ dr.created_at|date:"d M Y H:i" }}
+                </small>
+            </div>{% endfor %}
+        </div></div>
+        {% endif %}
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-3"><div class="card-header bg-purple text-white"><h6 class="mb-0">Financial Summary</h6></div>
+        <div class="card-body">
+            <table class="table table-sm mb-0">
+                <tr><td>Stall Price</td><td class="text-end">R{{ booking.stall_price|floatformat:2 }}</td></tr>
+                <tr><td>Accessories</td><td class="text-end">R{{ booking.accessories_total|floatformat:2 }}</td></tr>
+                <tr><td>Subtotal</td><td class="text-end">R{{ booking.subtotal|floatformat:2 }}</td></tr>
+                <tr><td>VAT (15%)</td><td class="text-end">R{{ booking.vat_amount|floatformat:2 }}</td></tr>
+                <tr class="fw-bold"><td>Total</td><td class="text-end">R{{ booking.total_amount|floatformat:2 }}</td></tr>
+                <tr><td>Paid</td><td class="text-end text-success">R{{ booking.amount_paid|floatformat:2 }}</td></tr>
+                <tr class="fw-bold"><td>Balance</td><td class="text-end text-danger">R{{ booking.balance_due|floatformat:2 }}</td></tr>
+            </table>
+        </div></div>
+        {% if invoices %}
+        <div class="card"><div class="card-header bg-purple text-white"><h6 class="mb-0">Invoices</h6></div>
+        <div class="card-body p-0">{% for inv in invoices %}
+            <div class="p-2 border-bottom d-flex justify-content-between">
+                <a href="{% url 'admin:invoices_invoice_change' inv.id %}">{{ inv.invoice_number }}</a>
+                <span class="badge bg-{% if inv.status == 'paid' %}success{% elif inv.status == 'overdue' %}danger{% else %}warning{% endif %}">{{ inv.get_status_display }}</span>
+            </div>{% endfor %}
+        </div></div>
+        {% endif %}
+        {% if payments %}
+        <div class="card mt-2"><div class="card-header bg-purple text-white"><h6 class="mb-0">Payments</h6></div>
+        <div class="card-body p-0">{% for p in payments %}
+            <div class="p-2 border-bottom d-flex justify-content-between">
+                <span>R{{ p.amount|floatformat:0 }}</span>
+                <span class="badge bg-{% if p.status == 'verified' %}success{% elif p.status == 'pending' %}warning{% else %}danger{% endif %}">{{ p.get_status_display }}</span>
+            </div>{% endfor %}
+        </div></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

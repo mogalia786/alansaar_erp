@@ -1,0 +1,35 @@
+{% extends 'portal/base.html' %}
+{% block title %}Expenses - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold mb-0"><i class="bi bi-cash-stack"></i> Expenses</h3>
+    <a href="{% url 'erp:expense_create' %}" class="btn btn-purple btn-sm"><i class="bi bi-plus-lg"></i> New Expense</a>
+</div>
+<div class="d-flex gap-2 mb-3">
+    <a href="{% url 'erp:expense_list' %}" class="btn btn-sm {% if not request.GET.status %}btn-purple{% else %}btn-outline-secondary{% endif %}">All</a>
+    <a href="{% url 'erp:expense_list' %}?status=unpaid" class="btn btn-sm {% if request.GET.status == 'unpaid' %}btn-danger{% else %}btn-outline-danger{% endif %}">Unpaid</a>
+    <a href="{% url 'erp:expense_list' %}?status=paid" class="btn btn-sm {% if request.GET.status == 'paid' %}btn-success{% else %}btn-outline-success{% endif %}">Paid</a>
+    <a href="{% url 'erp:expense_list' %}?status=partial" class="btn btn-sm {% if request.GET.status == 'partial' %}btn-warning{% else %}btn-outline-warning{% endif %}">Partial</a>
+    <a href="{% url 'erp:expense_list' %}?status=cancelled" class="btn btn-sm {% if request.GET.status == 'cancelled' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Cancelled</a>
+</div>
+<div class="card"><div class="card-body p-0">
+<div class="table-responsive"><table class="table table-hover mb-0">
+    <thead class="table-purple"><tr><th>Description</th><th>Provider</th><th>Category</th><th>Amount Incl</th><th>Amount Paid</th><th>Balance</th><th>Status</th><th>Due Date</th><th>Actions</th></tr></thead>
+    <tbody>{% for e in expenses %}<tr>
+        <td>{{ e.description|truncatechars:40 }}</td>
+        <td>{{ e.provider.company_name|default:"-" }}</td>
+        <td>{{ e.get_category_display }}</td>
+        <td>R{{ e.amount_incl|floatformat:2 }}</td>
+        <td>R{{ e.amount_paid|floatformat:2 }}</td>
+        <td><span class="{% if e.balance_due > 0 %}text-danger fw-bold{% else %}text-success{% endif %}">R{{ e.balance_due|floatformat:2 }}</span></td>
+        <td><span class="badge bg-{% if e.status == 'unpaid' %}danger{% elif e.status == 'paid' %}success{% elif e.status == 'partial' %}warning{% else %}secondary{% endif %}">{{ e.get_status_display }}</span></td>
+        <td>{{ e.due_date|date:"d M Y"|default:"-" }}</td>
+        <td>
+            <a href="{% url 'erp:expense_edit' e.id %}" class="btn btn-sm btn-purple"><i class="bi bi-pencil"></i></a>
+            {% if e.balance_due > 0 %}
+            <a href="{% url 'erp:expense_pay' e.id %}" class="btn btn-sm btn-gold"><i class="bi bi-credit-card"></i> Pay</a>
+            {% endif %}
+        </td>
+    </tr>{% empty %}<tr><td colspan="9" class="text-center text-muted py-4">No expenses found</td></tr>{% endfor %}</tbody>
+</table></div></div></div>
+{% endblock %}

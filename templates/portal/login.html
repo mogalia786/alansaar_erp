@@ -1,0 +1,29 @@
+{% extends 'portal/base.html' %}
+{% block title %}ERP Login - Al Ansaar{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header text-white text-center py-3" style="background: #5B2C6F;">
+                    <h4 class="mb-0"><i class="bi bi-shield-lock"></i> Staff Login</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" name="username" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn w-100 text-white fw-bold" style="background: #5B2C6F;">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

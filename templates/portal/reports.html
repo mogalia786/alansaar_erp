@@ -1,0 +1,54 @@
+{% extends 'portal/base.html' %}
+{% load erp_tags %}
+{% block title %}Reports - ERP{% endblock %}
+{% block content %}
+<h3 class="fw-bold mb-3"><i class="bi bi-graph-up"></i> Event Reports</h3>
+<div class="card"><div class="card-body p-0">
+<div class="table-responsive"><table class="table table-hover mb-0">
+<thead class="table-purple"><tr><th>Event</th><th>Total Bookings</th><th>Confirmed</th><th>Total Revenue</th><th>Paid</th><th>Outstanding</th></tr></thead>
+<tbody>{% for r in report_data %}<tr>
+    <td><a href="{% url 'erp:event_detail' r.event.id %}"><strong>{{ r.event.name }}</strong></a></td>
+    <td>{{ r.total_bookings }}</td>
+    <td>{{ r.confirmed }}</td>
+    <td>R{{ r.total_revenue|floatformat:2 }}</td>
+    <td class="text-success fw-bold">R{{ r.paid_revenue|floatformat:2 }}</td>
+    <td class="text-danger fw-bold">R{{ r.outstanding|floatformat:2 }}</td>
+</tr>{% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No data</td></tr>{% endfor %}</tbody>
+<tfoot class="table-light"><tr class="fw-bold">
+    <td>TOTAL</td>
+    <td>{{ report_data|sum_attr:'total_bookings' }}</td>
+    <td>{{ report_data|sum_attr:'confirmed' }}</td>
+    <td>R{{ report_data|sum_attr:'total_revenue'|floatformat:2 }}</td>
+    <td class="text-success">R{{ report_data|sum_attr:'paid_revenue'|floatformat:2 }}</td>
+    <td class="text-danger">R{{ report_data|sum_attr:'outstanding'|floatformat:2 }}</td>
+</tr></tfoot>
+</table></div></div></div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+    // Fix the sum in footer since Django templates can't do this natively - will be fixed in custom templatetag
+    document.addEventListener('DOMContentLoaded', function() {
+        // Simple JS fallback for totals
+        const rows = document.querySelectorAll('tbody tr');
+        if (rows.length) {
+            const totals = {bookings:0, confirmed:0, revenue:0, paid:0, outstanding:0};
+            rows.forEach(r => {
+                const cells = r.querySelectorAll('td');
+                totals.bookings += parseInt(cells[1].textContent) || 0;
+                totals.confirmed += parseInt(cells[2].textContent) || 0;
+                totals.revenue += parseFloat(cells[3].textContent.replace(/[R,]/g,'')) || 0;
+                totals.paid += parseFloat(cells[4].textContent.replace(/[R,]/g,'')) || 0;
+                totals.outstanding += parseFloat(cells[5].textContent.replace(/[R,]/g,'')) || 0;
+            });
+            const foot = document.querySelector('tfoot tr');
+            if (foot) {
+                foot.cells[1].textContent = totals.bookings;
+                foot.cells[2].textContent = totals.confirmed;
+                foot.cells[3].textContent = 'R' + totals.revenue.toFixed(2);
+                foot.cells[4].textContent = 'R' + totals.paid.toFixed(2);
+                foot.cells[5].textContent = 'R' + totals.outstanding.toFixed(2);
+            }
+        }
+    });
+</script>
+{% endblock %}
