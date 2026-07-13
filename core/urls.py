@@ -1,10 +1,15 @@
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from providers import rfq_views
 
+def health_check(request):
+    return HttpResponse("OK", status=200)
+
 urlpatterns = [
+    path('healthz/', health_check),
     path('admin/', admin.site.urls),
     path('erp/', include('portal.urls')),
     path('', include('accounts.urls')),

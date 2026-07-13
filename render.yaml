@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn core.wsgi:application
+    startCommand: gunicorn core.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
         value: "3.12"
@@ -20,7 +20,7 @@ services:
           property: connectionString
       - key: SITE_URL
         sync: false
-    healthCheckPath: /
+    healthCheckPath: /healthz/
     autoDeploy: true
 
 databases:
