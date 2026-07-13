@@ -7,6 +7,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-erp-key-change-in-production')
 DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+if not DEBUG and '*' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.extend(['alansaar-erp.onrender.com', 'alansaar.site', 'www.alansaar.site'])
 
 INSTALLED_APPS = [
     'django.contrib.admin',
