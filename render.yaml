@@ -3,7 +3,7 @@ services:
     name: alansaar-erp
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python manage.py migrate --run-syncdb && python manage.py collectstatic --no-input && python manage.py migrate --run-syncdb && python manage.py collectstatic --no-input
     startCommand: gunicorn core.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
