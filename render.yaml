@@ -3,8 +3,8 @@ services:
     name: alansaar-erp
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python manage.py migrate --run-syncdb && python manage.py collectstatic --no-input && python manage.py migrate --run-syncdb && python manage.py collectstatic --no-input
-    startCommand: gunicorn core.wsgi:application --bind 0.0.0.0:$PORT
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py migrate --run-syncdb && python manage.py collectstatic --no-input && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
         value: "3.12"
@@ -13,13 +13,13 @@ services:
       - key: DEBUG
         value: "false"
       - key: ALLOWED_HOSTS
-        sync: false
+        value: "*"
       - key: DATABASE_URL
         fromDatabase:
           name: alansaar-db
           property: connectionString
       - key: SITE_URL
-        sync: false
+        value: "https://alansaar.site"
     healthCheckPath: /healthz/
     autoDeploy: true
 
