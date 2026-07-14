@@ -46,27 +46,23 @@ def _get_svg_dims(path):
 def _load_svg_content():
     global _svg_cache
     svg_rel_path = 'floor_plans/dec_full_floor_plan.svg'
+    if _svg_cache['content'] is not None:
+        return _svg_cache['content'], _svg_cache['fp_w'], _svg_cache['fp_h']
+    raw = None
     try:
         from django.core.files.storage import default_storage
-        if not default_storage.exists(svg_rel_path):
-            return '', 502485, 721189
-        mtime_str = default_storage.get_available_name(svg_rel_path)
-        mtime = default_storage.get_modified_time(mtime_str)
-        mtime_ts = mtime.timestamp() if hasattr(mtime, 'timestamp') else 0
-        if _svg_cache['content'] is not None and mtime_ts == _svg_cache['mtime']:
-            return _svg_cache['content'], _svg_cache['fp_w'], _svg_cache['fp_h']
-        with default_storage.open(svg_rel_path, 'r') as f:
-            raw = f.read()
+        if default_storage.exists(svg_rel_path):
+            with default_storage.open(svg_rel_path, 'r') as f:
+                raw = f.read()
     except Exception:
+        pass
+    if raw is None:
         full_svg = os.path.join(str(settings.MEDIA_ROOT), svg_rel_path)
-        if not os.path.exists(full_svg):
-            return '', 502485, 721189
-        mtime = os.path.getmtime(full_svg)
-        mtime_ts = mtime
-        if _svg_cache['content'] is not None and mtime == _svg_cache['mtime']:
-            return _svg_cache['content'], _svg_cache['fp_w'], _svg_cache['fp_h']
-        with open(full_svg, 'r', encoding='utf-8') as f:
-            raw = f.read()
+        if os.path.exists(full_svg):
+            with open(full_svg, 'r', encoding='utf-8') as f:
+                raw = f.read()
+    if raw is None:
+        return '', 502485, 721189
     vb = re.search(r'viewBox="([^"]+)"', raw)
     fp_w, fp_h = 502485, 721189
     if vb:
@@ -79,7 +75,7 @@ def _load_svg_content():
         raw = raw[:svg_tag.end() - 1] + ' overflow="visible">' + raw[svg_tag.end():]
     raw = re.sub(r'width="[^"]*"', f'width="{fp_w}"', raw, count=1)
     raw = re.sub(r'height="[^"]*"', f'height="{fp_h}"', raw, count=1)
-    _svg_cache = {'content': raw, 'mtime': mtime_ts, 'fp_w': fp_w, 'fp_h': fp_h}
+    _svg_cache = {'content': raw, 'mtime': 0, 'fp_w': fp_w, 'fp_h': fp_h}
     return raw, fp_w, fp_h
 
 
