@@ -136,19 +136,24 @@ def erp_floor_plan(request, event_id):
 
     svg_content = ''
     fp_w, fp_h = 502485, 721189
-    svg_rel_path = 'floor_plans/dec_full_floor_plan.svg'
+    paths_to_try = ['floor_plans/dec_full_floor_plan.svg', 'dec_full_floor_plan.svg']
     raw = None
-    try:
-        from django.core.files.storage import default_storage
-        if default_storage.exists(svg_rel_path):
-            f = default_storage.open(svg_rel_path)
-            raw = f.read()
-            f.close()
-            if isinstance(raw, bytes):
-                raw = raw.decode('utf-8', errors='replace')
-    except Exception:
-        pass
-    if raw is None:
+    for svg_rel_path in paths_to_try:
+        if raw is not None:
+            break
+        try:
+            from django.core.files.storage import default_storage
+            if default_storage.exists(svg_rel_path):
+                f = default_storage.open(svg_rel_path)
+                raw = f.read()
+                f.close()
+                if isinstance(raw, bytes):
+                    raw = raw.decode('utf-8', errors='replace')
+        except Exception:
+            pass
+    for svg_rel_path in paths_to_try:
+        if raw is not None:
+            break
         try:
             import requests as http_requests
             r2_domain = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', '')
@@ -159,10 +164,12 @@ def erp_floor_plan(request, event_id):
         except Exception:
             pass
     if raw is None:
-        full_svg = os.path.join(str(settings.MEDIA_ROOT), svg_rel_path)
-        if os.path.exists(full_svg):
-            with open(full_svg, 'r', encoding='utf-8') as f:
-                raw = f.read()
+        for svg_rel_path in paths_to_try:
+            full_svg = os.path.join(str(settings.MEDIA_ROOT), svg_rel_path)
+            if os.path.exists(full_svg):
+                with open(full_svg, 'r', encoding='utf-8') as f:
+                    raw = f.read()
+                break
     if raw:
         try:
             vb = re.search(r'viewBox="([^"]+)"', raw)
@@ -199,19 +206,24 @@ def floor_plan_frame(request, event_id):
     floor_plan = getattr(event, 'floor_plan', None)
     svg_content = ''
     fp_w, fp_h = 4000, 3000
-    svg_rel_path = 'floor_plans/dec_full_floor_plan.svg'
+    paths_to_try = ['floor_plans/dec_full_floor_plan.svg', 'dec_full_floor_plan.svg']
     raw = None
-    try:
-        from django.core.files.storage import default_storage
-        if default_storage.exists(svg_rel_path):
-            f = default_storage.open(svg_rel_path)
-            raw = f.read()
-            f.close()
-            if isinstance(raw, bytes):
-                raw = raw.decode('utf-8', errors='replace')
-    except Exception:
-        pass
-    if raw is None:
+    for svg_rel_path in paths_to_try:
+        if raw is not None:
+            break
+        try:
+            from django.core.files.storage import default_storage
+            if default_storage.exists(svg_rel_path):
+                f = default_storage.open(svg_rel_path)
+                raw = f.read()
+                f.close()
+                if isinstance(raw, bytes):
+                    raw = raw.decode('utf-8', errors='replace')
+        except Exception:
+            pass
+    for svg_rel_path in paths_to_try:
+        if raw is not None:
+            break
         try:
             import requests as http_requests
             r2_domain = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', '')
@@ -222,10 +234,12 @@ def floor_plan_frame(request, event_id):
         except Exception:
             pass
     if raw is None:
-        full_svg = os.path.join(str(settings.MEDIA_ROOT), svg_rel_path)
-        if os.path.exists(full_svg):
-            with open(full_svg, 'r', encoding='utf-8') as f:
-                raw = f.read()
+        for svg_rel_path in paths_to_try:
+            full_svg = os.path.join(str(settings.MEDIA_ROOT), svg_rel_path)
+            if os.path.exists(full_svg):
+                with open(full_svg, 'r', encoding='utf-8') as f:
+                    raw = f.read()
+                break
     if raw:
         try:
             vb = re.search(r'viewBox="([^"]+)"', raw)
