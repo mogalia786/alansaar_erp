@@ -45,17 +45,30 @@ def _get_svg_dims(path):
 
 def _load_svg_content():
     global _svg_cache
-    svg_rel_path = 'floor_plans/dec_full_floor_plan.svg'
     if _svg_cache['content'] is not None:
         return _svg_cache['content'], _svg_cache['fp_w'], _svg_cache['fp_h']
     raw = None
+    svg_rel_path = 'floor_plans/dec_full_floor_plan.svg'
     try:
         from django.core.files.storage import default_storage
         if default_storage.exists(svg_rel_path):
-            with default_storage.open(svg_rel_path, 'r') as f:
-                raw = f.read()
+            f = default_storage.open(svg_rel_path)
+            raw = f.read()
+            f.close()
+            if isinstance(raw, bytes):
+                raw = raw.decode('utf-8', errors='replace')
     except Exception:
         pass
+    if raw is None:
+        try:
+            import requests as http_requests
+            r2_url = settings.AWS_S3_CUSTOM_DOMAIN
+            if r2_url:
+                resp = http_requests.get(f"{r2_url}/{svg_rel_path}", timeout=30)
+                if resp.status_code == 200:
+                    raw = resp.text
+        except Exception:
+            pass
     if raw is None:
         full_svg = os.path.join(str(settings.MEDIA_ROOT), svg_rel_path)
         if os.path.exists(full_svg):
