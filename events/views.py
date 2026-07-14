@@ -47,7 +47,6 @@ def _load_svg_content():
     global _svg_cache
     if _svg_cache['content'] is not None:
         return _svg_cache['content'], _svg_cache['fp_w'], _svg_cache['fp_h']
-    raw = None
     svg_rel_path = 'floor_plans/dec_full_floor_plan.svg'
     try:
         from django.core.files.storage import default_storage
