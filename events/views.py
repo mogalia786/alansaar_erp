@@ -45,8 +45,6 @@ def _get_svg_dims(path):
 
 def _load_svg_content():
     global _svg_cache
-    import logging
-    logger = logging.getLogger('events.views')
     if _svg_cache['content'] is not None:
         return _svg_cache['content'], _svg_cache['fp_w'], _svg_cache['fp_h']
     paths_to_try = ['floor_plans/dec_full_floor_plan.svg', 'dec_full_floor_plan.svg']
@@ -56,16 +54,16 @@ def _load_svg_content():
             break
         try:
             from django.core.files.storage import default_storage
-            logger.info(f'SVG loader: trying storage path={svg_rel_path}, storage={type(default_storage).__name__}')
+            print(f'SVG loader: trying storage path={svg_rel_path}, storage={type(default_storage).__name__}')
             if default_storage.exists(svg_rel_path):
                 f = default_storage.open(svg_rel_path)
                 raw = f.read()
                 f.close()
                 if isinstance(raw, bytes):
                     raw = raw.decode('utf-8', errors='replace')
-                logger.info(f'SVG loader: loaded from storage path={svg_rel_path}, size={len(raw)}')
+                print(f'SVG loader: loaded from storage path={svg_rel_path}, size={len(raw)}')
         except Exception as e:
-            logger.warning(f'SVG loader: storage failed for {svg_rel_path}: {e}')
+            print(f'SVG loader: storage failed for {svg_rel_path}: {e}')
     for svg_rel_path in paths_to_try:
         if raw is not None:
             break
@@ -74,25 +72,25 @@ def _load_svg_content():
             r2_url = settings.AWS_S3_CUSTOM_DOMAIN
             if r2_url:
                 url = f"https://{r2_url}/{svg_rel_path}"
-                logger.info(f'SVG loader: trying public URL={url}')
+                print(f'SVG loader: trying public URL={url}')
                 resp = http_requests.get(url, timeout=30)
                 if resp.status_code == 200:
                     raw = resp.text
-                    logger.info(f'SVG loader: loaded from public URL, size={len(raw)}')
+                    print(f'SVG loader: loaded from public URL, size={len(raw)}')
                 else:
-                    logger.info(f'SVG loader: public URL returned {resp.status_code}')
+                    print(f'SVG loader: public URL returned {resp.status_code}')
         except Exception as e:
-            logger.warning(f'SVG loader: public URL failed for {svg_rel_path}: {e}')
+            print(f'SVG loader: public URL failed for {svg_rel_path}: {e}')
     if raw is None:
         for svg_rel_path in paths_to_try:
             full_svg = os.path.join(str(settings.MEDIA_ROOT), svg_rel_path)
             if os.path.exists(full_svg):
                 with open(full_svg, 'r', encoding='utf-8') as f:
                     raw = f.read()
-                logger.info(f'SVG loader: loaded from local file={full_svg}, size={len(raw)}')
+                print(f'SVG loader: loaded from local file={full_svg}, size={len(raw)}')
                 break
     if raw is None:
-        logger.error('SVG loader: all paths failed, returning empty')
+        print('SVG loader: all paths failed, returning empty')
         return '', 502485, 721189
     vb = re.search(r'viewBox="([^"]+)"', raw)
     fp_w, fp_h = 502485, 721189
