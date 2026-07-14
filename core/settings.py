@@ -118,7 +118,6 @@ if AWS_ACCESS_KEY_ID and AWS_STORAGE_BUCKET_NAME:
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
     }
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 else:
     STORAGES = {
         "default": {
