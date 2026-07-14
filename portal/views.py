@@ -143,14 +143,16 @@ def erp_floor_plan(request, event_id):
             break
         try:
             from django.core.files.storage import default_storage
+            print(f'portal SVG: trying storage path={svg_rel_path}, storage={type(default_storage).__name__}')
             if default_storage.exists(svg_rel_path):
                 f = default_storage.open(svg_rel_path)
                 raw = f.read()
                 f.close()
                 if isinstance(raw, bytes):
                     raw = raw.decode('utf-8', errors='replace')
-        except Exception:
-            pass
+                print(f'portal SVG: loaded from storage path={svg_rel_path}, size={len(raw)}')
+        except Exception as e:
+            print(f'portal SVG: storage failed for {svg_rel_path}: {e}')
     for svg_rel_path in paths_to_try:
         if raw is not None:
             break
@@ -158,18 +160,26 @@ def erp_floor_plan(request, event_id):
             import requests as http_requests
             r2_domain = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', '')
             if r2_domain:
-                resp = http_requests.get(f"https://{r2_domain}/{svg_rel_path}", timeout=30)
+                url = f"https://{r2_domain}/{svg_rel_path}"
+                print(f'portal SVG: trying public URL={url}')
+                resp = http_requests.get(url, timeout=30)
                 if resp.status_code == 200:
                     raw = resp.text
-        except Exception:
-            pass
+                    print(f'portal SVG: loaded from public URL, size={len(raw)}')
+                else:
+                    print(f'portal SVG: public URL returned {resp.status_code}')
+        except Exception as e:
+            print(f'portal SVG: public URL failed: {e}')
     if raw is None:
         for svg_rel_path in paths_to_try:
             full_svg = os.path.join(str(settings.MEDIA_ROOT), svg_rel_path)
             if os.path.exists(full_svg):
                 with open(full_svg, 'r', encoding='utf-8') as f:
                     raw = f.read()
+                print(f'portal SVG: loaded from local file={full_svg}')
                 break
+    if raw is None:
+        print('portal SVG: all paths failed')
     if raw:
         try:
             vb = re.search(r'viewBox="([^"]+)"', raw)
@@ -213,14 +223,16 @@ def floor_plan_frame(request, event_id):
             break
         try:
             from django.core.files.storage import default_storage
+            print(f'frame SVG: trying storage path={svg_rel_path}, storage={type(default_storage).__name__}')
             if default_storage.exists(svg_rel_path):
                 f = default_storage.open(svg_rel_path)
                 raw = f.read()
                 f.close()
                 if isinstance(raw, bytes):
                     raw = raw.decode('utf-8', errors='replace')
-        except Exception:
-            pass
+                print(f'frame SVG: loaded from storage path={svg_rel_path}, size={len(raw)}')
+        except Exception as e:
+            print(f'frame SVG: storage failed for {svg_rel_path}: {e}')
     for svg_rel_path in paths_to_try:
         if raw is not None:
             break
@@ -228,18 +240,26 @@ def floor_plan_frame(request, event_id):
             import requests as http_requests
             r2_domain = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', '')
             if r2_domain:
-                resp = http_requests.get(f"https://{r2_domain}/{svg_rel_path}", timeout=30)
+                url = f"https://{r2_domain}/{svg_rel_path}"
+                print(f'frame SVG: trying public URL={url}')
+                resp = http_requests.get(url, timeout=30)
                 if resp.status_code == 200:
                     raw = resp.text
-        except Exception:
-            pass
+                    print(f'frame SVG: loaded from public URL, size={len(raw)}')
+                else:
+                    print(f'frame SVG: public URL returned {resp.status_code}')
+        except Exception as e:
+            print(f'frame SVG: public URL failed: {e}')
     if raw is None:
         for svg_rel_path in paths_to_try:
             full_svg = os.path.join(str(settings.MEDIA_ROOT), svg_rel_path)
             if os.path.exists(full_svg):
                 with open(full_svg, 'r', encoding='utf-8') as f:
                     raw = f.read()
+                print(f'frame SVG: loaded from local file={full_svg}')
                 break
+    if raw is None:
+        print('frame SVG: all paths failed')
     if raw:
         try:
             vb = re.search(r'viewBox="([^"]+)"', raw)
