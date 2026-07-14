@@ -421,10 +421,10 @@
 },
 {
   "model": "sessions.session",
-  "pk": "shfstr68qddcm0496s9b2penqmj16jkb",
+  "pk": "sq58l3chepp92l5hvthvfdmuzxxxcpt3",
   "fields": {
-    "session_data": ".eJxVjEEOwiAQRe_C2hBgpDQu3XsGMjMMUjU0Ke3KeHdp0oVu_3vvv1XEbS1xa7LEKamLcqBOvyMhP6XuJD2w3mfNc12XifSu6IM2fZuTvK6H-3dQsJVeexyHIJmdJRwTYgaTYbDBGzKewQRiAcPSKQrbRN6eAyQgB9gTqz5fKAM47w:1wjNkU:2SOaTUfK_10TB8z3aoJvIlNas8Fl63T3My3cHtbU4co",
-    "expire_date": "2026-07-27T20:59:34.610Z"
+    "session_data": ".eJxVjEEOwiAQRe_C2hBpIYBL956BzDAzUjWQlHbVeHdt0oVu_3vvbyrBupS0dp7TROqijDr9bgj5yXUH9IB6bzq3uswT6l3RB-361ohf18P9OyjQy7cWdoIEEIYoGA16HxlQBM8wWIqBMyCQQx_EkyO24Mja0YBwHjkb9f4APuc6RQ:1wjRD3:RW47H0Ofr4DB_ty6PseAv5vgYsPBdMP4dVP2pUuFbW4",
+    "expire_date": "2026-07-28T00:41:17.481Z"
   }
 },
 {
@@ -3454,9 +3454,9 @@
   "pk": 10,
   "fields": {
     "name": "Carpet (Additional)",
-    "description": "Extra carpet area per m²",
+    "description": "Extra carpet area per mÂ²",
     "price": "180.00",
-    "unit": "per m²",
+    "unit": "per mÂ²",
     "icon": "bi-grid",
     "is_active": true,
     "display_order": 9
@@ -7870,7 +7870,7 @@
   "model": "accounts.user",
   "fields": {
     "password": "pbkdf2_sha256$1200000$6mIQN3BCG2EIwWOwVwj5D1$CinmNLotJOknsLRfIMC6q48XhWIxqcHbIEnpIRC6++M=",
-    "last_login": "2026-07-13T20:49:08.558Z",
+    "last_login": "2026-07-14T00:41:17.475Z",
     "is_superuser": true,
     "username": "admin",
     "first_name": "",
