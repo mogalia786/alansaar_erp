@@ -6,6 +6,7 @@ from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Sum, Count, Q
 from events.models import Event, FloorPlan, Zone, Stall, AccessoryType
+import re, json, os
 from bookings.models import Booking, DiscountRequest
 from invoices.models import Invoice, Payment, Receipt, LedgerEntry
 from accounts.models import User, Role, RolePermission
@@ -195,8 +196,9 @@ def erp_floor_plan(request, event_id):
             raw = re.sub(r'width="[^"]*"', f'width="{fp_w}"', raw)
             raw = re.sub(r'height="[^"]*"', f'height="{fp_h}"', raw)
             svg_content = raw
-        except Exception:
-            pass
+            print(f'portal SVG: processed OK, svg_content len={len(svg_content)}')
+        except Exception as e:
+            print(f'portal SVG: processing FAILED: {e}')
 
     return render(request, 'portal/floor_plan.html', {
         'event': event, 'floor_plan': floor_plan,
