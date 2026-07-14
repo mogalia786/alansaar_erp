@@ -64,7 +64,7 @@ def _load_svg_content():
             import requests as http_requests
             r2_url = settings.AWS_S3_CUSTOM_DOMAIN
             if r2_url:
-                resp = http_requests.get(f"{r2_url}/{svg_rel_path}", timeout=30)
+                resp = http_requests.get(f"https://{r2_url}/{svg_rel_path}", timeout=30)
                 if resp.status_code == 200:
                     raw = resp.text
         except Exception:

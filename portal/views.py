@@ -136,19 +136,40 @@ def erp_floor_plan(request, event_id):
 
     svg_content = ''
     fp_w, fp_h = 502485, 721189
-    full_svg = os.path.join(str(settings.MEDIA_ROOT), 'floor_plans', 'dec_full_floor_plan.svg')
-    if os.path.exists(full_svg):
+    svg_rel_path = 'floor_plans/dec_full_floor_plan.svg'
+    raw = None
+    try:
+        from django.core.files.storage import default_storage
+        if default_storage.exists(svg_rel_path):
+            f = default_storage.open(svg_rel_path)
+            raw = f.read()
+            f.close()
+            if isinstance(raw, bytes):
+                raw = raw.decode('utf-8', errors='replace')
+    except Exception:
+        pass
+    if raw is None:
         try:
-            import re
+            import requests as http_requests
+            r2_domain = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', '')
+            if r2_domain:
+                resp = http_requests.get(f"https://{r2_domain}/{svg_rel_path}", timeout=30)
+                if resp.status_code == 200:
+                    raw = resp.text
+        except Exception:
+            pass
+    if raw is None:
+        full_svg = os.path.join(str(settings.MEDIA_ROOT), svg_rel_path)
+        if os.path.exists(full_svg):
             with open(full_svg, 'r', encoding='utf-8') as f:
-                raw = f.read(2000)
+                raw = f.read()
+    if raw:
+        try:
             vb = re.search(r'viewBox="([^"]+)"', raw)
             if vb:
                 parts = vb.group(1).split()
                 fp_w = int(float(parts[2]))
                 fp_h = int(float(parts[3]))
-            with open(full_svg, 'r', encoding='utf-8') as f:
-                raw = f.read()
             raw = raw.replace('overflow="hidden"', 'overflow="visible"')
             svg_tag = re.search(r'<svg\b[^>]*>', raw)
             if svg_tag and 'overflow=' not in svg_tag.group():
@@ -156,24 +177,6 @@ def erp_floor_plan(request, event_id):
             raw = re.sub(r'<svg\b', '<svg class="fp-svg"', raw, count=1)
             raw = re.sub(r'width="[^"]*"', f'width="{fp_w}"', raw)
             raw = re.sub(r'height="[^"]*"', f'height="{fp_h}"', raw)
-            svg_content = raw
-        except Exception:
-            pass
-    elif floor_plan and floor_plan.image and floor_plan.image.path.lower().endswith('.svg'):
-        try:
-            import re
-            with open(floor_plan.image.path, 'r', encoding='utf-8') as f:
-                raw = f.read()
-            vb = re.search(r'viewBox="([^"]+)"', raw)
-            if vb:
-                parts = vb.group(1).split()
-                fp_w = int(float(parts[2]))
-                fp_h = int(float(parts[3]))
-            raw = raw.replace('overflow="hidden"', 'overflow="visible"')
-            svg_tag = re.search(r'<svg\b[^>]*>', raw)
-            if svg_tag and 'overflow=' not in svg_tag.group():
-                raw = raw[:svg_tag.end() - 1] + ' overflow="visible">' + raw[svg_tag.end():]
-            raw = re.sub(r'<svg\b', '<svg class="fp-svg"', raw, count=1)
             svg_content = raw
         except Exception:
             pass
@@ -196,21 +199,43 @@ def floor_plan_frame(request, event_id):
     floor_plan = getattr(event, 'floor_plan', None)
     svg_content = ''
     fp_w, fp_h = 4000, 3000
-    if floor_plan and floor_plan.image:
+    svg_rel_path = 'floor_plans/dec_full_floor_plan.svg'
+    raw = None
+    try:
+        from django.core.files.storage import default_storage
+        if default_storage.exists(svg_rel_path):
+            f = default_storage.open(svg_rel_path)
+            raw = f.read()
+            f.close()
+            if isinstance(raw, bytes):
+                raw = raw.decode('utf-8', errors='replace')
+    except Exception:
+        pass
+    if raw is None:
         try:
-            p = floor_plan.image.path
-            if p.lower().endswith('.svg'):
-                with open(p, 'r', encoding='utf-8') as f:
-                    raw = f.read()
-                import re
-                vb = re.search(r'viewBox="([^"]+)"', raw)
-                if vb:
-                    parts = vb.group(1).split()
-                    fp_w = int(float(parts[2]))
-                    fp_h = int(float(parts[3]))
-                raw = raw.replace('overflow="hidden"', 'overflow="visible"')
-                raw = raw.replace('<svg', '<svg class="fp-svg"')
-                svg_content = raw
+            import requests as http_requests
+            r2_domain = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', '')
+            if r2_domain:
+                resp = http_requests.get(f"https://{r2_domain}/{svg_rel_path}", timeout=30)
+                if resp.status_code == 200:
+                    raw = resp.text
+        except Exception:
+            pass
+    if raw is None:
+        full_svg = os.path.join(str(settings.MEDIA_ROOT), svg_rel_path)
+        if os.path.exists(full_svg):
+            with open(full_svg, 'r', encoding='utf-8') as f:
+                raw = f.read()
+    if raw:
+        try:
+            vb = re.search(r'viewBox="([^"]+)"', raw)
+            if vb:
+                parts = vb.group(1).split()
+                fp_w = int(float(parts[2]))
+                fp_h = int(float(parts[3]))
+            raw = raw.replace('overflow="hidden"', 'overflow="visible"')
+            raw = raw.replace('<svg', '<svg class="fp-svg"')
+            svg_content = raw
         except Exception:
             pass
     return render(request, 'portal/floor_plan_frame.html', {
