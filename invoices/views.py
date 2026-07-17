@@ -54,6 +54,8 @@ def invoice_detail(request, pk):
 @login_required
 def make_payment(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk, exhibitor=request.user)
+    update_invoice_from_booking(invoice.booking)
+    invoice.refresh_from_db()
     if request.method == 'POST':
         amount = Decimal(request.POST.get('amount', '0'))
         ref = request.POST.get('reference_number', '')
