@@ -44,6 +44,8 @@ def my_invoices(request):
 @login_required
 def invoice_detail(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk, exhibitor=request.user)
+    update_invoice_from_booking(invoice.booking)
+    invoice.refresh_from_db()
     payments = invoice.payments.all()
     return render(request, 'invoices/detail.html', {
         'invoice': invoice,
