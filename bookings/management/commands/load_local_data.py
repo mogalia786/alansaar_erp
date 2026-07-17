@@ -13,6 +13,7 @@ USER_FK_MAP = {
     'bookings.discountrequest': ['requested_by', 'approved_by_first', 'approved_by_second', 'rejected_by'],
     'invoices.invoice': ['exhibitor'],
     'invoices.payment': ['verified_by'],
+    'invoices.receipt': ['exhibitor'],
     'invoices.ledgerentry': ['exhibitor'],
 }
 
