@@ -38,6 +38,7 @@ class Invoice(models.Model):
 class Payment(models.Model):
     PAYMENT_METHODS = [
         ('eft', 'EFT'),
+        ('cash', 'Cash'),
     ]
     STATUS_CHOICES = [
         ('pending', 'Pending'),

@@ -32,6 +32,7 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
     overflow: auto; background: #1a1a1a;
     height: calc(100vh - 70px); position: relative;
     display: flex; align-items: flex-start; justify-content: flex-start;
+    isolation: auto;
 }
 #fp-inner { position: relative; line-height: 0; }
 #fp-inner svg { display: block; overflow: visible !important; }
@@ -55,7 +56,7 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
 .stall.confirmed { background: rgba(231,76,60,0.8); border: 2px solid #e74c3c; }
 .stall.blocked { background: rgba(120,120,140,0.6); border: 2px solid #78788c; }
 .ttip {
-    position: fixed; z-index: 9999; pointer-events: none;
+    position: fixed; z-index: 99998; pointer-events: none;
     background: #fff; border-radius: 12px;
     box-shadow: 0 12px 40px rgba(0,0,0,.3); padding: 0; min-width: 240px;
     opacity: 0; transition: opacity .12s; font-size: 13px; overflow: hidden;
@@ -113,9 +114,9 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
     <div class="tf" id="tft"></div>
 </div>
 
-<div class="modal fade" id="bookingModal" tabindex="-1">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content">
+<div class="modal fade" id="bookingModal" tabindex="-1" style="z-index:99999;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+        <div class="modal-content" style="max-height:90vh;overflow-y:auto;">
             <div class="modal-header" style="background:var(--purple);color:#fff;">
                 <h6 class="mb-0"><i class="bi bi-shop"></i> Confirm Booking</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>

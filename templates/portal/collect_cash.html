@@ -1,0 +1,65 @@
+{% extends 'portal/base.html' %}
+{% block title %}Collect Cash - {{ booking.booking_reference }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-cash-coin"></i> Collect Cash Payment</h5>
+                <a href="{% url 'erp:booking_detail' booking.id %}" class="btn btn-sm btn-outline-light">Back</a>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span><strong>Booking:</strong> {{ booking.booking_reference }}</span>
+                        <span><strong>Exhibitor:</strong> {{ booking.exhibitor.company_name }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mt-1">
+                        <span><strong>Stall:</strong> {{ booking.stall.name }}</span>
+                        <span><strong>Event:</strong> {{ booking.event.name }}</span>
+                    </div>
+                </div>
+                <div class="row mb-3 p-3 bg-light rounded">
+                    <div class="col-4 text-center">
+                        <small class="text-muted d-block">Total Incl. VAT</small>
+                        <strong class="fs-5">R{{ invoice.amount_incl|floatformat:2 }}</strong>
+                    </div>
+                    <div class="col-4 text-center">
+                        <small class="text-muted d-block">Already Paid</small>
+                        <strong class="fs-5 text-success">R{{ verified_total|floatformat:2 }}</strong>
+                    </div>
+                    <div class="col-4 text-center">
+                        <small class="text-muted d-block">Balance Due</small>
+                        <strong class="fs-5 text-danger">R{{ balance_due|floatformat:2 }}</strong>
+                    </div>
+                </div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Amount to Collect (R)</label>
+                        <input type="number" class="form-control form-control-lg" name="amount"
+                               value="{{ balance_due|floatformat:2 }}" min="0.01" max="{{ balance_due }}"
+                               step="0.01" required id="cash-amount">
+                        <div class="form-text">Maximum: R{{ balance_due|floatformat:2 }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Reference / Stall Name</label>
+                        <input type="text" class="form-control" name="reference_number"
+                               value="{{ booking.stall.name }}" maxlength="100">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Notes (optional)</label>
+                        <textarea class="form-control" name="notes" rows="2" placeholder="e.g. Partial payment, deposit, etc."></textarea>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg" onclick="return confirm('Record R' + document.getElementById('cash-amount').value + ' cash payment?')">
+                            <i class="bi bi-check-circle"></i> Collect Cash & Issue Receipt
+                        </button>
+                        <a href="{% url 'erp:booking_detail' booking.id %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

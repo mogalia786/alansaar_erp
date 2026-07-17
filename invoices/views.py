@@ -96,6 +96,26 @@ def print_receipt(request, pk):
 
 
 @login_required
+def print_payments_receipt(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk)
+    if request.user != invoice.exhibitor and not request.user.is_staff:
+        messages.error(request, 'Access denied.')
+        return redirect('my_invoices')
+    booking = invoice.booking
+    payments = Payment.objects.filter(
+        booking=booking, status='verified'
+    ).select_related('invoice').order_by('payment_date')
+    total_paid = payments.aggregate(s=Sum('amount'))['s'] or Decimal('0')
+    return render(request, 'printouts/payments_receipt.html', {
+        'booking': booking,
+        'invoice': invoice,
+        'payments': payments,
+        'receipt': None,
+        'total_paid': total_paid,
+    })
+
+
+@login_required
 def account_statement(request):
     exhibitor = request.user
     entries = LedgerEntry.objects.filter(exhibitor=exhibitor).select_related('booking').order_by('entry_date', 'created_at')

@@ -85,13 +85,25 @@
         </div></div>
         {% endif %}
         {% if payments %}
-        <div class="card mt-2"><div class="card-header bg-purple text-white"><h6 class="mb-0">Payments</h6></div>
+        <div class="card mt-2"><div class="card-header bg-purple text-white d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Payments</h6>
+            <a href="{% url 'erp:print_payments_receipt' booking.id %}" class="btn btn-sm btn-outline-light" target="_blank"><i class="bi bi-printer"></i> Print</a>
+        </div>
         <div class="card-body p-0">{% for p in payments %}
             <div class="p-2 border-bottom d-flex justify-content-between">
-                <span>R{{ p.amount|floatformat:0 }}</span>
+                <span>R{{ p.amount|floatformat:2 }} <small class="text-muted">{{ p.get_payment_method_display }} {{ p.payment_date|date:"d M" }}</small></span>
                 <span class="badge bg-{% if p.status == 'verified' %}success{% elif p.status == 'pending' %}warning{% else %}danger{% endif %}">{{ p.get_status_display }}</span>
             </div>{% endfor %}
         </div></div>
+        {% endif %}
+        {% if invoices %}
+        {% for inv in invoices %}
+        {% if inv.balance_due > 0 %}
+        <a href="{% url 'erp:collect_cash' booking.id %}" class="btn btn-success w-100 mt-2">
+            <i class="bi bi-cash-coin"></i> Collect Cash Payment
+        </a>
+        {% endif %}
+        {% endfor %}
         {% endif %}
     </div>
 </div>

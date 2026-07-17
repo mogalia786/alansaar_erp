@@ -546,6 +546,96 @@ def verify_payment(request, pk):
     return redirect('erp:payment_list')
 
 
+@erp_section_required('payments')
+def collect_cash(request, booking_id):
+    booking = get_object_or_404(Booking, pk=booking_id)
+    invoice = booking.invoices.first()
+    if not invoice:
+        messages.error(request, 'No invoice found for this booking.')
+        return redirect('erp:booking_detail', pk=booking_id)
+    if request.method == 'POST':
+        amount = Decimal(request.POST.get('amount', '0'))
+        ref = request.POST.get('reference_number', booking.stall.name)
+        notes = request.POST.get('notes', '')
+        if amount <= 0:
+            messages.error(request, 'Amount must be greater than zero.')
+            return redirect('erp:collect_cash', booking_id=booking_id)
+        payment = Payment.objects.create(
+            invoice=invoice,
+            booking=booking,
+            amount=amount,
+            payment_method='cash',
+            reference_number=ref,
+            status='verified',
+            verified_by=request.user,
+            verified_at=timezone.now(),
+            notes=notes,
+        )
+        payment.receipt_number = f"RCT-{uuid.uuid4().hex[:8].upper()}"
+        payment.save()
+        from invoices.views import update_invoice_from_booking
+        inv = update_invoice_from_booking(booking)
+        booking.amount_paid = inv.amount_paid
+        booking.balance_due = inv.balance_due
+        if inv.balance_due <= 0:
+            booking.payment_status = 'paid'
+        elif inv.amount_paid > 0:
+            booking.payment_status = 'partial'
+        booking.save()
+        receipt = Receipt.objects.create(
+            receipt_number=payment.receipt_number,
+            payment=payment,
+            exhibitor=booking.exhibitor,
+            amount=payment.amount,
+            payment_method='cash',
+            reference_number=ref,
+            issue_date=timezone.now().date(),
+            notes=notes,
+        )
+        LedgerEntry.objects.create(
+            exhibitor=booking.exhibitor,
+            booking=booking,
+            entry_type='payment',
+            description=f'Cash payment - {invoice.invoice_number}',
+            reference=receipt.receipt_number,
+            debit=0, credit=payment.amount,
+            balance=inv.balance_due,
+            entry_date=timezone.now().date(),
+        )
+        messages.success(request, f'Cash payment of R{amount:.2f} recorded. Receipt: {receipt.receipt_number}')
+        return redirect('erp:booking_detail', pk=booking_id)
+    from decimal import Decimal as D
+    verified_total = invoice.payments.filter(status='verified').aggregate(s=Sum('amount'))['s'] or D('0')
+    context = {
+        'booking': booking,
+        'invoice': invoice,
+        'balance_due': invoice.amount_incl - verified_total,
+        'verified_total': verified_total,
+    }
+    return render(request, 'portal/collect_cash.html', context)
+
+
+@erp_section_required('payments')
+def print_payments_receipt(request, booking_id):
+    booking = get_object_or_404(Booking, pk=booking_id)
+    invoice = booking.invoices.first()
+    payments = Payment.objects.filter(
+        booking=booking, status='verified'
+    ).select_related('invoice').order_by('payment_date')
+    receipt = None
+    if payments.exists():
+        last_payment = payments.first()
+        receipt = Receipt.objects.filter(payment=last_payment).first()
+    total_paid = payments.aggregate(s=Sum('amount'))['s'] or Decimal('0')
+    return render(request, 'printouts/payments_receipt.html', {
+        'booking': booking,
+        'invoice': invoice,
+        'payments': payments,
+        'receipt': receipt,
+        'total_paid': total_paid,
+    })
+
+
 @erp_section_required('exhibitors')
 def erp_exhibitor_list(request):
     exhibitors = User.objects.filter(user_type='exhibitor')

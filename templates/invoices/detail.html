@@ -105,6 +105,9 @@
                     </a>
                     {% endif %}
                     {% endfor %}
+                    <a href="{% url 'print_payments_receipt' invoice.id %}" class="btn btn-outline-success w-100 mb-2" target="_blank">
+                        <i class="bi bi-list-ol"></i> Full Payment Breakdown
+                    </a>
                     {% if effective_balance <= 0 %}
                     <a href="{% url 'print_invoice' invoice.id %}" class="btn btn-outline-purple w-100 mb-2" target="_blank">
                         <i class="bi bi-file-pdf"></i> Paid Invoice
