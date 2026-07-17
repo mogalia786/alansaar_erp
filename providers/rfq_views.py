@@ -35,35 +35,41 @@ def public_submit_quotation(request, rfq_id):
         excl = Decimal(request.POST.get('total_amount_excl', '0'))
         vat = excl * Decimal('0.15')
         incl = excl + vat
-        quotation = Quotation.objects.create(
-            rfq=rfq,
-            provider=None,
-            submitter_company_name=request.POST.get('company_name', ''),
-            submitter_email=request.POST.get('email', ''),
-            submitter_phone=request.POST.get('phone', ''),
-            submitter_contact_person=request.POST.get('contact_person', ''),
-            submitter_registration_number=request.POST.get('registration_number', ''),
-            submitter_vat_number=request.POST.get('vat_number', ''),
-            submitter_company_type=request.POST.get('company_type', ''),
-            cover_letter=request.POST.get('cover_letter', ''),
-            methodology=request.POST.get('methodology', ''),
-            total_amount_excl=excl,
-            vat_amount=vat,
-            total_amount_incl=incl,
-            payment_terms=request.POST.get('payment_terms', ''),
-            validity_period=request.POST.get('validity_period', ''),
-            delivery_timeline=request.POST.get('delivery_timeline', ''),
-            status='submitted',
-            submitted_by_provider=False,
-        )
-        files = request.FILES.getlist('documents')
-        for f in files:
-            QuotationDocument.objects.create(
-                quotation=quotation,
-                document=f,
-                filename=f.name,
-                file_size=f.size,
+        try:
+            quotation = Quotation.objects.create(
+                rfq=rfq,
+                provider=None,
+                submitter_company_name=request.POST.get('company_name', ''),
+                submitter_email=request.POST.get('email', ''),
+                submitter_phone=request.POST.get('phone', ''),
+                submitter_contact_person=request.POST.get('contact_person', ''),
+                submitter_registration_number=request.POST.get('registration_number', ''),
+                submitter_vat_number=request.POST.get('vat_number', ''),
+                submitter_company_type=request.POST.get('company_type', ''),
+                cover_letter=request.POST.get('cover_letter', ''),
+                methodology=request.POST.get('methodology', ''),
+                total_amount_excl=excl,
+                vat_amount=vat,
+                total_amount_incl=incl,
+                payment_terms=request.POST.get('payment_terms', ''),
+                validity_period=request.POST.get('validity_period', ''),
+                delivery_timeline=request.POST.get('delivery_timeline', ''),
+                status='submitted',
+                submitted_by_provider=False,
             )
+            files = request.FILES.getlist('documents')
+            for f in files:
+                QuotationDocument.objects.create(
+                    quotation=quotation,
+                    document=f,
+                    filename=f.name,
+                    file_size=f.size,
+                )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f'Quotation submit error: {e}')
+            messages.error(request, 'There was an error submitting your proposal. Please try again without attachments or contact support.')
+            return redirect('rfq_detail', rfq_id=rfq_id)
         try:
             from notifications.utils import send_quotation_submitted
             send_quotation_submitted(quotation)

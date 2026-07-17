@@ -1159,24 +1159,32 @@ def erp_rfq_create(request):
         closing_date_str = request.POST.get('closing_date', '')
         closing_date = timezone.datetime.strptime(closing_date_str, '%Y-%m-%dT%H:%M') if closing_date_str else timezone.now()
         budget = request.POST.get('estimated_budget', '').strip()
-        rfq = RFQ.objects.create(
-            event_id=request.POST.get('event_id') or None,
-            category_id=request.POST.get('category_id') or None,
-            title=request.POST.get('title', ''),
-            description=request.POST.get('description', ''),
-            deliverables=request.POST.get('deliverables', ''),
-            terms_and_conditions=request.POST.get('terms_and_conditions', ''),
-            priority=request.POST.get('priority', 'normal'),
-            status='draft',
-            closing_date=closing_date,
-            estimated_budget=Decimal(budget) if budget else None,
-            contact_person=request.POST.get('contact_person', ''),
-            contact_email=request.POST.get('contact_email', ''),
-            contact_phone=request.POST.get('contact_phone', ''),
-            site_visit_required=request.POST.get('site_visit_required') == 'on',
-            documents=request.FILES.get('documents'),
-            created_by=request.user,
-        )
+        try:
+            rfq = RFQ.objects.create(
+                event_id=request.POST.get('event_id') or None,
+                category_id=request.POST.get('category_id') or None,
+                title=request.POST.get('title', ''),
+                description=request.POST.get('description', ''),
+                deliverables=request.POST.get('deliverables', ''),
+                terms_and_conditions=request.POST.get('terms_and_conditions', ''),
+                priority=request.POST.get('priority', 'normal'),
+                status='draft',
+                closing_date=closing_date,
+                estimated_budget=Decimal(budget) if budget else None,
+                contact_person=request.POST.get('contact_person', ''),
+                contact_email=request.POST.get('contact_email', ''),
+                contact_phone=request.POST.get('contact_phone', ''),
+                site_visit_required=request.POST.get('site_visit_required') == 'on',
+                documents=request.FILES.get('documents'),
+                created_by=request.user,
+            )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f'RFQ create error: {e}')
+            messages.error(request, f'Error creating RFQ: {e}. Please try again without a document or contact support.')
+            return render(request, 'portal/rfq_form.html', {
+                'categories': categories, 'events': events, 'edit': False,
+            })
         messages.success(request, f'RFQ {rfq.rfq_number} created. Review and publish when ready.')
         return redirect('erp:rfq_detail', pk=rfq.pk)
     return render(request, 'portal/rfq_form.html', {
@@ -1218,7 +1226,15 @@ def erp_rfq_edit(request, pk):
         rfq.site_visit_required = request.POST.get('site_visit_required') == 'on'
         if request.FILES.get('documents'):
             rfq.documents = request.FILES['documents']
-        rfq.save()
+        try:
+            rfq.save()
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f'RFQ edit error: {e}')
+            messages.error(request, f'Error saving RFQ: {e}. Please try again without a new document or contact support.')
+            return render(request, 'portal/rfq_form.html', {
+                'rfq': rfq, 'categories': categories, 'events': events, 'edit': True,
+            })
         messages.success(request, 'RFQ updated.')
         return redirect('erp:rfq_detail', pk=rfq.pk)
     return render(request, 'portal/rfq_form.html', {

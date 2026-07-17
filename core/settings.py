@@ -108,8 +108,10 @@ AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL', default='')
 AWS_S3_CUSTOM_DOMAIN = config('AWS_S3_CUSTOM_DOMAIN', default='pub-0fe312ed16c545ef951e9e5824c3583f.r2.dev')
 AWS_DEFAULT_ACL = None
 AWS_QUERYSTRING_AUTH = False
+AWS_S3_FILE_OVERWRITE = False
+AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
 
-if AWS_ACCESS_KEY_ID and AWS_STORAGE_BUCKET_NAME:
+if AWS_ACCESS_KEY_ID and AWS_STORAGE_BUCKET_NAME and AWS_S3_ENDPOINT_URL:
     STORAGES = {
         "default": {
             "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
@@ -130,6 +132,10 @@ else:
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+os.makedirs(MEDIA_ROOT, exist_ok=True)
+os.makedirs(MEDIA_ROOT / 'rfq_documents', exist_ok=True)
+os.makedirs(MEDIA_ROOT / 'quotation_documents', exist_ok=True)
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
