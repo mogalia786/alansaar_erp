@@ -1,15 +1,26 @@
 from django.contrib import admin
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404, FileResponse
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from providers import rfq_views
+import os
 
 def health_check(request):
     return HttpResponse("OK", status=200)
 
+def serve_media(request, path):
+    full_path = os.path.join(str(settings.MEDIA_ROOT), path)
+    full_path = os.path.normpath(full_path)
+    if not full_path.startswith(str(settings.MEDIA_ROOT)):
+        raise Http404
+    if not os.path.isfile(full_path):
+        raise Http404
+    return FileResponse(open(full_path, 'rb'))
+
 urlpatterns = [
     path('healthz/', health_check),
+    path('media/<path:path>', serve_media, name='serve_media'),
     path('admin/', admin.site.urls),
     path('erp/', include('portal.urls')),
     path('', include('accounts.urls')),
