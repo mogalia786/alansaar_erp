@@ -83,6 +83,7 @@ body { background: #0d0d1a !important; }
     font-weight: 800; color: #fff; white-space: nowrap;
     text-shadow: 0 1px 2px rgba(0,0,0,.7); line-height: 1;
     z-index: 5; transition: all .15s; cursor: default;
+    overflow: hidden; text-overflow: ellipsis;
 }
 .myst.mine {
     background: linear-gradient(135deg, rgba(212,175,55,0.92), rgba(232,200,74,0.95));
@@ -186,7 +187,7 @@ body { background: #0d0d1a !important; }
         function sn(n){var m=n.match(/^(\w+)\s+(\d+)$/);return m?m[1].charAt(0)+m[2]:n;}
         function layout(){
             inner.querySelectorAll('.myst').forEach(function(e){e.remove();});
-            var fs=Math.max(6,Math.round(10/getCssZoom()));
+            var fs=Math.max(4,Math.round(7/getCssZoom()));
             stalls.forEach(function(s){
                 var d=document.createElement('div');
                 d.className='myst '+(s.is_mine?'mine':s.status==='available'?'sa':s.status==='reserved'?'sr':s.status==='confirmed'?'sc':'sb');
