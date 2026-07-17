@@ -60,7 +60,7 @@ class Command(BaseCommand):
                     fields.pop('user_permissions', None)
                     fields.pop('groups', None)
                     fields.pop('password', None)
-                    user_fields = {k: v for k, v in fields.items() if k in [f.name for f in User._meta.get_fields()]}
+                    user_fields = {k: v for k, v in fields.items() if k in [f.name for f in User._meta.get_fields()] and k != 'username'}
                     try:
                         u = User(username=username, **user_fields)
                         u.set_password('changeme123')
