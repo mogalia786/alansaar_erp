@@ -8,6 +8,16 @@ import json
 
 
 @login_required
+def thank_you(request, pk):
+    booking = get_object_or_404(Booking, pk=pk, exhibitor=request.user)
+    return render(request, 'bookings/thank_you.html', {'booking': booking, 'show_ack': False})
+
+@login_required
+def thank_you_update(request, pk):
+    booking = get_object_or_404(Booking, pk=pk, exhibitor=request.user)
+    return render(request, 'bookings/thank_you.html', {'booking': booking, 'show_ack': True})
+
+@login_required
 def my_bookings(request):
     bookings = request.user.bookings.all().select_related('event', 'stall')
     my_booked_stall_ids = set(bookings.values_list('stall_id', flat=True))
