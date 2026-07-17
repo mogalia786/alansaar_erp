@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Booking Submitted - {{ booking.booking_reference }}{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="text-center mb-4">
+                <div style="font-size:72px;color:var(--gold);"><i class="bi bi-check-circle-fill"></i></div>
+                <h2 class="fw-bold mt-3" style="color:var(--purple);">Thank You!</h2>
+                <p class="text-muted fs-5">Your booking has been received.</p>
+            </div>
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <div class="text-center mb-3">
+                        <span class="badge bg-warning text-dark fs-6 px-3 py-2">{{ booking.get_status_display }}</span>
+                    </div>
+                    <table class="table table-borderless mb-0">
+                        <tr><td class="text-muted">Booking Reference</td><td class="fw-bold">{{ booking.booking_reference }}</td></tr>
+                        <tr><td class="text-muted">Event</td><td class="fw-bold">{{ booking.event.name }}</td></tr>
+                        <tr><td class="text-muted">Stall</td><td class="fw-bold">{{ booking.stall.name }}</td></tr>
+                        <tr><td class="text-muted">Total Amount</td><td class="fw-bold">R{{ booking.total_amount|floatformat:2 }}</td></tr>
+                        <tr><td class="text-muted">Booking Date</td><td class="fw-bold">{{ booking.booking_date|date:"d M Y H:i" }}</td></tr>
+                    </table>
+                    <hr>
+                    <div class="alert alert-info mb-0" style="font-size:14px;">
+                        <i class="bi bi-info-circle"></i>
+                        Your booking is currently <strong>pending</strong>. Once Al Ansaar confirms your booking, you will receive a notification via email and on your dashboard.
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{% url 'booking_detail' booking.id %}" class="btn btn-purple">
+                        <i class="bi bi-eye"></i> View Booking
+                    </a>
+                    <a href="{% url 'my_bookings' %}" class="btn btn-outline-purple">
+                        <i class="bi bi-list"></i> My Bookings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
