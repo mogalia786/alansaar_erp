@@ -64,8 +64,11 @@ def public_submit_quotation(request, rfq_id):
                 filename=f.name,
                 file_size=f.size,
             )
-        from notifications.utils import send_quotation_submitted
-        send_quotation_submitted(quotation)
+        try:
+            from notifications.utils import send_quotation_submitted
+            send_quotation_submitted(quotation)
+        except Exception:
+            pass
         messages.success(
             request,
             'Your quotation has been submitted successfully. '

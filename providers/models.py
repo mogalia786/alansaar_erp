@@ -222,10 +222,11 @@ class RFQ(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.rfq_number:
+            import uuid
             from django.utils import timezone
             year = timezone.now().strftime('%Y')
-            count = RFQ.objects.count() + 1
-            self.rfq_number = f"RFP-{year}-{count:04d}"
+            short_id = uuid.uuid4().hex[:6].upper()
+            self.rfq_number = f"RFP-{year}-{short_id}"
         super().save(*args, **kwargs)
 
 
@@ -274,10 +275,11 @@ class Quotation(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.quotation_number:
+            import uuid
             from django.utils import timezone
             year = timezone.now().strftime('%Y')
-            count = Quotation.objects.count() + 1
-            self.quotation_number = f"QTN-{year}-{count:04d}"
+            short_id = uuid.uuid4().hex[:6].upper()
+            self.quotation_number = f"QTN-{year}-{short_id}"
         if self.total_amount_excl and not self.total_amount_incl:
             self.vat_amount = self.total_amount_excl * Decimal('0.15')
             self.total_amount_incl = self.total_amount_excl + self.vat_amount
