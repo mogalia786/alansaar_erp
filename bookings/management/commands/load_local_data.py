@@ -1,70 +1,76 @@
 import json
+import os
+import tempfile
 from django.core.management.base import BaseCommand
 from django.core.management import call_command
-from django.db import connection
+from django.contrib.auth import get_user_model
+from django.db import transaction, connection
+
+User = get_user_model()
+
+USER_FK_MAP = {
+    'bookings.booking': ['exhibitor'],
+    'bookings.discountrequest': ['requested_by', 'approved_by_first', 'approved_by_second', 'rejected_by'],
+    'invoices.invoice': ['exhibitor'],
+    'invoices.payment': ['verified_by'],
+    'invoices.ledgerentry': ['exhibitor'],
+}
+
+TARGET_MODELS = {
+    'accounts.role', 'accounts.rolepermission',
+    'events.venue', 'events.zone', 'events.event', 'events.accessorytype',
+    'events.floorplan', 'events.stall',
+    'bookings.booking', 'bookings.bookingaccessory', 'bookings.discountrequest',
+    'invoices.invoice', 'invoices.payment', 'invoices.receipt',
+    'invoices.ledgerentry', 'invoices.paymentreminder',
+}
 
 
 class Command(BaseCommand):
-    help = 'Load local data fixture into production'
+    help = 'Load local data fixture into production with FK remapping'
 
     def handle(self, *args, **options):
-        fixture_path = 'fixtures/local_data.json'
-        self.stdout.write(f'Loading {fixture_path}...')
-
-        with open(fixture_path, 'r') as f:
+        self.stdout.write('Reading fixture...')
+        with open('fixtures/local_data.json', 'r') as f:
             data = json.load(f)
 
-        models_seen = set()
+        local_user_pks = {}
         for item in data:
-            models_seen.add(item['model'])
+            if item['model'] == 'accounts.user' and item.get('pk'):
+                local_user_pks[item['pk']] = item['fields'].get('username', '')
+        self.stdout.write(f'Local users: {local_user_pks}')
 
-        self.stdout.write(f'Models in fixture: {sorted(models_seen)}')
+        prod_username_to_pk = {u.username: u.id for u in User.objects.all()}
+        self.stdout.write(f'Prod users: {prod_username_to_pk}')
+
+        pk_map = {}
+        for local_pk, username in local_user_pks.items():
+            if username in prod_username_to_pk:
+                pk_map[local_pk] = prod_username_to_pk[username]
+        self.stdout.write(f'User PK map: {pk_map}')
 
         for item in data:
-            model = item['model']
-            pk = item['pk']
-            fields = item['fields']
-            try:
-                call_command('loaddata', fixture_path, verbosity=0)
-                self.stdout.write(self.style.SUCCESS('Fixture loaded successfully.'))
-                return
-            except Exception as e:
-                self.stdout.write(self.style.WARNING(f'loaddata failed: {e}'))
-                break
-
-        self.stdout.write('Falling back to manual insert with conflict handling...')
-        app_label, model_name = models_seen.pop().split('.')
-        for item in data:
-            model_label = item['model']
-            al, mn = model_label.split('.')
-            from django.apps import apps
-            try:
-                Model = apps.get_model(al, mn)
-            except LookupError:
-                self.stdout.write(self.style.WARNING(f'Model {model_label} not found, skipping'))
+            if item['model'] not in TARGET_MODELS:
                 continue
-
-            pk = item['pk']
             fields = item['fields']
+            for fk_field in USER_FK_MAP.get(item['model'], []):
+                if fk_field in fields and fields[fk_field] is not None:
+                    old_pk = fields[fk_field]
+                    if isinstance(old_pk, int):
+                        fields[fk_field] = pk_map.get(old_pk, old_pk)
 
-            fk_fields = {}
-            regular_fields = {}
-            for k, v in fields.items():
-                if isinstance(v, list):
-                    fk_fields[k] = v
-                else:
-                    regular_fields[k] = v
+        filtered = [item for item in data if item['model'] in TARGET_MODELS and item.get('pk')]
+        self.stdout.write(f'Filtered to {len(filtered)} records')
 
-            try:
-                obj = Model.objects.get(pk=pk)
-                for k, v in regular_fields.items():
-                    setattr(obj, k, v)
-                obj.save()
-            except Model.DoesNotExist:
-                obj = Model(**regular_fields)
-                obj.pk = pk
-                obj.save()
-            except Exception as e:
-                self.stdout.write(self.style.WARNING(f'Error saving {model_label} pk={pk}: {e}'))
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as tmp:
+            json.dump(filtered, tmp, ensure_ascii=True, indent=2)
+            tmp_path = tmp.name
 
-        self.stdout.write(self.style.SUCCESS('Manual load complete.'))
+        self.stdout.write('Loading fixture with loaddata...')
+        try:
+            call_command('loaddata', tmp_path, verbosity=2, stdout=self.stdout)
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'loaddata raised: {e}'))
+
+        os.unlink(tmp_path)
+        self.stdout.write(self.style.SUCCESS('Done.'))
