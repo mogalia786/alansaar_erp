@@ -44,9 +44,32 @@ class Command(BaseCommand):
         self.stdout.write(f'Prod users: {prod_username_to_pk}')
 
         pk_map = {}
+        missing = []
         for local_pk, username in local_user_pks.items():
             if username in prod_username_to_pk:
                 pk_map[local_pk] = prod_username_to_pk[username]
+            else:
+                missing.append((local_pk, username))
+
+        if missing:
+            self.stdout.write(self.style.WARNING(f'Creating {len(missing)} missing users on production...'))
+            for item in data:
+                if item['model'] == 'accounts.user' and item.get('pk') in [m[0] for m in missing]:
+                    username = item['fields'].get('username', '')
+                    fields = dict(item['fields'])
+                    fields.pop('user_permissions', None)
+                    fields.pop('groups', None)
+                    fields.pop('password', None)
+                    user_fields = {k: v for k, v in fields.items() if k in [f.name for f in User._meta.get_fields()]}
+                    try:
+                        u = User(username=username, **user_fields)
+                        u.set_password('changeme123')
+                        u.save()
+                        pk_map[item['pk']] = u.id
+                        prod_username_to_pk[username] = u.id
+                        self.stdout.write(self.style.SUCCESS(f'  Created {username} (id={u.id})'))
+                    except Exception as e:
+                        self.stdout.write(self.style.ERROR(f'  Failed to create {username}: {e}'))
         self.stdout.write(f'User PK map: {pk_map}')
 
         for item in data:
