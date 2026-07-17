@@ -46,8 +46,8 @@
                         <tr><td>VAT (15%)</td><td class="text-end">R{{ booking.vat_amount|floatformat:2 }}</td></tr>
                         {% endif %}
                         <tr class="fw-bold"><td>Total</td><td class="text-end">R{{ booking.total_amount|floatformat:2 }}</td></tr>
-                        <tr><td>Amount Paid</td><td class="text-end text-success">R{{ booking.amount_paid|floatformat:2 }}</td></tr>
-                        <tr class="fw-bold"><td>Balance Due</td><td class="text-end text-{% if booking.balance_due > 0 %}danger{% else %}success{% endif %}">R{{ booking.balance_due|floatformat:2 }}</td></tr>
+                        <tr><td>Amount Paid</td><td class="text-end text-success">R{{ paid_amount|floatformat:2 }}</td></tr>
+                        <tr class="fw-bold"><td>Balance Due</td><td class="text-end text-{% if balance_due > 0 %}danger{% else %}success{% endif %}">R{{ balance_due|floatformat:2 }}</td></tr>
                     </table>
                 </div>
             </div>

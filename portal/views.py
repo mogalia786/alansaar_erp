@@ -510,10 +510,12 @@ def verify_payment(request, pk):
             inv = payment.invoice
             from invoices.views import update_invoice_from_booking
             inv = update_invoice_from_booking(inv.booking)
+            booking = inv.booking
+            booking.amount_paid = inv.amount_paid
+            booking.balance_due = inv.balance_due
             if inv.balance_due <= 0:
-                booking = inv.booking
                 booking.payment_status = 'paid'
-                booking.save()
+            booking.save()
             receipt = Receipt.objects.create(
                 receipt_number=payment.receipt_number,
                 payment=payment,

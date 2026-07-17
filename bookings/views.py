@@ -65,7 +65,18 @@ def booking_detail(request, pk):
     booking = get_object_or_404(Booking, pk=pk, exhibitor=request.user)
     from events.models import AccessoryType
     accessories = AccessoryType.objects.filter(is_active=True)
-    return render(request, 'bookings/detail.html', {'booking': booking, 'accessories': accessories})
+    paid_amount = booking.amount_paid
+    balance_due = booking.balance_due
+    invoice = booking.invoices.first()
+    if invoice:
+        paid_amount = invoice.amount_paid
+        balance_due = invoice.balance_due
+    return render(request, 'bookings/detail.html', {
+        'booking': booking,
+        'accessories': accessories,
+        'paid_amount': paid_amount,
+        'balance_due': balance_due,
+    })
 
 
 @login_required
