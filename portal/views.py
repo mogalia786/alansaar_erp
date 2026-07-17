@@ -508,17 +508,12 @@ def verify_payment(request, pk):
             payment.receipt_number = f"RCT-{uuid.uuid4().hex[:8].upper()}"
             payment.save()
             inv = payment.invoice
-            inv.amount_paid += payment.amount
-            inv.balance_due = inv.amount_incl - inv.amount_paid
+            from invoices.views import update_invoice_from_booking
+            inv = update_invoice_from_booking(inv.booking)
             if inv.balance_due <= 0:
-                inv.status = 'paid'
-                inv.paid_date = timezone.now().date()
                 booking = inv.booking
                 booking.payment_status = 'paid'
                 booking.save()
-            elif inv.amount_paid > 0:
-                inv.status = 'partial'
-            inv.save()
             receipt = Receipt.objects.create(
                 receipt_number=payment.receipt_number,
                 payment=payment,

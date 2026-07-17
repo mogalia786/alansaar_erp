@@ -157,6 +157,8 @@ def add_accessory(request, pk):
         booking.total_amount = booking.subtotal + booking.vat_amount
         booking.balance_due = booking.total_amount - booking.amount_paid
         booking.save()
+        from invoices.views import update_invoice_from_booking
+        update_invoice_from_booking(booking)
         messages.success(request, f'Added {accessory.name} x{qty}')
     return redirect('booking_detail', pk=pk)
 
