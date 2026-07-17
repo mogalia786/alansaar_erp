@@ -119,7 +119,7 @@ def book_stall(request, event_id, stall_id):
             status='draft', issue_date=date.today(), due_date=date.today(),
         )
         messages.success(request, f'Booking {ref} created!')
-        return redirect('booking_detail', pk=booking.pk)
+        return redirect('thank_you', pk=booking.pk)
     return redirect('floor_plan_view', event_id=event_id)
 
 
