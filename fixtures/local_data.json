@@ -1,5 +1,500 @@
 [
 {
+  "model": "bookings.booking",
+  "pk": 19,
+  "fields": {
+    "booking_reference": "BK-FC5C470E",
+    "event": 1,
+    "exhibitor": 10,
+    "stall": 590,
+    "status": "cancelled",
+    "payment_status": "unpaid",
+    "stall_price": "5000.00",
+    "accessories_total": "0.00",
+    "electricity_deposit": "0.00",
+    "subtotal": "5000.00",
+    "vat_amount": "750.00",
+    "total_amount": "5750.00",
+    "amount_paid": "0.00",
+    "balance_due": "5750.00",
+    "fascia_name": "SHEEZ TRADING",
+    "terms_accepted": false,
+    "requires_power": false,
+    "power_amps": 0,
+    "requires_water": false,
+    "require_stand_build": false,
+    "require_remove_side_walls": false,
+    "side_wall_removal": "none",
+    "require_floor_mat": false,
+    "require_carpet": false,
+    "require_extra_plugs": false,
+    "require_extra_lights": false,
+    "require_additional_power_amps": 0,
+    "stand_build_instructions": "",
+    "exhibitor_requirements": "",
+    "special_requirements": "",
+    "admin_notes": "",
+    "stand_build_completed": false,
+    "electrical_completed": false,
+    "requirements_version": 0,
+    "requirements_updated_at": null,
+    "booking_date": "2026-07-13T20:21:35.747Z",
+    "approved_date": null,
+    "confirmed_date": null,
+    "payment_due_date": null
+  }
+},
+{
+  "model": "bookings.booking",
+  "pk": 20,
+  "fields": {
+    "booking_reference": "BK-E8E28193",
+    "event": 1,
+    "exhibitor": 10,
+    "stall": 591,
+    "status": "pending",
+    "payment_status": "unpaid",
+    "stall_price": "5000.00",
+    "accessories_total": "0.00",
+    "electricity_deposit": "500.00",
+    "subtotal": "5500.00",
+    "vat_amount": "825.00",
+    "total_amount": "6325.00",
+    "amount_paid": "0.00",
+    "balance_due": "6325.00",
+    "fascia_name": "",
+    "terms_accepted": false,
+    "requires_power": true,
+    "power_amps": 15,
+    "requires_water": false,
+    "require_stand_build": true,
+    "require_remove_side_walls": false,
+    "side_wall_removal": "left",
+    "require_floor_mat": false,
+    "require_carpet": true,
+    "require_extra_plugs": true,
+    "require_extra_lights": true,
+    "require_additional_power_amps": 0,
+    "stand_build_instructions": "",
+    "exhibitor_requirements": "",
+    "special_requirements": "",
+    "admin_notes": "",
+    "stand_build_completed": false,
+    "electrical_completed": false,
+    "requirements_version": 0,
+    "requirements_updated_at": null,
+    "booking_date": "2026-07-13T20:23:41.545Z",
+    "approved_date": null,
+    "confirmed_date": null,
+    "payment_due_date": null
+  }
+},
+{
+  "model": "bookings.booking",
+  "pk": 21,
+  "fields": {
+    "booking_reference": "BK-3514A501",
+    "event": 1,
+    "exhibitor": 23,
+    "stall": 642,
+    "status": "pending",
+    "payment_status": "unpaid",
+    "stall_price": "5000.00",
+    "accessories_total": "500.00",
+    "electricity_deposit": "500.00",
+    "subtotal": "6000.00",
+    "vat_amount": "900.00",
+    "total_amount": "6900.00",
+    "amount_paid": "0.00",
+    "balance_due": "6900.00",
+    "fascia_name": "Saber Cars",
+    "terms_accepted": false,
+    "requires_power": true,
+    "power_amps": 15,
+    "requires_water": false,
+    "require_stand_build": true,
+    "require_remove_side_walls": false,
+    "side_wall_removal": "none",
+    "require_floor_mat": true,
+    "require_carpet": false,
+    "require_extra_plugs": true,
+    "require_extra_lights": true,
+    "require_additional_power_amps": 0,
+    "stand_build_instructions": "",
+    "exhibitor_requirements": "",
+    "special_requirements": "",
+    "admin_notes": "",
+    "stand_build_completed": false,
+    "electrical_completed": false,
+    "requirements_version": 0,
+    "requirements_updated_at": null,
+    "booking_date": "2026-07-13T22:57:57.258Z",
+    "approved_date": null,
+    "confirmed_date": null,
+    "payment_due_date": null
+  }
+},
+{
+  "model": "bookings.booking",
+  "pk": 22,
+  "fields": {
+    "booking_reference": "BK-87BEB795",
+    "event": 1,
+    "exhibitor": 10,
+    "stall": 638,
+    "status": "pending",
+    "payment_status": "unpaid",
+    "stall_price": "5000.00",
+    "accessories_total": "350.00",
+    "electricity_deposit": "500.00",
+    "subtotal": "5850.00",
+    "vat_amount": "877.50",
+    "total_amount": "6727.50",
+    "amount_paid": "0.00",
+    "balance_due": "6727.50",
+    "fascia_name": "SHEEZ TRADING",
+    "terms_accepted": false,
+    "requires_power": true,
+    "power_amps": 15,
+    "requires_water": false,
+    "require_stand_build": true,
+    "require_remove_side_walls": false,
+    "side_wall_removal": "both",
+    "require_floor_mat": true,
+    "require_carpet": true,
+    "require_extra_plugs": false,
+    "require_extra_lights": false,
+    "require_additional_power_amps": 0,
+    "stand_build_instructions": "",
+    "exhibitor_requirements": "",
+    "special_requirements": "",
+    "admin_notes": "",
+    "stand_build_completed": false,
+    "electrical_completed": false,
+    "requirements_version": 0,
+    "requirements_updated_at": null,
+    "booking_date": "2026-07-14T10:08:59.985Z",
+    "approved_date": null,
+    "confirmed_date": null,
+    "payment_due_date": null
+  }
+},
+{
+  "model": "bookings.booking",
+  "pk": 23,
+  "fields": {
+    "booking_reference": "BK-07C6A1DF",
+    "event": 1,
+    "exhibitor": 1,
+    "stall": 630,
+    "status": "pending",
+    "payment_status": "unpaid",
+    "stall_price": "5000.00",
+    "accessories_total": "1200.00",
+    "electricity_deposit": "500.00",
+    "subtotal": "6700.00",
+    "vat_amount": "1005.00",
+    "total_amount": "7705.00",
+    "amount_paid": "0.00",
+    "balance_due": "7705.00",
+    "fascia_name": "David's Tools",
+    "terms_accepted": false,
+    "requires_power": true,
+    "power_amps": 0,
+    "requires_water": false,
+    "require_stand_build": true,
+    "require_remove_side_walls": false,
+    "side_wall_removal": "none",
+    "require_floor_mat": false,
+    "require_carpet": false,
+    "require_extra_plugs": false,
+    "require_extra_lights": false,
+    "require_additional_power_amps": 0,
+    "stand_build_instructions": "",
+    "exhibitor_requirements": "",
+    "special_requirements": "",
+    "admin_notes": "",
+    "stand_build_completed": false,
+    "electrical_completed": false,
+    "requirements_version": 0,
+    "requirements_updated_at": null,
+    "booking_date": "2026-07-14T10:27:36.220Z",
+    "approved_date": null,
+    "confirmed_date": null,
+    "payment_due_date": null
+  }
+},
+{
+  "model": "bookings.booking",
+  "pk": 24,
+  "fields": {
+    "booking_reference": "BK-754E1BEE",
+    "event": 1,
+    "exhibitor": 24,
+    "stall": 590,
+    "status": "pending",
+    "payment_status": "unpaid",
+    "stall_price": "5000.00",
+    "accessories_total": "1200.00",
+    "electricity_deposit": "0.00",
+    "subtotal": "6200.00",
+    "vat_amount": "930.00",
+    "total_amount": "7130.00",
+    "amount_paid": "0.00",
+    "balance_due": "7130.00",
+    "fascia_name": "David Tools",
+    "terms_accepted": false,
+    "requires_power": false,
+    "power_amps": 0,
+    "requires_water": false,
+    "require_stand_build": false,
+    "require_remove_side_walls": false,
+    "side_wall_removal": "none",
+    "require_floor_mat": false,
+    "require_carpet": false,
+    "require_extra_plugs": false,
+    "require_extra_lights": false,
+    "require_additional_power_amps": 0,
+    "stand_build_instructions": "",
+    "exhibitor_requirements": "",
+    "special_requirements": "",
+    "admin_notes": "",
+    "stand_build_completed": false,
+    "electrical_completed": false,
+    "requirements_version": 0,
+    "requirements_updated_at": null,
+    "booking_date": "2026-07-14T10:31:28.446Z",
+    "approved_date": null,
+    "confirmed_date": null,
+    "payment_due_date": null
+  }
+},
+{
+  "model": "bookings.booking",
+  "pk": 25,
+  "fields": {
+    "booking_reference": "BK-D09FB7E6",
+    "event": 1,
+    "exhibitor": 10,
+    "stall": 575,
+    "status": "pending",
+    "payment_status": "unpaid",
+    "stall_price": "5000.00",
+    "accessories_total": "2000.00",
+    "electricity_deposit": "500.00",
+    "subtotal": "7500.00",
+    "vat_amount": "1125.00",
+    "total_amount": "8625.00",
+    "amount_paid": "0.00",
+    "balance_due": "8625.00",
+    "fascia_name": "Shhez Foods",
+    "terms_accepted": false,
+    "requires_power": true,
+    "power_amps": 14,
+    "requires_water": false,
+    "require_stand_build": true,
+    "require_remove_side_walls": false,
+    "side_wall_removal": "none",
+    "require_floor_mat": false,
+    "require_carpet": false,
+    "require_extra_plugs": true,
+    "require_extra_lights": false,
+    "require_additional_power_amps": 0,
+    "stand_build_instructions": "",
+    "exhibitor_requirements": "",
+    "special_requirements": "",
+    "admin_notes": "",
+    "stand_build_completed": false,
+    "electrical_completed": false,
+    "requirements_version": 0,
+    "requirements_updated_at": null,
+    "booking_date": "2026-07-17T20:19:08.924Z",
+    "approved_date": null,
+    "confirmed_date": null,
+    "payment_due_date": null
+  }
+},
+{
+  "model": "bookings.booking",
+  "pk": 26,
+  "fields": {
+    "booking_reference": "BK-A70ED727",
+    "event": 1,
+    "exhibitor": 10,
+    "stall": 623,
+    "status": "pending",
+    "payment_status": "unpaid",
+    "stall_price": "5000.00",
+    "accessories_total": "75.00",
+    "electricity_deposit": "500.00",
+    "subtotal": "5575.00",
+    "vat_amount": "836.25",
+    "total_amount": "6411.25",
+    "amount_paid": "0.00",
+    "balance_due": "6411.25",
+    "fascia_name": "",
+    "terms_accepted": false,
+    "requires_power": true,
+    "power_amps": 0,
+    "requires_water": false,
+    "require_stand_build": true,
+    "require_remove_side_walls": false,
+    "side_wall_removal": "none",
+    "require_floor_mat": false,
+    "require_carpet": false,
+    "require_extra_plugs": true,
+    "require_extra_lights": false,
+    "require_additional_power_amps": 0,
+    "stand_build_instructions": "",
+    "exhibitor_requirements": "",
+    "special_requirements": "",
+    "admin_notes": "",
+    "stand_build_completed": false,
+    "electrical_completed": false,
+    "requirements_version": 0,
+    "requirements_updated_at": null,
+    "booking_date": "2026-07-17T20:34:39.563Z",
+    "approved_date": null,
+    "confirmed_date": null,
+    "payment_due_date": null
+  }
+},
+{
+  "model": "bookings.booking",
+  "pk": 27,
+  "fields": {
+    "booking_reference": "BK-025FF8B7",
+    "event": 1,
+    "exhibitor": 10,
+    "stall": 644,
+    "status": "pending",
+    "payment_status": "unpaid",
+    "stall_price": "5000.00",
+    "accessories_total": "75.00",
+    "electricity_deposit": "500.00",
+    "subtotal": "5575.00",
+    "vat_amount": "836.25",
+    "total_amount": "6411.25",
+    "amount_paid": "0.00",
+    "balance_due": "6411.25",
+    "fascia_name": "",
+    "terms_accepted": false,
+    "requires_power": true,
+    "power_amps": 0,
+    "requires_water": true,
+    "require_stand_build": false,
+    "require_remove_side_walls": false,
+    "side_wall_removal": "none",
+    "require_floor_mat": false,
+    "require_carpet": false,
+    "require_extra_plugs": false,
+    "require_extra_lights": false,
+    "require_additional_power_amps": 0,
+    "stand_build_instructions": "",
+    "exhibitor_requirements": "",
+    "special_requirements": "",
+    "admin_notes": "",
+    "stand_build_completed": false,
+    "electrical_completed": false,
+    "requirements_version": 0,
+    "requirements_updated_at": null,
+    "booking_date": "2026-07-17T21:04:10.545Z",
+    "approved_date": null,
+    "confirmed_date": null,
+    "payment_due_date": null
+  }
+},
+{
+  "model": "bookings.booking",
+  "pk": 28,
+  "fields": {
+    "booking_reference": "BK-FBA1458F",
+    "event": 1,
+    "exhibitor": 10,
+    "stall": 633,
+    "status": "pending",
+    "payment_status": "unpaid",
+    "stall_price": "5000.00",
+    "accessories_total": "450.00",
+    "electricity_deposit": "500.00",
+    "subtotal": "5950.00",
+    "vat_amount": "892.50",
+    "total_amount": "6842.50",
+    "amount_paid": "0.00",
+    "balance_due": "6842.50",
+    "fascia_name": "SHEEZ Footlongs",
+    "terms_accepted": false,
+    "requires_power": true,
+    "power_amps": 0,
+    "requires_water": false,
+    "require_stand_build": true,
+    "require_remove_side_walls": false,
+    "side_wall_removal": "none",
+    "require_floor_mat": false,
+    "require_carpet": false,
+    "require_extra_plugs": true,
+    "require_extra_lights": false,
+    "require_additional_power_amps": 0,
+    "stand_build_instructions": "",
+    "exhibitor_requirements": "",
+    "special_requirements": "",
+    "admin_notes": "",
+    "stand_build_completed": false,
+    "electrical_completed": false,
+    "requirements_version": 0,
+    "requirements_updated_at": null,
+    "booking_date": "2026-07-17T21:11:43.961Z",
+    "approved_date": null,
+    "confirmed_date": null,
+    "payment_due_date": null
+  }
+},
+{
+  "model": "bookings.booking",
+  "pk": 29,
+  "fields": {
+    "booking_reference": "BK-370C27A8",
+    "event": 1,
+    "exhibitor": 10,
+    "stall": 635,
+    "status": "pending",
+    "payment_status": "unpaid",
+    "stall_price": "5000.00",
+    "accessories_total": "450.00",
+    "electricity_deposit": "500.00",
+    "subtotal": "5950.00",
+    "vat_amount": "892.50",
+    "total_amount": "6842.50",
+    "amount_paid": "0.00",
+    "balance_due": "6842.50",
+    "fascia_name": "Sheez test",
+    "terms_accepted": false,
+    "requires_power": true,
+    "power_amps": 0,
+    "requires_water": false,
+    "require_stand_build": true,
+    "require_remove_side_walls": true,
+    "side_wall_removal": "none",
+    "require_floor_mat": false,
+    "require_carpet": false,
+    "require_extra_plugs": true,
+    "require_extra_lights": false,
+    "require_additional_power_amps": 0,
+    "stand_build_instructions": "",
+    "exhibitor_requirements": "",
+    "special_requirements": "",
+    "admin_notes": "",
+    "stand_build_completed": false,
+    "electrical_completed": false,
+    "requirements_version": 0,
+    "requirements_updated_at": null,
+    "booking_date": "2026-07-17T21:20:06.306Z",
+    "approved_date": null,
+    "confirmed_date": null,
+    "payment_due_date": null
+  }
+},
+{
   "model": "bookings.bookingaccessory",
   "pk": 10,
   "fields": {
@@ -107,6 +602,584 @@
     "accessory": 4,
     "quantity": 1,
     "price": "450.00"
+  }
+},
+{
+  "model": "invoices.invoice",
+  "pk": 15,
+  "fields": {
+    "invoice_number": "INV-BK-E8E28193",
+    "booking": 20,
+    "exhibitor": 10,
+    "amount_excl": "5000.00",
+    "vat_amount": "750.00",
+    "amount_incl": "5750.00",
+    "amount_paid": "0.00",
+    "balance_due": "5750.00",
+    "status": "draft",
+    "issue_date": "2026-07-13",
+    "due_date": "2026-07-13",
+    "paid_date": null,
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-13T20:23:41.561Z"
+  }
+},
+{
+  "model": "invoices.invoice",
+  "pk": 16,
+  "fields": {
+    "invoice_number": "INV-BK-3514A501",
+    "booking": 21,
+    "exhibitor": 23,
+    "amount_excl": "5000.00",
+    "vat_amount": "750.00",
+    "amount_incl": "5750.00",
+    "amount_paid": "0.00",
+    "balance_due": "5750.00",
+    "status": "draft",
+    "issue_date": "2026-07-14",
+    "due_date": "2026-07-14",
+    "paid_date": null,
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-13T22:57:57.279Z"
+  }
+},
+{
+  "model": "invoices.invoice",
+  "pk": 17,
+  "fields": {
+    "invoice_number": "INV-BK-87BEB795",
+    "booking": 22,
+    "exhibitor": 10,
+    "amount_excl": "5850.00",
+    "vat_amount": "877.50",
+    "amount_incl": "6727.50",
+    "amount_paid": "2000.00",
+    "balance_due": "4727.50",
+    "status": "partial",
+    "issue_date": "2026-07-14",
+    "due_date": "2026-07-14",
+    "paid_date": null,
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-14T10:09:00.005Z"
+  }
+},
+{
+  "model": "invoices.invoice",
+  "pk": 18,
+  "fields": {
+    "invoice_number": "INV-BK-07C6A1DF",
+    "booking": 23,
+    "exhibitor": 1,
+    "amount_excl": "5000.00",
+    "vat_amount": "750.00",
+    "amount_incl": "5750.00",
+    "amount_paid": "0.00",
+    "balance_due": "5750.00",
+    "status": "draft",
+    "issue_date": "2026-07-14",
+    "due_date": "2026-07-14",
+    "paid_date": null,
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-14T10:27:36.241Z"
+  }
+},
+{
+  "model": "invoices.invoice",
+  "pk": 19,
+  "fields": {
+    "invoice_number": "INV-BK-754E1BEE",
+    "booking": 24,
+    "exhibitor": 24,
+    "amount_excl": "6200.00",
+    "vat_amount": "930.00",
+    "amount_incl": "7130.00",
+    "amount_paid": "3000.00",
+    "balance_due": "4130.00",
+    "status": "partial",
+    "issue_date": "2026-07-14",
+    "due_date": "2026-07-14",
+    "paid_date": null,
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-14T10:31:28.464Z"
+  }
+},
+{
+  "model": "invoices.invoice",
+  "pk": 20,
+  "fields": {
+    "invoice_number": "INV-BK-D09FB7E6",
+    "booking": 25,
+    "exhibitor": 10,
+    "amount_excl": "7500.00",
+    "vat_amount": "1125.00",
+    "amount_incl": "8625.00",
+    "amount_paid": "5000.00",
+    "balance_due": "3625.00",
+    "status": "partial",
+    "issue_date": "2026-07-17",
+    "due_date": "2026-07-17",
+    "paid_date": null,
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-17T20:19:08.961Z"
+  }
+},
+{
+  "model": "invoices.invoice",
+  "pk": 21,
+  "fields": {
+    "invoice_number": "INV-BK-A70ED727",
+    "booking": 26,
+    "exhibitor": 10,
+    "amount_excl": "5575.00",
+    "vat_amount": "836.25",
+    "amount_incl": "6411.25",
+    "amount_paid": "1000.00",
+    "balance_due": "5411.25",
+    "status": "partial",
+    "issue_date": "2026-07-17",
+    "due_date": "2026-07-17",
+    "paid_date": null,
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-17T20:34:39.587Z"
+  }
+},
+{
+  "model": "invoices.invoice",
+  "pk": 22,
+  "fields": {
+    "invoice_number": "INV-BK-025FF8B7",
+    "booking": 27,
+    "exhibitor": 10,
+    "amount_excl": "5575.00",
+    "vat_amount": "836.25",
+    "amount_incl": "6411.25",
+    "amount_paid": "0.00",
+    "balance_due": "6411.25",
+    "status": "draft",
+    "issue_date": "2026-07-17",
+    "due_date": "2026-07-17",
+    "paid_date": null,
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-17T21:04:10.567Z"
+  }
+},
+{
+  "model": "invoices.invoice",
+  "pk": 23,
+  "fields": {
+    "invoice_number": "INV-BK-FBA1458F",
+    "booking": 28,
+    "exhibitor": 10,
+    "amount_excl": "5950.00",
+    "vat_amount": "892.50",
+    "amount_incl": "6842.50",
+    "amount_paid": "1000.00",
+    "balance_due": "5842.50",
+    "status": "partial",
+    "issue_date": "2026-07-17",
+    "due_date": "2026-07-17",
+    "paid_date": null,
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-17T21:11:43.978Z"
+  }
+},
+{
+  "model": "invoices.invoice",
+  "pk": 24,
+  "fields": {
+    "invoice_number": "INV-BK-370C27A8",
+    "booking": 29,
+    "exhibitor": 10,
+    "amount_excl": "5950.00",
+    "vat_amount": "892.50",
+    "amount_incl": "6842.50",
+    "amount_paid": "2000.00",
+    "balance_due": "4842.50",
+    "status": "partial",
+    "issue_date": "2026-07-17",
+    "due_date": "2026-07-17",
+    "paid_date": null,
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-17T21:20:06.322Z"
+  }
+},
+{
+  "model": "invoices.payment",
+  "pk": 13,
+  "fields": {
+    "invoice": 17,
+    "booking": 22,
+    "amount": "2000.00",
+    "payment_method": "eft",
+    "reference_number": "SHEEZ",
+    "proof_of_payment": "proof_of_payment/sasta_2025.pdf",
+    "status": "verified",
+    "verified_by": 1,
+    "verified_at": "2026-07-14T10:13:16.194Z",
+    "payment_date": "2026-07-14T10:10:27.264Z",
+    "notes": "",
+    "receipt_number": "RCT-FBC3F20B"
+  }
+},
+{
+  "model": "invoices.payment",
+  "pk": 14,
+  "fields": {
+    "invoice": 19,
+    "booking": 24,
+    "amount": "3000.00",
+    "payment_method": "cash",
+    "reference_number": "David's Tools",
+    "proof_of_payment": "",
+    "status": "verified",
+    "verified_by": 1,
+    "verified_at": "2026-07-17T21:22:28.763Z",
+    "payment_date": "2026-07-16T16:43:40.308Z",
+    "notes": "",
+    "receipt_number": "RCT-790A737D"
+  }
+},
+{
+  "model": "invoices.payment",
+  "pk": 15,
+  "fields": {
+    "invoice": 20,
+    "booking": 25,
+    "amount": "2000.00",
+    "payment_method": "eft",
+    "reference_number": "SHEEZ",
+    "proof_of_payment": "",
+    "status": "verified",
+    "verified_by": 1,
+    "verified_at": "2026-07-17T20:24:46.864Z",
+    "payment_date": "2026-07-17T20:22:24.813Z",
+    "notes": "",
+    "receipt_number": "RCT-E8E65B54"
+  }
+},
+{
+  "model": "invoices.payment",
+  "pk": 16,
+  "fields": {
+    "invoice": 20,
+    "booking": 25,
+    "amount": "3000.00",
+    "payment_method": "eft",
+    "reference_number": "Stand 9",
+    "proof_of_payment": "",
+    "status": "verified",
+    "verified_by": 1,
+    "verified_at": "2026-07-17T21:22:27.666Z",
+    "payment_date": "2026-07-17T20:29:13.255Z",
+    "notes": "",
+    "receipt_number": "RCT-37F7DDD9"
+  }
+},
+{
+  "model": "invoices.payment",
+  "pk": 17,
+  "fields": {
+    "invoice": 21,
+    "booking": 26,
+    "amount": "1000.00",
+    "payment_method": "eft",
+    "reference_number": "Stand 30",
+    "proof_of_payment": "",
+    "status": "verified",
+    "verified_by": 1,
+    "verified_at": "2026-07-17T21:22:26.631Z",
+    "payment_date": "2026-07-17T21:07:28.912Z",
+    "notes": "",
+    "receipt_number": "RCT-B63A0172"
+  }
+},
+{
+  "model": "invoices.payment",
+  "pk": 18,
+  "fields": {
+    "invoice": 23,
+    "booking": 28,
+    "amount": "1000.00",
+    "payment_method": "eft",
+    "reference_number": "Stand 40",
+    "proof_of_payment": "",
+    "status": "verified",
+    "verified_by": 1,
+    "verified_at": "2026-07-17T21:22:25.298Z",
+    "payment_date": "2026-07-17T21:15:54.402Z",
+    "notes": "",
+    "receipt_number": "RCT-50561AF7"
+  }
+},
+{
+  "model": "invoices.payment",
+  "pk": 19,
+  "fields": {
+    "invoice": 24,
+    "booking": 29,
+    "amount": "2000.00",
+    "payment_method": "eft",
+    "reference_number": "Stand 42",
+    "proof_of_payment": "",
+    "status": "verified",
+    "verified_by": 1,
+    "verified_at": "2026-07-17T21:22:23.235Z",
+    "payment_date": "2026-07-17T21:20:57.622Z",
+    "notes": "",
+    "receipt_number": "RCT-11BAD017"
+  }
+},
+{
+  "model": "invoices.payment",
+  "pk": 20,
+  "fields": {
+    "invoice": 24,
+    "booking": 29,
+    "amount": "1000.00",
+    "payment_method": "eft",
+    "reference_number": "Stand 42",
+    "proof_of_payment": "",
+    "status": "pending",
+    "verified_by": null,
+    "verified_at": null,
+    "payment_date": "2026-07-17T21:36:51.155Z",
+    "notes": "",
+    "receipt_number": ""
+  }
+},
+{
+  "model": "invoices.ledgerentry",
+  "pk": 15,
+  "fields": {
+    "exhibitor": 10,
+    "booking": 22,
+    "entry_type": "payment",
+    "description": "Payment received - INV-BK-87BEB795",
+    "reference": "RCT-FBC3F20B",
+    "debit": "0.00",
+    "credit": "2000.00",
+    "balance": "3750.00",
+    "entry_date": "2026-07-14",
+    "created_at": "2026-07-14T10:13:16.222Z"
+  }
+},
+{
+  "model": "invoices.ledgerentry",
+  "pk": 16,
+  "fields": {
+    "exhibitor": 10,
+    "booking": 25,
+    "entry_type": "payment",
+    "description": "Payment received - INV-BK-D09FB7E6",
+    "reference": "RCT-E8E65B54",
+    "debit": "0.00",
+    "credit": "2000.00",
+    "balance": "6625.00",
+    "entry_date": "2026-07-17",
+    "created_at": "2026-07-17T20:24:46.901Z"
+  }
+},
+{
+  "model": "invoices.ledgerentry",
+  "pk": 17,
+  "fields": {
+    "exhibitor": 10,
+    "booking": 29,
+    "entry_type": "payment",
+    "description": "Payment received - INV-BK-370C27A8",
+    "reference": "RCT-11BAD017",
+    "debit": "0.00",
+    "credit": "2000.00",
+    "balance": "4842.50",
+    "entry_date": "2026-07-17",
+    "created_at": "2026-07-17T21:22:23.268Z"
+  }
+},
+{
+  "model": "invoices.ledgerentry",
+  "pk": 18,
+  "fields": {
+    "exhibitor": 10,
+    "booking": 28,
+    "entry_type": "payment",
+    "description": "Payment received - INV-BK-FBA1458F",
+    "reference": "RCT-50561AF7",
+    "debit": "0.00",
+    "credit": "1000.00",
+    "balance": "5842.50",
+    "entry_date": "2026-07-17",
+    "created_at": "2026-07-17T21:22:25.326Z"
+  }
+},
+{
+  "model": "invoices.ledgerentry",
+  "pk": 19,
+  "fields": {
+    "exhibitor": 10,
+    "booking": 26,
+    "entry_type": "payment",
+    "description": "Payment received - INV-BK-A70ED727",
+    "reference": "RCT-B63A0172",
+    "debit": "0.00",
+    "credit": "1000.00",
+    "balance": "5411.25",
+    "entry_date": "2026-07-17",
+    "created_at": "2026-07-17T21:22:26.656Z"
+  }
+},
+{
+  "model": "invoices.ledgerentry",
+  "pk": 20,
+  "fields": {
+    "exhibitor": 10,
+    "booking": 25,
+    "entry_type": "payment",
+    "description": "Payment received - INV-BK-D09FB7E6",
+    "reference": "RCT-37F7DDD9",
+    "debit": "0.00",
+    "credit": "3000.00",
+    "balance": "3625.00",
+    "entry_date": "2026-07-17",
+    "created_at": "2026-07-17T21:22:27.695Z"
+  }
+},
+{
+  "model": "invoices.ledgerentry",
+  "pk": 21,
+  "fields": {
+    "exhibitor": 24,
+    "booking": 24,
+    "entry_type": "payment",
+    "description": "Payment received - INV-BK-754E1BEE",
+    "reference": "RCT-790A737D",
+    "debit": "0.00",
+    "credit": "3000.00",
+    "balance": "4130.00",
+    "entry_date": "2026-07-17",
+    "created_at": "2026-07-17T21:22:28.791Z"
+  }
+},
+{
+  "model": "invoices.receipt",
+  "pk": 9,
+  "fields": {
+    "receipt_number": "RCT-FBC3F20B",
+    "payment": 13,
+    "exhibitor": 10,
+    "amount": "2000.00",
+    "payment_method": "eft",
+    "reference_number": "SHEEZ",
+    "issue_date": "2026-07-14",
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-14T10:13:16.214Z"
+  }
+},
+{
+  "model": "invoices.receipt",
+  "pk": 10,
+  "fields": {
+    "receipt_number": "RCT-E8E65B54",
+    "payment": 15,
+    "exhibitor": 10,
+    "amount": "2000.00",
+    "payment_method": "eft",
+    "reference_number": "SHEEZ",
+    "issue_date": "2026-07-17",
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-17T20:24:46.892Z"
+  }
+},
+{
+  "model": "invoices.receipt",
+  "pk": 11,
+  "fields": {
+    "receipt_number": "RCT-11BAD017",
+    "payment": 19,
+    "exhibitor": 10,
+    "amount": "2000.00",
+    "payment_method": "eft",
+    "reference_number": "Stand 42",
+    "issue_date": "2026-07-17",
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-17T21:22:23.261Z"
+  }
+},
+{
+  "model": "invoices.receipt",
+  "pk": 12,
+  "fields": {
+    "receipt_number": "RCT-50561AF7",
+    "payment": 18,
+    "exhibitor": 10,
+    "amount": "1000.00",
+    "payment_method": "eft",
+    "reference_number": "Stand 40",
+    "issue_date": "2026-07-17",
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-17T21:22:25.320Z"
+  }
+},
+{
+  "model": "invoices.receipt",
+  "pk": 13,
+  "fields": {
+    "receipt_number": "RCT-B63A0172",
+    "payment": 17,
+    "exhibitor": 10,
+    "amount": "1000.00",
+    "payment_method": "eft",
+    "reference_number": "Stand 30",
+    "issue_date": "2026-07-17",
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-17T21:22:26.651Z"
+  }
+},
+{
+  "model": "invoices.receipt",
+  "pk": 14,
+  "fields": {
+    "receipt_number": "RCT-37F7DDD9",
+    "payment": 16,
+    "exhibitor": 10,
+    "amount": "3000.00",
+    "payment_method": "eft",
+    "reference_number": "Stand 9",
+    "issue_date": "2026-07-17",
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-17T21:22:27.689Z"
+  }
+},
+{
+  "model": "invoices.receipt",
+  "pk": 15,
+  "fields": {
+    "receipt_number": "RCT-790A737D",
+    "payment": 14,
+    "exhibitor": 24,
+    "amount": "3000.00",
+    "payment_method": "cash",
+    "reference_number": "David's Tools",
+    "issue_date": "2026-07-17",
+    "notes": "",
+    "pdf_file": "",
+    "created_at": "2026-07-17T21:22:28.784Z"
   }
 },
 {
@@ -2491,6 +3564,7 @@
 },
 {
   "model": "accounts.user",
+  "pk": 1,
   "fields": {
     "password": "pbkdf2_sha256$1200000$6mIQN3BCG2EIwWOwVwj5D1$CinmNLotJOknsLRfIMC6q48XhWIxqcHbIEnpIRC6++M=",
     "last_login": "2026-07-17T21:22:17.201Z",
@@ -2513,6 +3587,7 @@
 },
 {
   "model": "accounts.user",
+  "pk": 2,
   "fields": {
     "password": "pbkdf2_sha256$1200000$0nBOcQoT8aeuOwKUKdqWI7$Uj8YCOyBj8SkiIs/sjmurSNNQu594ooKEF45b9O9S2g=",
     "last_login": "2026-07-07T19:30:49.828Z",
@@ -2535,6 +3610,7 @@
 },
 {
   "model": "accounts.user",
+  "pk": 3,
   "fields": {
     "password": "pbkdf2_sha256$1200000$R3slsiVPpkFYZ9uKDalY8Q$C058y1GZWhuH8V4liNmGcoWWGGTwyOKF2ZRYHWxKceA=",
     "last_login": "2026-07-07T19:53:07.437Z",
@@ -2557,6 +3633,7 @@
 },
 {
   "model": "accounts.user",
+  "pk": 8,
   "fields": {
     "password": "pbkdf2_sha256$1200000$pLc8ZuBTd7n7UDelXmC4pl$FF3Zw102anjLN0gdf9A4QiQiTxttJZJejF3QmC3wYh0=",
     "last_login": "2026-07-07T21:38:51.320Z",
@@ -2579,6 +3656,7 @@
 },
 {
   "model": "accounts.user",
+  "pk": 10,
   "fields": {
     "password": "pbkdf2_sha256$1200000$VInCW3mPdJLLZc6yDKJV0e$GfqXWtai3kaLYndbtub61FI+Mg2xCWdaLQJpqYMDkek=",
     "last_login": "2026-07-17T21:23:14.395Z",
@@ -2601,6 +3679,7 @@
 },
 {
   "model": "accounts.user",
+  "pk": 16,
   "fields": {
     "password": "pbkdf2_sha256$1200000$ZczVA9X3CyJlaWxUyyG2Rr$4XkOyrBjSboBzUIe6dDaOblgthGMiEW30gzUV1U2O40=",
     "last_login": "2026-07-08T21:06:43.343Z",
@@ -2623,6 +3702,7 @@
 },
 {
   "model": "accounts.user",
+  "pk": 17,
   "fields": {
     "password": "pbkdf2_sha256$1200000$7loQhW25j8XOnv0kQSQ7bk$mweUQK9rb/E7JeLudCz+8hTm0uulppFO9v5eHy3uUMw=",
     "last_login": "2026-07-08T23:02:50.870Z",
@@ -2645,6 +3725,7 @@
 },
 {
   "model": "accounts.user",
+  "pk": 18,
   "fields": {
     "password": "pbkdf2_sha256$1200000$ZOn9hgWSp6piFXCb2JO9zj$1cFJGq63FE7005tTJYdsFW4MFncfD0ee3sEPG7rR7tg=",
     "last_login": null,
@@ -2667,6 +3748,7 @@
 },
 {
   "model": "accounts.user",
+  "pk": 19,
   "fields": {
     "password": "pbkdf2_sha256$1200000$WeWi57zFra5E3rT2VcbXkm$6fSPTrs3kqN8xhteAsfknYIlyYJtNp9BGKhfZ4E1fPs=",
     "last_login": null,
@@ -2689,6 +3771,7 @@
 },
 {
   "model": "accounts.user",
+  "pk": 20,
   "fields": {
     "password": "pbkdf2_sha256$1200000$egttXgQdG4EbX0BJK3XeKN$Or1pH0YGp6Ts4FpansGrimbq79jjnhJFlR7aeNmJKM4=",
     "last_login": "2026-07-09T12:12:17.063Z",
@@ -2711,6 +3794,7 @@
 },
 {
   "model": "accounts.user",
+  "pk": 21,
   "fields": {
     "password": "pbkdf2_sha256$1200000$6dCvpmkV1uj9fEN7qam0ot$817Y0MAWt+ycaO27vKc9NVUSTDzT+QK1ut8UrN60lyU=",
     "last_login": "2026-07-09T12:15:16.025Z",
@@ -2733,6 +3817,7 @@
 },
 {
   "model": "accounts.user",
+  "pk": 22,
   "fields": {
     "password": "pbkdf2_sha256$1200000$LFlYrXMRS03B9wDoa6VaA2$q2hKY9Y8xNjZ+o7x057akkX/eUSWzRIc7DM5hsCU2Yg=",
     "last_login": "2026-07-09T13:05:52.152Z",
@@ -2755,6 +3840,7 @@
 },
 {
   "model": "accounts.user",
+  "pk": 23,
   "fields": {
     "password": "pbkdf2_sha256$1200000$Tj5gNqGp2cYK2aP1AgRduX$jDsdTqATXXCdZjIA8m3jpNh20JKaDV1WGsLcMsfUkgg=",
     "last_login": "2026-07-13T20:59:34.604Z",
@@ -2777,6 +3863,7 @@
 },
 {
   "model": "accounts.user",
+  "pk": 24,
   "fields": {
     "password": "pbkdf2_sha256$1200000$CuOFII1iY0QGh0jGUSpsTs$j2I0qzOHOgILvcWELcqjhAWm8VtXUErZoOjO8Jaqogg=",
     "last_login": "2026-07-14T10:25:58.029Z",
@@ -3459,1163 +4546,6 @@
     "can_create": false,
     "can_edit": false,
     "can_delete": false
-  }
-},
-{
-  "model": "invoices.receipt",
-  "pk": 9,
-  "fields": {
-    "receipt_number": "RCT-FBC3F20B",
-    "payment": 13,
-    "exhibitor": [
-      "sheez"
-    ],
-    "amount": "2000.00",
-    "payment_method": "eft",
-    "reference_number": "SHEEZ",
-    "issue_date": "2026-07-14",
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-14T10:13:16.214Z"
-  }
-},
-{
-  "model": "invoices.receipt",
-  "pk": 10,
-  "fields": {
-    "receipt_number": "RCT-E8E65B54",
-    "payment": 15,
-    "exhibitor": [
-      "sheez"
-    ],
-    "amount": "2000.00",
-    "payment_method": "eft",
-    "reference_number": "SHEEZ",
-    "issue_date": "2026-07-17",
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-17T20:24:46.892Z"
-  }
-},
-{
-  "model": "invoices.receipt",
-  "pk": 11,
-  "fields": {
-    "receipt_number": "RCT-11BAD017",
-    "payment": 19,
-    "exhibitor": [
-      "sheez"
-    ],
-    "amount": "2000.00",
-    "payment_method": "eft",
-    "reference_number": "Stand 42",
-    "issue_date": "2026-07-17",
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-17T21:22:23.261Z"
-  }
-},
-{
-  "model": "invoices.receipt",
-  "pk": 12,
-  "fields": {
-    "receipt_number": "RCT-50561AF7",
-    "payment": 18,
-    "exhibitor": [
-      "sheez"
-    ],
-    "amount": "1000.00",
-    "payment_method": "eft",
-    "reference_number": "Stand 40",
-    "issue_date": "2026-07-17",
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-17T21:22:25.320Z"
-  }
-},
-{
-  "model": "invoices.receipt",
-  "pk": 13,
-  "fields": {
-    "receipt_number": "RCT-B63A0172",
-    "payment": 17,
-    "exhibitor": [
-      "sheez"
-    ],
-    "amount": "1000.00",
-    "payment_method": "eft",
-    "reference_number": "Stand 30",
-    "issue_date": "2026-07-17",
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-17T21:22:26.651Z"
-  }
-},
-{
-  "model": "invoices.receipt",
-  "pk": 14,
-  "fields": {
-    "receipt_number": "RCT-37F7DDD9",
-    "payment": 16,
-    "exhibitor": [
-      "sheez"
-    ],
-    "amount": "3000.00",
-    "payment_method": "eft",
-    "reference_number": "Stand 9",
-    "issue_date": "2026-07-17",
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-17T21:22:27.689Z"
-  }
-},
-{
-  "model": "invoices.receipt",
-  "pk": 15,
-  "fields": {
-    "receipt_number": "RCT-790A737D",
-    "payment": 14,
-    "exhibitor": [
-      "David"
-    ],
-    "amount": "3000.00",
-    "payment_method": "cash",
-    "reference_number": "David's Tools",
-    "issue_date": "2026-07-17",
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-17T21:22:28.784Z"
-  }
-},
-{
-  "model": "invoices.ledgerentry",
-  "pk": 15,
-  "fields": {
-    "exhibitor": [
-      "sheez"
-    ],
-    "booking": 22,
-    "entry_type": "payment",
-    "description": "Payment received - INV-BK-87BEB795",
-    "reference": "RCT-FBC3F20B",
-    "debit": "0.00",
-    "credit": "2000.00",
-    "balance": "3750.00",
-    "entry_date": "2026-07-14",
-    "created_at": "2026-07-14T10:13:16.222Z"
-  }
-},
-{
-  "model": "invoices.ledgerentry",
-  "pk": 16,
-  "fields": {
-    "exhibitor": [
-      "sheez"
-    ],
-    "booking": 25,
-    "entry_type": "payment",
-    "description": "Payment received - INV-BK-D09FB7E6",
-    "reference": "RCT-E8E65B54",
-    "debit": "0.00",
-    "credit": "2000.00",
-    "balance": "6625.00",
-    "entry_date": "2026-07-17",
-    "created_at": "2026-07-17T20:24:46.901Z"
-  }
-},
-{
-  "model": "invoices.ledgerentry",
-  "pk": 17,
-  "fields": {
-    "exhibitor": [
-      "sheez"
-    ],
-    "booking": 29,
-    "entry_type": "payment",
-    "description": "Payment received - INV-BK-370C27A8",
-    "reference": "RCT-11BAD017",
-    "debit": "0.00",
-    "credit": "2000.00",
-    "balance": "4842.50",
-    "entry_date": "2026-07-17",
-    "created_at": "2026-07-17T21:22:23.268Z"
-  }
-},
-{
-  "model": "invoices.ledgerentry",
-  "pk": 18,
-  "fields": {
-    "exhibitor": [
-      "sheez"
-    ],
-    "booking": 28,
-    "entry_type": "payment",
-    "description": "Payment received - INV-BK-FBA1458F",
-    "reference": "RCT-50561AF7",
-    "debit": "0.00",
-    "credit": "1000.00",
-    "balance": "5842.50",
-    "entry_date": "2026-07-17",
-    "created_at": "2026-07-17T21:22:25.326Z"
-  }
-},
-{
-  "model": "invoices.ledgerentry",
-  "pk": 19,
-  "fields": {
-    "exhibitor": [
-      "sheez"
-    ],
-    "booking": 26,
-    "entry_type": "payment",
-    "description": "Payment received - INV-BK-A70ED727",
-    "reference": "RCT-B63A0172",
-    "debit": "0.00",
-    "credit": "1000.00",
-    "balance": "5411.25",
-    "entry_date": "2026-07-17",
-    "created_at": "2026-07-17T21:22:26.656Z"
-  }
-},
-{
-  "model": "invoices.ledgerentry",
-  "pk": 20,
-  "fields": {
-    "exhibitor": [
-      "sheez"
-    ],
-    "booking": 25,
-    "entry_type": "payment",
-    "description": "Payment received - INV-BK-D09FB7E6",
-    "reference": "RCT-37F7DDD9",
-    "debit": "0.00",
-    "credit": "3000.00",
-    "balance": "3625.00",
-    "entry_date": "2026-07-17",
-    "created_at": "2026-07-17T21:22:27.695Z"
-  }
-},
-{
-  "model": "invoices.ledgerentry",
-  "pk": 21,
-  "fields": {
-    "exhibitor": [
-      "David"
-    ],
-    "booking": 24,
-    "entry_type": "payment",
-    "description": "Payment received - INV-BK-754E1BEE",
-    "reference": "RCT-790A737D",
-    "debit": "0.00",
-    "credit": "3000.00",
-    "balance": "4130.00",
-    "entry_date": "2026-07-17",
-    "created_at": "2026-07-17T21:22:28.791Z"
-  }
-},
-{
-  "model": "invoices.payment",
-  "pk": 13,
-  "fields": {
-    "invoice": 17,
-    "booking": 22,
-    "amount": "2000.00",
-    "payment_method": "eft",
-    "reference_number": "SHEEZ",
-    "proof_of_payment": "proof_of_payment/sasta_2025.pdf",
-    "status": "verified",
-    "verified_by": [
-      "admin"
-    ],
-    "verified_at": "2026-07-14T10:13:16.194Z",
-    "payment_date": "2026-07-14T10:10:27.264Z",
-    "notes": "",
-    "receipt_number": "RCT-FBC3F20B"
-  }
-},
-{
-  "model": "invoices.payment",
-  "pk": 14,
-  "fields": {
-    "invoice": 19,
-    "booking": 24,
-    "amount": "3000.00",
-    "payment_method": "cash",
-    "reference_number": "David's Tools",
-    "proof_of_payment": "",
-    "status": "verified",
-    "verified_by": [
-      "admin"
-    ],
-    "verified_at": "2026-07-17T21:22:28.763Z",
-    "payment_date": "2026-07-16T16:43:40.308Z",
-    "notes": "",
-    "receipt_number": "RCT-790A737D"
-  }
-},
-{
-  "model": "invoices.payment",
-  "pk": 15,
-  "fields": {
-    "invoice": 20,
-    "booking": 25,
-    "amount": "2000.00",
-    "payment_method": "eft",
-    "reference_number": "SHEEZ",
-    "proof_of_payment": "",
-    "status": "verified",
-    "verified_by": [
-      "admin"
-    ],
-    "verified_at": "2026-07-17T20:24:46.864Z",
-    "payment_date": "2026-07-17T20:22:24.813Z",
-    "notes": "",
-    "receipt_number": "RCT-E8E65B54"
-  }
-},
-{
-  "model": "invoices.payment",
-  "pk": 16,
-  "fields": {
-    "invoice": 20,
-    "booking": 25,
-    "amount": "3000.00",
-    "payment_method": "eft",
-    "reference_number": "Stand 9",
-    "proof_of_payment": "",
-    "status": "verified",
-    "verified_by": [
-      "admin"
-    ],
-    "verified_at": "2026-07-17T21:22:27.666Z",
-    "payment_date": "2026-07-17T20:29:13.255Z",
-    "notes": "",
-    "receipt_number": "RCT-37F7DDD9"
-  }
-},
-{
-  "model": "invoices.payment",
-  "pk": 17,
-  "fields": {
-    "invoice": 21,
-    "booking": 26,
-    "amount": "1000.00",
-    "payment_method": "eft",
-    "reference_number": "Stand 30",
-    "proof_of_payment": "",
-    "status": "verified",
-    "verified_by": [
-      "admin"
-    ],
-    "verified_at": "2026-07-17T21:22:26.631Z",
-    "payment_date": "2026-07-17T21:07:28.912Z",
-    "notes": "",
-    "receipt_number": "RCT-B63A0172"
-  }
-},
-{
-  "model": "invoices.payment",
-  "pk": 18,
-  "fields": {
-    "invoice": 23,
-    "booking": 28,
-    "amount": "1000.00",
-    "payment_method": "eft",
-    "reference_number": "Stand 40",
-    "proof_of_payment": "",
-    "status": "verified",
-    "verified_by": [
-      "admin"
-    ],
-    "verified_at": "2026-07-17T21:22:25.298Z",
-    "payment_date": "2026-07-17T21:15:54.402Z",
-    "notes": "",
-    "receipt_number": "RCT-50561AF7"
-  }
-},
-{
-  "model": "invoices.payment",
-  "pk": 19,
-  "fields": {
-    "invoice": 24,
-    "booking": 29,
-    "amount": "2000.00",
-    "payment_method": "eft",
-    "reference_number": "Stand 42",
-    "proof_of_payment": "",
-    "status": "verified",
-    "verified_by": [
-      "admin"
-    ],
-    "verified_at": "2026-07-17T21:22:23.235Z",
-    "payment_date": "2026-07-17T21:20:57.622Z",
-    "notes": "",
-    "receipt_number": "RCT-11BAD017"
-  }
-},
-{
-  "model": "invoices.payment",
-  "pk": 20,
-  "fields": {
-    "invoice": 24,
-    "booking": 29,
-    "amount": "1000.00",
-    "payment_method": "eft",
-    "reference_number": "Stand 42",
-    "proof_of_payment": "",
-    "status": "pending",
-    "verified_by": null,
-    "verified_at": null,
-    "payment_date": "2026-07-17T21:36:51.155Z",
-    "notes": "",
-    "receipt_number": ""
-  }
-},
-{
-  "model": "invoices.invoice",
-  "pk": 15,
-  "fields": {
-    "invoice_number": "INV-BK-E8E28193",
-    "booking": 20,
-    "exhibitor": [
-      "sheez"
-    ],
-    "amount_excl": "5000.00",
-    "vat_amount": "750.00",
-    "amount_incl": "5750.00",
-    "amount_paid": "0.00",
-    "balance_due": "5750.00",
-    "status": "draft",
-    "issue_date": "2026-07-13",
-    "due_date": "2026-07-13",
-    "paid_date": null,
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-13T20:23:41.561Z"
-  }
-},
-{
-  "model": "invoices.invoice",
-  "pk": 16,
-  "fields": {
-    "invoice_number": "INV-BK-3514A501",
-    "booking": 21,
-    "exhibitor": [
-      "Saber"
-    ],
-    "amount_excl": "5000.00",
-    "vat_amount": "750.00",
-    "amount_incl": "5750.00",
-    "amount_paid": "0.00",
-    "balance_due": "5750.00",
-    "status": "draft",
-    "issue_date": "2026-07-14",
-    "due_date": "2026-07-14",
-    "paid_date": null,
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-13T22:57:57.279Z"
-  }
-},
-{
-  "model": "invoices.invoice",
-  "pk": 17,
-  "fields": {
-    "invoice_number": "INV-BK-87BEB795",
-    "booking": 22,
-    "exhibitor": [
-      "sheez"
-    ],
-    "amount_excl": "5850.00",
-    "vat_amount": "877.50",
-    "amount_incl": "6727.50",
-    "amount_paid": "2000.00",
-    "balance_due": "4727.50",
-    "status": "partial",
-    "issue_date": "2026-07-14",
-    "due_date": "2026-07-14",
-    "paid_date": null,
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-14T10:09:00.005Z"
-  }
-},
-{
-  "model": "invoices.invoice",
-  "pk": 18,
-  "fields": {
-    "invoice_number": "INV-BK-07C6A1DF",
-    "booking": 23,
-    "exhibitor": [
-      "admin"
-    ],
-    "amount_excl": "5000.00",
-    "vat_amount": "750.00",
-    "amount_incl": "5750.00",
-    "amount_paid": "0.00",
-    "balance_due": "5750.00",
-    "status": "draft",
-    "issue_date": "2026-07-14",
-    "due_date": "2026-07-14",
-    "paid_date": null,
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-14T10:27:36.241Z"
-  }
-},
-{
-  "model": "invoices.invoice",
-  "pk": 19,
-  "fields": {
-    "invoice_number": "INV-BK-754E1BEE",
-    "booking": 24,
-    "exhibitor": [
-      "David"
-    ],
-    "amount_excl": "6200.00",
-    "vat_amount": "930.00",
-    "amount_incl": "7130.00",
-    "amount_paid": "3000.00",
-    "balance_due": "4130.00",
-    "status": "partial",
-    "issue_date": "2026-07-14",
-    "due_date": "2026-07-14",
-    "paid_date": null,
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-14T10:31:28.464Z"
-  }
-},
-{
-  "model": "invoices.invoice",
-  "pk": 20,
-  "fields": {
-    "invoice_number": "INV-BK-D09FB7E6",
-    "booking": 25,
-    "exhibitor": [
-      "sheez"
-    ],
-    "amount_excl": "7500.00",
-    "vat_amount": "1125.00",
-    "amount_incl": "8625.00",
-    "amount_paid": "5000.00",
-    "balance_due": "3625.00",
-    "status": "partial",
-    "issue_date": "2026-07-17",
-    "due_date": "2026-07-17",
-    "paid_date": null,
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-17T20:19:08.961Z"
-  }
-},
-{
-  "model": "invoices.invoice",
-  "pk": 21,
-  "fields": {
-    "invoice_number": "INV-BK-A70ED727",
-    "booking": 26,
-    "exhibitor": [
-      "sheez"
-    ],
-    "amount_excl": "5575.00",
-    "vat_amount": "836.25",
-    "amount_incl": "6411.25",
-    "amount_paid": "1000.00",
-    "balance_due": "5411.25",
-    "status": "partial",
-    "issue_date": "2026-07-17",
-    "due_date": "2026-07-17",
-    "paid_date": null,
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-17T20:34:39.587Z"
-  }
-},
-{
-  "model": "invoices.invoice",
-  "pk": 22,
-  "fields": {
-    "invoice_number": "INV-BK-025FF8B7",
-    "booking": 27,
-    "exhibitor": [
-      "sheez"
-    ],
-    "amount_excl": "5575.00",
-    "vat_amount": "836.25",
-    "amount_incl": "6411.25",
-    "amount_paid": "0.00",
-    "balance_due": "6411.25",
-    "status": "draft",
-    "issue_date": "2026-07-17",
-    "due_date": "2026-07-17",
-    "paid_date": null,
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-17T21:04:10.567Z"
-  }
-},
-{
-  "model": "invoices.invoice",
-  "pk": 23,
-  "fields": {
-    "invoice_number": "INV-BK-FBA1458F",
-    "booking": 28,
-    "exhibitor": [
-      "sheez"
-    ],
-    "amount_excl": "5950.00",
-    "vat_amount": "892.50",
-    "amount_incl": "6842.50",
-    "amount_paid": "1000.00",
-    "balance_due": "5842.50",
-    "status": "partial",
-    "issue_date": "2026-07-17",
-    "due_date": "2026-07-17",
-    "paid_date": null,
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-17T21:11:43.978Z"
-  }
-},
-{
-  "model": "invoices.invoice",
-  "pk": 24,
-  "fields": {
-    "invoice_number": "INV-BK-370C27A8",
-    "booking": 29,
-    "exhibitor": [
-      "sheez"
-    ],
-    "amount_excl": "5950.00",
-    "vat_amount": "892.50",
-    "amount_incl": "6842.50",
-    "amount_paid": "2000.00",
-    "balance_due": "4842.50",
-    "status": "partial",
-    "issue_date": "2026-07-17",
-    "due_date": "2026-07-17",
-    "paid_date": null,
-    "notes": "",
-    "pdf_file": "",
-    "created_at": "2026-07-17T21:20:06.322Z"
-  }
-},
-{
-  "model": "bookings.booking",
-  "pk": 19,
-  "fields": {
-    "booking_reference": "BK-FC5C470E",
-    "event": 1,
-    "exhibitor": [
-      "sheez"
-    ],
-    "stall": 590,
-    "status": "cancelled",
-    "payment_status": "unpaid",
-    "stall_price": "5000.00",
-    "accessories_total": "0.00",
-    "electricity_deposit": "0.00",
-    "subtotal": "5000.00",
-    "vat_amount": "750.00",
-    "total_amount": "5750.00",
-    "amount_paid": "0.00",
-    "balance_due": "5750.00",
-    "fascia_name": "SHEEZ TRADING",
-    "terms_accepted": false,
-    "requires_power": false,
-    "power_amps": 0,
-    "requires_water": false,
-    "require_stand_build": false,
-    "require_remove_side_walls": false,
-    "side_wall_removal": "none",
-    "require_floor_mat": false,
-    "require_carpet": false,
-    "require_extra_plugs": false,
-    "require_extra_lights": false,
-    "require_additional_power_amps": 0,
-    "stand_build_instructions": "",
-    "exhibitor_requirements": "",
-    "special_requirements": "",
-    "admin_notes": "",
-    "stand_build_completed": false,
-    "electrical_completed": false,
-    "requirements_version": 0,
-    "requirements_updated_at": null,
-    "booking_date": "2026-07-13T20:21:35.747Z",
-    "approved_date": null,
-    "confirmed_date": null,
-    "payment_due_date": null
-  }
-},
-{
-  "model": "bookings.booking",
-  "pk": 20,
-  "fields": {
-    "booking_reference": "BK-E8E28193",
-    "event": 1,
-    "exhibitor": [
-      "sheez"
-    ],
-    "stall": 591,
-    "status": "pending",
-    "payment_status": "unpaid",
-    "stall_price": "5000.00",
-    "accessories_total": "0.00",
-    "electricity_deposit": "500.00",
-    "subtotal": "5500.00",
-    "vat_amount": "825.00",
-    "total_amount": "6325.00",
-    "amount_paid": "0.00",
-    "balance_due": "6325.00",
-    "fascia_name": "",
-    "terms_accepted": false,
-    "requires_power": true,
-    "power_amps": 15,
-    "requires_water": false,
-    "require_stand_build": true,
-    "require_remove_side_walls": false,
-    "side_wall_removal": "left",
-    "require_floor_mat": false,
-    "require_carpet": true,
-    "require_extra_plugs": true,
-    "require_extra_lights": true,
-    "require_additional_power_amps": 0,
-    "stand_build_instructions": "",
-    "exhibitor_requirements": "",
-    "special_requirements": "",
-    "admin_notes": "",
-    "stand_build_completed": false,
-    "electrical_completed": false,
-    "requirements_version": 0,
-    "requirements_updated_at": null,
-    "booking_date": "2026-07-13T20:23:41.545Z",
-    "approved_date": null,
-    "confirmed_date": null,
-    "payment_due_date": null
-  }
-},
-{
-  "model": "bookings.booking",
-  "pk": 21,
-  "fields": {
-    "booking_reference": "BK-3514A501",
-    "event": 1,
-    "exhibitor": [
-      "Saber"
-    ],
-    "stall": 642,
-    "status": "pending",
-    "payment_status": "unpaid",
-    "stall_price": "5000.00",
-    "accessories_total": "500.00",
-    "electricity_deposit": "500.00",
-    "subtotal": "6000.00",
-    "vat_amount": "900.00",
-    "total_amount": "6900.00",
-    "amount_paid": "0.00",
-    "balance_due": "6900.00",
-    "fascia_name": "Saber Cars",
-    "terms_accepted": false,
-    "requires_power": true,
-    "power_amps": 15,
-    "requires_water": false,
-    "require_stand_build": true,
-    "require_remove_side_walls": false,
-    "side_wall_removal": "none",
-    "require_floor_mat": true,
-    "require_carpet": false,
-    "require_extra_plugs": true,
-    "require_extra_lights": true,
-    "require_additional_power_amps": 0,
-    "stand_build_instructions": "",
-    "exhibitor_requirements": "",
-    "special_requirements": "",
-    "admin_notes": "",
-    "stand_build_completed": false,
-    "electrical_completed": false,
-    "requirements_version": 0,
-    "requirements_updated_at": null,
-    "booking_date": "2026-07-13T22:57:57.258Z",
-    "approved_date": null,
-    "confirmed_date": null,
-    "payment_due_date": null
-  }
-},
-{
-  "model": "bookings.booking",
-  "pk": 22,
-  "fields": {
-    "booking_reference": "BK-87BEB795",
-    "event": 1,
-    "exhibitor": [
-      "sheez"
-    ],
-    "stall": 638,
-    "status": "pending",
-    "payment_status": "unpaid",
-    "stall_price": "5000.00",
-    "accessories_total": "350.00",
-    "electricity_deposit": "500.00",
-    "subtotal": "5850.00",
-    "vat_amount": "877.50",
-    "total_amount": "6727.50",
-    "amount_paid": "0.00",
-    "balance_due": "6727.50",
-    "fascia_name": "SHEEZ TRADING",
-    "terms_accepted": false,
-    "requires_power": true,
-    "power_amps": 15,
-    "requires_water": false,
-    "require_stand_build": true,
-    "require_remove_side_walls": false,
-    "side_wall_removal": "both",
-    "require_floor_mat": true,
-    "require_carpet": true,
-    "require_extra_plugs": false,
-    "require_extra_lights": false,
-    "require_additional_power_amps": 0,
-    "stand_build_instructions": "",
-    "exhibitor_requirements": "",
-    "special_requirements": "",
-    "admin_notes": "",
-    "stand_build_completed": false,
-    "electrical_completed": false,
-    "requirements_version": 0,
-    "requirements_updated_at": null,
-    "booking_date": "2026-07-14T10:08:59.985Z",
-    "approved_date": null,
-    "confirmed_date": null,
-    "payment_due_date": null
-  }
-},
-{
-  "model": "bookings.booking",
-  "pk": 23,
-  "fields": {
-    "booking_reference": "BK-07C6A1DF",
-    "event": 1,
-    "exhibitor": [
-      "admin"
-    ],
-    "stall": 630,
-    "status": "pending",
-    "payment_status": "unpaid",
-    "stall_price": "5000.00",
-    "accessories_total": "1200.00",
-    "electricity_deposit": "500.00",
-    "subtotal": "6700.00",
-    "vat_amount": "1005.00",
-    "total_amount": "7705.00",
-    "amount_paid": "0.00",
-    "balance_due": "7705.00",
-    "fascia_name": "David's Tools",
-    "terms_accepted": false,
-    "requires_power": true,
-    "power_amps": 0,
-    "requires_water": false,
-    "require_stand_build": true,
-    "require_remove_side_walls": false,
-    "side_wall_removal": "none",
-    "require_floor_mat": false,
-    "require_carpet": false,
-    "require_extra_plugs": false,
-    "require_extra_lights": false,
-    "require_additional_power_amps": 0,
-    "stand_build_instructions": "",
-    "exhibitor_requirements": "",
-    "special_requirements": "",
-    "admin_notes": "",
-    "stand_build_completed": false,
-    "electrical_completed": false,
-    "requirements_version": 0,
-    "requirements_updated_at": null,
-    "booking_date": "2026-07-14T10:27:36.220Z",
-    "approved_date": null,
-    "confirmed_date": null,
-    "payment_due_date": null
-  }
-},
-{
-  "model": "bookings.booking",
-  "pk": 24,
-  "fields": {
-    "booking_reference": "BK-754E1BEE",
-    "event": 1,
-    "exhibitor": [
-      "David"
-    ],
-    "stall": 590,
-    "status": "pending",
-    "payment_status": "unpaid",
-    "stall_price": "5000.00",
-    "accessories_total": "1200.00",
-    "electricity_deposit": "0.00",
-    "subtotal": "6200.00",
-    "vat_amount": "930.00",
-    "total_amount": "7130.00",
-    "amount_paid": "0.00",
-    "balance_due": "7130.00",
-    "fascia_name": "David Tools",
-    "terms_accepted": false,
-    "requires_power": false,
-    "power_amps": 0,
-    "requires_water": false,
-    "require_stand_build": false,
-    "require_remove_side_walls": false,
-    "side_wall_removal": "none",
-    "require_floor_mat": false,
-    "require_carpet": false,
-    "require_extra_plugs": false,
-    "require_extra_lights": false,
-    "require_additional_power_amps": 0,
-    "stand_build_instructions": "",
-    "exhibitor_requirements": "",
-    "special_requirements": "",
-    "admin_notes": "",
-    "stand_build_completed": false,
-    "electrical_completed": false,
-    "requirements_version": 0,
-    "requirements_updated_at": null,
-    "booking_date": "2026-07-14T10:31:28.446Z",
-    "approved_date": null,
-    "confirmed_date": null,
-    "payment_due_date": null
-  }
-},
-{
-  "model": "bookings.booking",
-  "pk": 25,
-  "fields": {
-    "booking_reference": "BK-D09FB7E6",
-    "event": 1,
-    "exhibitor": [
-      "sheez"
-    ],
-    "stall": 575,
-    "status": "pending",
-    "payment_status": "unpaid",
-    "stall_price": "5000.00",
-    "accessories_total": "2000.00",
-    "electricity_deposit": "500.00",
-    "subtotal": "7500.00",
-    "vat_amount": "1125.00",
-    "total_amount": "8625.00",
-    "amount_paid": "0.00",
-    "balance_due": "8625.00",
-    "fascia_name": "Shhez Foods",
-    "terms_accepted": false,
-    "requires_power": true,
-    "power_amps": 14,
-    "requires_water": false,
-    "require_stand_build": true,
-    "require_remove_side_walls": false,
-    "side_wall_removal": "none",
-    "require_floor_mat": false,
-    "require_carpet": false,
-    "require_extra_plugs": true,
-    "require_extra_lights": false,
-    "require_additional_power_amps": 0,
-    "stand_build_instructions": "",
-    "exhibitor_requirements": "",
-    "special_requirements": "",
-    "admin_notes": "",
-    "stand_build_completed": false,
-    "electrical_completed": false,
-    "requirements_version": 0,
-    "requirements_updated_at": null,
-    "booking_date": "2026-07-17T20:19:08.924Z",
-    "approved_date": null,
-    "confirmed_date": null,
-    "payment_due_date": null
-  }
-},
-{
-  "model": "bookings.booking",
-  "pk": 26,
-  "fields": {
-    "booking_reference": "BK-A70ED727",
-    "event": 1,
-    "exhibitor": [
-      "sheez"
-    ],
-    "stall": 623,
-    "status": "pending",
-    "payment_status": "unpaid",
-    "stall_price": "5000.00",
-    "accessories_total": "75.00",
-    "electricity_deposit": "500.00",
-    "subtotal": "5575.00",
-    "vat_amount": "836.25",
-    "total_amount": "6411.25",
-    "amount_paid": "0.00",
-    "balance_due": "6411.25",
-    "fascia_name": "",
-    "terms_accepted": false,
-    "requires_power": true,
-    "power_amps": 0,
-    "requires_water": false,
-    "require_stand_build": true,
-    "require_remove_side_walls": false,
-    "side_wall_removal": "none",
-    "require_floor_mat": false,
-    "require_carpet": false,
-    "require_extra_plugs": true,
-    "require_extra_lights": false,
-    "require_additional_power_amps": 0,
-    "stand_build_instructions": "",
-    "exhibitor_requirements": "",
-    "special_requirements": "",
-    "admin_notes": "",
-    "stand_build_completed": false,
-    "electrical_completed": false,
-    "requirements_version": 0,
-    "requirements_updated_at": null,
-    "booking_date": "2026-07-17T20:34:39.563Z",
-    "approved_date": null,
-    "confirmed_date": null,
-    "payment_due_date": null
-  }
-},
-{
-  "model": "bookings.booking",
-  "pk": 27,
-  "fields": {
-    "booking_reference": "BK-025FF8B7",
-    "event": 1,
-    "exhibitor": [
-      "sheez"
-    ],
-    "stall": 644,
-    "status": "pending",
-    "payment_status": "unpaid",
-    "stall_price": "5000.00",
-    "accessories_total": "75.00",
-    "electricity_deposit": "500.00",
-    "subtotal": "5575.00",
-    "vat_amount": "836.25",
-    "total_amount": "6411.25",
-    "amount_paid": "0.00",
-    "balance_due": "6411.25",
-    "fascia_name": "",
-    "terms_accepted": false,
-    "requires_power": true,
-    "power_amps": 0,
-    "requires_water": true,
-    "require_stand_build": false,
-    "require_remove_side_walls": false,
-    "side_wall_removal": "none",
-    "require_floor_mat": false,
-    "require_carpet": false,
-    "require_extra_plugs": false,
-    "require_extra_lights": false,
-    "require_additional_power_amps": 0,
-    "stand_build_instructions": "",
-    "exhibitor_requirements": "",
-    "special_requirements": "",
-    "admin_notes": "",
-    "stand_build_completed": false,
-    "electrical_completed": false,
-    "requirements_version": 0,
-    "requirements_updated_at": null,
-    "booking_date": "2026-07-17T21:04:10.545Z",
-    "approved_date": null,
-    "confirmed_date": null,
-    "payment_due_date": null
-  }
-},
-{
-  "model": "bookings.booking",
-  "pk": 28,
-  "fields": {
-    "booking_reference": "BK-FBA1458F",
-    "event": 1,
-    "exhibitor": [
-      "sheez"
-    ],
-    "stall": 633,
-    "status": "pending",
-    "payment_status": "unpaid",
-    "stall_price": "5000.00",
-    "accessories_total": "450.00",
-    "electricity_deposit": "500.00",
-    "subtotal": "5950.00",
-    "vat_amount": "892.50",
-    "total_amount": "6842.50",
-    "amount_paid": "0.00",
-    "balance_due": "6842.50",
-    "fascia_name": "SHEEZ Footlongs",
-    "terms_accepted": false,
-    "requires_power": true,
-    "power_amps": 0,
-    "requires_water": false,
-    "require_stand_build": true,
-    "require_remove_side_walls": false,
-    "side_wall_removal": "none",
-    "require_floor_mat": false,
-    "require_carpet": false,
-    "require_extra_plugs": true,
-    "require_extra_lights": false,
-    "require_additional_power_amps": 0,
-    "stand_build_instructions": "",
-    "exhibitor_requirements": "",
-    "special_requirements": "",
-    "admin_notes": "",
-    "stand_build_completed": false,
-    "electrical_completed": false,
-    "requirements_version": 0,
-    "requirements_updated_at": null,
-    "booking_date": "2026-07-17T21:11:43.961Z",
-    "approved_date": null,
-    "confirmed_date": null,
-    "payment_due_date": null
-  }
-},
-{
-  "model": "bookings.booking",
-  "pk": 29,
-  "fields": {
-    "booking_reference": "BK-370C27A8",
-    "event": 1,
-    "exhibitor": [
-      "sheez"
-    ],
-    "stall": 635,
-    "status": "pending",
-    "payment_status": "unpaid",
-    "stall_price": "5000.00",
-    "accessories_total": "450.00",
-    "electricity_deposit": "500.00",
-    "subtotal": "5950.00",
-    "vat_amount": "892.50",
-    "total_amount": "6842.50",
-    "amount_paid": "0.00",
-    "balance_due": "6842.50",
-    "fascia_name": "Sheez test",
-    "terms_accepted": false,
-    "requires_power": true,
-    "power_amps": 0,
-    "requires_water": false,
-    "require_stand_build": true,
-    "require_remove_side_walls": true,
-    "side_wall_removal": "none",
-    "require_floor_mat": false,
-    "require_carpet": false,
-    "require_extra_plugs": true,
-    "require_extra_lights": false,
-    "require_additional_power_amps": 0,
-    "stand_build_instructions": "",
-    "exhibitor_requirements": "",
-    "special_requirements": "",
-    "admin_notes": "",
-    "stand_build_completed": false,
-    "electrical_completed": false,
-    "requirements_version": 0,
-    "requirements_updated_at": null,
-    "booking_date": "2026-07-17T21:20:06.306Z",
-    "approved_date": null,
-    "confirmed_date": null,
-    "payment_due_date": null
   }
 }
 ]
