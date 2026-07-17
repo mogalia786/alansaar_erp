@@ -13,25 +13,3 @@ urlpatterns = [
     path('bookings/<int:pk>/thank-you/', views.thank_you, name='thank_you'),
     path('bookings/<int:pk>/acknowledge/', views.thank_you_update, name='thank_you_update'),
 ]
-
-TEMP_SECRET = 'x7k9m2p4q8'
-
-def _load_data_trigger(request):
-    from django.http import HttpResponse
-    import hashlib, traceback
-    token = request.GET.get('token', '')
-    if hashlib.sha256(token.encode()).hexdigest() != hashlib.sha256(TEMP_SECRET.encode()).hexdigest():
-        return HttpResponse('Unauthorized', status=403)
-    try:
-        from django.core.management import call_command
-        import io
-        out = io.StringIO()
-        call_command('load_local_data', stdout=out, stderr=out)
-        return HttpResponse(out.getvalue(), content_type='text/plain')
-    except Exception as e:
-        tb = traceback.format_exc()
-        return HttpResponse(f'FATAL: {e}\n\n{tb}', content_type='text/plain')
-
-urlpatterns += [
-    path('bookings/_load-data/', _load_data_trigger, name='temp_load_data'),
-]
