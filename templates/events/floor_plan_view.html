@@ -293,8 +293,13 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
         bsModal.show();
     }
 
-    zm = 4; applyZoom();
-    setTimeout(zf, 100);
+    zm = 3.24; applyZoom();
+    setTimeout(function(){
+        var cssZ = getCssZoom();
+        var iw = VW * cssZ, ih = VH * cssZ;
+        wrap.scrollLeft = Math.max(0, (iw - wrap.clientWidth) / 2);
+        wrap.scrollTop = Math.max(0, (ih - wrap.clientHeight) / 2);
+    }, 100);
     window.addEventListener('resize', function(){ applyZoom(); });
 })();
 </script>

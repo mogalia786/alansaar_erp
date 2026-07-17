@@ -210,9 +210,10 @@ body { background: #0d0d1a !important; }
         }
         window['zi{{ g.ev_id }}']=function(){zm=Math.min(12,zm*1.25);applyZoom();};
         window['zo{{ g.ev_id }}']=function(){zm=Math.max(0.1,zm/1.25);applyZoom();};
-        zm=4;applyZoom();
+        zm=3.24;applyZoom();
         setTimeout(function(){
-            var iw=VW*baseZ,ih=VH*baseZ;
+            var cssZ=getCssZoom();
+            var iw=VW*cssZ,ih=VH*cssZ;
             wrap.scrollLeft=Math.max(0,(iw-wrap.clientWidth)/2);
             wrap.scrollTop=Math.max(0,(ih-wrap.clientHeight)/2);
         },100);
