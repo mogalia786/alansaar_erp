@@ -33,7 +33,7 @@ def _load_data_trigger(request):
 
         local_user_ids = {}
         for item in data:
-            if item['model'] == 'accounts.user':
+            if item['model'] == 'accounts.user' and item.get('pk'):
                 local_user_ids[item['pk']] = item['fields'].get('username', '')
 
         prod_user_map = {}
