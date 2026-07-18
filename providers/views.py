@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
+from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from decimal import Decimal
@@ -75,9 +76,15 @@ def provider_dashboard(request):
     from django.utils import timezone
     from django.db.models import Count
     upcoming = Event.objects.filter(end_date__gte=timezone.now()).annotate(total_bookings=Count('bookings')).order_by('start_date')
+    open_rfqs = RFQ.objects.filter(status='open', closing_date__gte=timezone.now()).select_related('category')
+    my_quotations = Quotation.objects.filter(
+        models.Q(provider=provider) | models.Q(submitter_email=provider.email)
+    ).select_related('rfq').order_by('-submitted_at')[:5]
     return render(request, 'providers/dashboard.html', {
         'provider': provider,
         'events': upcoming,
+        'open_rfqs': open_rfqs,
+        'my_quotations': my_quotations,
     })
 
 
@@ -121,7 +128,9 @@ def provider_event_detail(request, event_id):
 @provider_required
 def provider_my_quotations(request):
     provider = get_object_or_404(ServiceProvider, pk=request.session['provider_id'])
-    quotations = Quotation.objects.filter(provider=provider).select_related('rfq').order_by('-submitted_at')
+    quotations = Quotation.objects.filter(
+        models.Q(provider=provider) | models.Q(submitter_email=provider.email)
+    ).select_related('rfq').order_by('-submitted_at')
     return render(request, 'providers/my_quotations.html', {
         'provider': provider,
         'quotations': quotations,
