@@ -299,8 +299,8 @@
             const d = document.createElement('div');
             d.className = `stall-el ${s.status}`;
             if (s.id === selectedId) d.classList.add('selected');
-            const fs = Math.round(Math.min(s.w, s.h) * 0.28 / cssZoom);
-            d.style.cssText = `left:${mmToPct(s.x)}%;top:${mmToPctH(s.y)}%;width:${mmToPct(s.w)}%;height:${mmToPctH(s.h)}%;font-size:${fs}px;`;
+            const fs = Math.max(8, Math.round(Math.min(s.w, s.h) * 0.55));
+            d.style.cssText = `left:${mmToPct(s.x)}%;top:${mmToPctH(s.y)}%;width:${mmToPct(s.w)}%;height:${mmToPctH(s.h)}%;font-size:${fs}px;overflow:hidden;text-overflow:ellipsis;text-align:center;line-height:1.2;`;
             d.innerHTML = `<span class="label">${shortName(s.name)}</span>`;
             d.dataset.id = s.id;
             d.addEventListener('mousedown', e => onStallMouseDown(e, s));
