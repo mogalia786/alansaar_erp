@@ -9,6 +9,8 @@
         <a href="{% url 'erp:rfq_publish' rfq.pk %}" class="btn btn-success" onclick="return confirm('Publish this RFQ? All active providers will be notified.')"><i class="bi bi-send"></i> Publish</a>
         {% elif rfq.status == 'open' %}
         <a href="{% url 'erp:rfq_close' rfq.pk %}" class="btn btn-warning" onclick="return confirm('Close this RFQ? No further submissions will be accepted.')"><i class="bi bi-lock"></i> Close RFQ</a>
+        {% elif rfq.status == 'closed' and rfq.closing_date > now %}
+        <a href="{% url 'erp:rfq_reopen' rfq.pk %}" class="btn btn-success" onclick="return confirm('Re-open this RFQ? Providers will be able to submit proposals again.')"><i class="bi bi-unlock"></i> Reopen</a>
         {% endif %}
         <a href="{% url 'erp:rfq_edit' rfq.pk %}" class="btn btn-purple"><i class="bi bi-pencil"></i> Edit</a>
         <a href="{% url 'erp:rfq_list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>

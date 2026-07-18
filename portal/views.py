@@ -1197,7 +1197,7 @@ def erp_rfq_detail(request, pk):
     rfq = get_object_or_404(RFQ.objects.select_related('category', 'created_by', 'event'), pk=pk)
     quotations = rfq.quotations.all().select_related('provider').prefetch_related('documents')
     return render(request, 'portal/rfq_detail.html', {
-        'rfq': rfq, 'quotations': quotations,
+        'rfq': rfq, 'quotations': quotations, 'now': timezone.now(),
     })
 
 
@@ -1263,6 +1263,16 @@ def erp_rfq_close(request, pk):
         rfq.status = 'closed'
         rfq.save()
         messages.success(request, f'RFQ {rfq.rfq_number} closed. No further submissions accepted.')
+    return redirect('erp:rfq_detail', pk=rfq.pk)
+
+
+@erp_login_required
+def erp_rfq_reopen(request, pk):
+    rfq = get_object_or_404(RFQ, pk=pk)
+    if rfq.status == 'closed' and rfq.closing_date and rfq.closing_date > timezone.now():
+        rfq.status = 'open'
+        rfq.save()
+        messages.success(request, f'RFQ {rfq.rfq_number} re-opened. Providers can now submit proposals.')
     return redirect('erp:rfq_detail', pk=rfq.pk)
 
 

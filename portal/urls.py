@@ -57,6 +57,7 @@ urlpatterns = [
     path('rfqs/<int:pk>/edit/', views.erp_rfq_edit, name='rfq_edit'),
     path('rfqs/<int:pk>/publish/', views.erp_rfq_publish, name='rfq_publish'),
     path('rfqs/<int:pk>/close/', views.erp_rfq_close, name='rfq_close'),
+    path('rfqs/<int:pk>/reopen/', views.erp_rfq_reopen, name='rfq_reopen'),
     path('quotations/<int:pk>/', views.erp_quotation_detail, name='quotation_detail'),
     path('quotations/<int:pk>/shortlist/', views.erp_quotation_shortlist, name='quotation_shortlist'),
     path('quotations/<int:pk>/reject/', views.erp_quotation_reject, name='quotation_reject'),
