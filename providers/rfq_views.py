@@ -37,15 +37,9 @@ def public_submit_quotation(request, rfq_id):
         incl = excl + vat
         try:
             submitter_email = request.POST.get('email', '')
-            matched_provider = None
-            try:
-                from .models import ServiceProvider
-                matched_provider = ServiceProvider.objects.get(email=submitter_email, is_active=True)
-            except ServiceProvider.DoesNotExist:
-                pass
             quotation = Quotation.objects.create(
                 rfq=rfq,
-                provider=matched_provider,
+                provider=None,
                 submitter_company_name=request.POST.get('company_name', ''),
                 submitter_email=submitter_email,
                 submitter_phone=request.POST.get('phone', ''),

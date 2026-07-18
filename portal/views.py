@@ -1379,22 +1379,42 @@ def erp_quotation_approve_second(request, pk):
     if not provider:
         from django.contrib.auth.hashers import make_password
         from providers.models import ServiceProvider
-        # Default password = contact person name (lowercase, no spaces)
-        contact_name = (quotation.submitter_contact_person or 'provider').strip().lower().replace(' ', '_')
-        provider_password = contact_name
-        provider = ServiceProvider.objects.create(
-            email=quotation.submitter_email or f'{contact_name}@alansaar.org.za',
-            password=make_password(provider_password),
-            company_name=quotation.submitter_company_name or 'Unknown Company',
-            company_type=quotation.submitter_company_type or 'other',
-            registration_number=quotation.submitter_registration_number or '',
-            vat_number=quotation.submitter_vat_number or '',
-            phone=quotation.submitter_phone or '',
-            contact_person=quotation.submitter_contact_person or '',
-            is_verified=True,
-            is_active=True,
-            must_change_password=True,
-        )
+        # Check if email already matches an existing provider
+        existing_by_email = ServiceProvider.objects.filter(
+            email__iexact=quotation.submitter_email
+        ).first() if quotation.submitter_email else None
+        if existing_by_email:
+            provider = existing_by_email
+            # Update company info from the quotation if different
+            if quotation.submitter_company_name:
+                provider.company_name = quotation.submitter_company_name
+            if quotation.submitter_phone:
+                provider.phone = quotation.submitter_phone
+            if quotation.submitter_registration_number:
+                provider.registration_number = quotation.submitter_registration_number
+            if quotation.submitter_vat_number:
+                provider.vat_number = quotation.submitter_vat_number
+            provider.must_change_password = True
+            provider.is_active = True
+            provider.is_verified = True
+            provider.save()
+        else:
+            # Default password = contact person name (lowercase, no spaces)
+            contact_name = (quotation.submitter_contact_person or 'provider').strip().lower().replace(' ', '_')
+            provider_password = contact_name
+            provider = ServiceProvider.objects.create(
+                email=quotation.submitter_email or f'{contact_name}@alansaar.org.za',
+                password=make_password(provider_password),
+                company_name=quotation.submitter_company_name or 'Unknown Company',
+                company_type=quotation.submitter_company_type or 'other',
+                registration_number=quotation.submitter_registration_number or '',
+                vat_number=quotation.submitter_vat_number or '',
+                phone=quotation.submitter_phone or '',
+                contact_person=quotation.submitter_contact_person or '',
+                is_verified=True,
+                is_active=True,
+                must_change_password=True,
+            )
         quotation.provider = provider
         quotation.save()
     else:
