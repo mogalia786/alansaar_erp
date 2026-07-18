@@ -27,7 +27,7 @@
                 <table class="table table-sm">
                     <tr><th class="text-muted" style="width:160px;">RFQ Reference</th><td><a href="{% url 'erp:rfq_detail' quotation.rfq.pk %}">{{ quotation.rfq.rfq_number }} - {{ quotation.rfq.title|truncatewords:10 }}</a></td></tr>
                     {% if quotation.provider %}
-                    <tr><th class="text-muted">Provider</th><td><strong>{{ quotation.provider.company_name }}</strong></td></tr>
+                    <tr><th class="text-muted">Provider</th><td><strong>{{ quotation.submitter_company_name|default:quotation.provider.company_name }}</strong></td></tr>
                     <tr><th class="text-muted">Contact Person</th><td>{{ quotation.provider.contact_person|default:"-" }}</td></tr>
                     <tr><th class="text-muted">Email</th><td>{{ quotation.provider.email }}</td></tr>
                     <tr><th class="text-muted">Phone</th><td>{{ quotation.provider.phone }}</td></tr>

@@ -73,7 +73,7 @@
                 <div class="list-group-item {% if q.status == 'accepted' %}list-group-item-success{% endif %}">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <strong>{{ q.provider.company_name|default:q.submitter_company_name }}</strong><br>
+                            <strong>{{ q.submitter_company_name|default:q.provider.company_name }}</strong><br>
                             <small class="text-muted">{{ q.quotation_number }}</small>
                         </div>
                         <div class="text-end">
