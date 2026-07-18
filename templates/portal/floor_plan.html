@@ -6,22 +6,16 @@
 :root { --purple: #5B2C6F; --gold: #D4AF37; }
 #editor-wrap { display: flex; gap: 15px; height: calc(100vh - 110px); }
 #toolbox { width: 220px; flex-shrink: 0; overflow-y: auto; }
-#toolbox .card { border-radius: 10px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
-#toolbox .card-header { background: var(--purple); color: #fff; border-radius: 10px 10px 0 0 !important; padding: 8px 12px; font-size: 12px; font-weight: 600; }
-#toolbox .card-body { padding: 8px; }
-#toolbox .stall-type-card { cursor: grab; padding: 6px 8px; margin-bottom: 4px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; transition: all .15s; }
-#toolbox .stall-type-card:hover { border-color: var(--purple); background: #f8f4fc; }
-#toolbox .stall-type-card:active { cursor: grabbing; }
-#toolbox .stall-type-card .size { font-weight: 700; color: var(--purple); }
-#toolbox .stall-type-card .price { color: #888; font-size: 10px; }
-#toolbox .tool-btn { padding: 6px 8px; margin-bottom: 3px; border: 1px solid #ddd; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all .15s; background: #fff; display: flex; align-items: center; gap: 6px; }
-#toolbox .tool-btn:hover { border-color: var(--purple); }
-#toolbox .tool-btn.active { background: var(--purple); color: #fff; border-color: var(--purple); }
 #canvas-wrap {
     flex: 1; overflow: auto; background: #1a1a1a; border-radius: 10px;
-    display: flex; align-items: flex-start; justify-content: flex-start;
+    display: flex; align-items: center; justify-content: center;
 }
 #canvas-inner { position: relative; }
+@media (max-width: 768px) {
+    #editor-wrap { flex-direction: column; height: calc(100vh - 80px); }
+    #toolbox { width: 100%; max-height: 40vh; overflow-y: auto; flex-shrink: 0; }
+    #canvas-wrap { min-height: 50vh; }
+}
 #canvas-inner > .fp-svg { display: block; overflow: visible !important; background: #1a1a1a; }
 #canvas-inner svg.fp-svg path { stroke: #999 !important; }
 #canvas-inner svg.fp-svg * { stroke-opacity: 1 !important; }
@@ -61,10 +55,10 @@
 </style>
 {% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-2">
-    <div class="d-flex align-items-center gap-3">
+<div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
         <h4 class="fw-bold mb-0">{{ event.name }}</h4>
-        <span id="status-bar">
+        <span id="status-bar" class="d-none d-sm-inline-flex">
             <span><i class="bi bi-grid-3x3"></i> Grid: <span id="grid-status">1m</span></span>
             <span><i class="bi bi-bounding-box"></i> <span id="stall-count">0</span> stalls</span>
             <span><i class="bi bi-arrows-move"></i> <span id="snap-status" class="badge bg-success">SNAP ON</span></span>
@@ -186,7 +180,7 @@
     let dragData = null;
     let idCounter = stalls.reduce((a,b) => Math.max(a, b.id), 0) + 1;
 
-    let zoomLevel = 1;
+    let zoomLevel = 3.84;
     const ZOOM_STEP = 0.15;
     const ZOOM_MIN = 0.1;
     const ZOOM_MAX = 20;
@@ -208,7 +202,7 @@
     function zoomIn() { zoomLevel = Math.min(ZOOM_MAX, zoomLevel * (1 + ZOOM_STEP)); applyZoom(); }
     function zoomOut() { zoomLevel = Math.max(ZOOM_MIN, zoomLevel * (1 - ZOOM_STEP)); applyZoom(); }
     function zoomFit() {
-        zoomLevel = 4;
+        zoomLevel = 3.84;
         applyZoom();
         const innerW = VB_W * getBaseZoom() * zoomLevel;
         const innerH = VB_H * getBaseZoom() * zoomLevel;
@@ -257,6 +251,18 @@
         if (!panDrag && !e.target.closest('.stall-el, .exit-el')) canvasWrap.style.cursor = 'grab';
     });
 
+    canvasWrap.addEventListener('touchstart', e => {
+        if (e.touches.length === 1 && !e.target.closest('.stall-el, .exit-el')) {
+            panDrag = { sx: e.touches[0].clientX, sy: e.touches[0].clientY, sl: canvasWrap.scrollLeft, st: canvasWrap.scrollTop };
+        }
+    }, { passive: true });
+    canvasWrap.addEventListener('touchmove', e => {
+        if (!panDrag || e.touches.length !== 1) return;
+        canvasWrap.scrollLeft = panDrag.sl - (e.touches[0].clientX - panDrag.sx);
+        canvasWrap.scrollTop = panDrag.st - (e.touches[0].clientY - panDrag.sy);
+    }, { passive: true });
+    canvasWrap.addEventListener('touchend', () => { panDrag = null; });
+
     function snap(v) { return snapEnabled ? Math.round(v / GRID) * GRID : v; }
     function mmToPct(mm) { return (mm / VB_W * 100); }
     function mmToPctH(mm) { return (mm / VB_H * 100); }
@@ -288,12 +294,12 @@
     function renderAll() {
         document.querySelectorAll('.stall-el, .walkway-el, .exit-el').forEach(el => el.remove());
         const cssZoom = getCssZoom();
-        const fs = Math.max(8, Math.round(11 / cssZoom));
 
         stalls.forEach(s => {
             const d = document.createElement('div');
             d.className = `stall-el ${s.status}`;
             if (s.id === selectedId) d.classList.add('selected');
+            const fs = Math.round(Math.min(s.w, s.h) * 0.28 / cssZoom);
             d.style.cssText = `left:${mmToPct(s.x)}%;top:${mmToPctH(s.y)}%;width:${mmToPct(s.w)}%;height:${mmToPctH(s.h)}%;font-size:${fs}px;`;
             d.innerHTML = `<span class="label">${shortName(s.name)}</span>`;
             d.dataset.id = s.id;
