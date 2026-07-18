@@ -1,10 +1,10 @@
 {
-    "name": "Al Ansaar Events",
-    "short_name": "Al Ansaar",
-    "description": "Al Ansaar Foundation - Events, Bookings & Invoicing",
-    "start_url": "/",
+    "name": "Al Ansaar ERP",
+    "short_name": "Al Ansaar ERP",
+    "description": "Al Ansaar Foundation - Enterprise Resource Planning",
+    "start_url": "/erp/",
     "display": "standalone",
-    "background_color": "#5B2C6F",
+    "background_color": "#2c1640",
     "theme_color": "#5B2C6F",
     "orientation": "any",
     "icons": [
@@ -17,7 +17,7 @@
         { "src": "/static/icons/icon-384x384.png", "sizes": "384x384", "type": "image/png" },
         { "src": "/static/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
     ],
-    "categories": ["business", "events"],
+    "categories": ["business"],
     "lang": "en-za",
     "dir": "ltr"
 }
