@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>New Booking</title></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:30px 10px;">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+<tr><td style="background:#5B2C6F;padding:25px 30px;text-align:center;">
+<h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:2px;">AL ANSAAR FOUNDATION</h1>
+<p style="color:#D4AF37;margin:5px 0 0;font-size:13px;letter-spacing:1px;">ADMIN NOTIFICATION</p>
+</td></tr>
+<tr><td style="padding:30px;">
+<h2 style="color:#27ae60;margin:0 0 15px;">New Booking Received</h2>
+<table width="100%" cellpadding="8" cellspacing="0" style="background:#f0faf4;border-radius:6px;margin:15px 0;">
+<tr><td style="border-bottom:1px solid #c8e6d5;"><strong>Exhibitor:</strong></td><td>{{ exhibitor.company_name }}</td></tr>
+<tr><td style="border-bottom:1px solid #c8e6d5;"><strong>Email:</strong></td><td>{{ exhibitor.email }}</td></tr>
+<tr><td style="border-bottom:1px solid #c8e6d5;"><strong>Reference:</strong></td><td>{{ booking.booking_reference }}</td></tr>
+<tr><td style="border-bottom:1px solid #c8e6d5;"><strong>Event:</strong></td><td>{{ booking.event.name }}</td></tr>
+<tr><td style="border-bottom:1px solid #c8e6d5;"><strong>Stall:</strong></td><td>{{ booking.stall.name }} ({{ booking.stall.size_sqm }}m&sup2;)</td></tr>
+<tr><td><strong>Total:</strong></td><td><strong>R{{ booking.total_amount|floatformat:2 }}</strong></td></tr>
+</table>
+<p><a href="{{ site_url }}/erp/bookings/{{ booking.pk }}/" style="display:inline-block;background:#5B2C6F;color:#ffffff;padding:12px 30px;border-radius:6px;text-decoration:none;font-weight:bold;">Review Booking</a></p>
+</td></tr>
+<tr><td style="background:#f8f4fc;padding:20px 30px;text-align:center;border-top:2px solid #5B2C6F;font-size:12px;color:#888;">
+<p style="margin:0;">Al Ansaar Foundation &bull; Durban, South Africa</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>

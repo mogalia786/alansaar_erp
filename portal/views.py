@@ -18,7 +18,8 @@ import uuid
 import os
 from datetime import timedelta
 from notifications.utils import (
-    send_booking_confirmation, send_payment_received,
+    send_booking_confirmation, send_booking_received, send_payment_received,
+    send_payment_verified as send_payment_verified_email,
     send_discount_request, send_discount_decision,
     send_invoice_email
 )
@@ -602,6 +603,8 @@ def collect_cash(request, booking_id):
             balance=inv.balance_due,
             entry_date=timezone.now().date(),
         )
+        auto_post_payment(payment, created_by=request.user)
+        send_payment_verified_email(payment, receipt)
         messages.success(request, f'Cash payment of R{amount:.2f} recorded. Receipt: {receipt.receipt_number}')
         return redirect('erp:booking_detail', pk=booking_id)
     from decimal import Decimal as D

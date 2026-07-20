@@ -129,6 +129,12 @@ def book_stall(request, event_id, stall_id):
             amount_paid=Decimal('0'), balance_due=total,
             status='draft', issue_date=date.today(), due_date=date.today(),
         )
+        from notifications.utils import send_booking_received
+        try:
+            send_booking_received(booking)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f'Failed to send booking received email: {e}')
         messages.success(request, f'Booking {ref} created!')
         return redirect('thank_you', pk=booking.pk)
     return redirect('floor_plan_view', event_id=event_id)

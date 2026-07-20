@@ -52,6 +52,7 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
 .stall.avail:hover { transform: scale(1.1); z-index: 20; box-shadow: 0 0 0 3px rgba(39,174,96,0.4), 0 4px 16px rgba(39,174,96,0.5); }
 @keyframes gpulse { 0%,100%{box-shadow:0 1px 6px rgba(39,174,96,0.4)} 50%{box-shadow:0 1px 12px rgba(39,174,96,0.7)} }
 .stall.reserved { background: rgba(243,156,18,0.8); border: 2px solid #f39c12; }
+.stall.pending { background: rgba(243,156,18,0.8); border: 2px solid #f39c12; }
 .stall.confirmed { background: rgba(231,76,60,0.8); border: 2px solid #e74c3c; }
 .stall.blocked { background: rgba(120,120,140,0.6); border: 2px solid #78788c; }
 .ttip {
@@ -278,7 +279,7 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
 
     var tt = document.getElementById('tt');
     function showTT(e,el){
-        var d=el.dataset, c={available:'#27ae60',reserved:'#f39c12',confirmed:'#c0392b',blocked:'#78788c'};
+        var d=el.dataset, c={available:'#27ae60',reserved:'#f39c12',pending:'#f39c12',confirmed:'#c0392b',blocked:'#78788c'};
         document.getElementById('tth').textContent=d.n;
         document.getElementById('tth').style.background=c[d.st]||'#666';
         document.getElementById('tsz').textContent=(d.w/1000).toFixed(1)+'m x '+(d.h/1000).toFixed(1)+'m ('+d.sq+' m\u00B2)';

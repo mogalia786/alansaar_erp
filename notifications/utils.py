@@ -52,6 +52,41 @@ def create_notification(user, ntype, title, message, link=''):
     )
 
 
+def send_booking_received(booking):
+    exhibitor = booking.exhibitor
+    # Email to exhibitor: booking received
+    subject_exh = f'Booking Received - {booking.booking_reference} - Al Ansaar Foundation'
+    context = {
+        'booking': booking,
+        'exhibitor': exhibitor,
+        'site_name': settings.SITE_NAME,
+        'site_url': settings.SITE_URL,
+    }
+    send_html_email(subject_exh, 'emails/booking_received.html', context, [exhibitor.email])
+    create_notification(
+        exhibitor, 'booking',
+        f'Booking {booking.booking_reference} Received',
+        f'Your booking for stall {booking.stall.name} at {booking.event.name} has been received and is pending approval.',
+        f'/bookings/{booking.pk}/'
+    )
+    # Email to directors/admins
+    admin_emails = get_director_emails()
+    if admin_emails:
+        send_html_email(
+            f'New Booking - {booking.booking_reference} - {exhibitor.company_name}',
+            'emails/admin_new_booking.html', context, admin_emails
+        )
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    for staff in User.objects.filter(is_staff=True, is_active=True):
+        create_notification(
+            staff, 'booking',
+            f'New Booking: {booking.booking_reference}',
+            f'{exhibitor.company_name} booked stall {booking.stall.name} for R{booking.total_amount:.2f}.',
+            f'/erp/bookings/{booking.pk}/'
+        )
+
+
 def send_booking_confirmation(booking):
     exhibitor = booking.exhibitor
     subject = f'Booking Confirmed - {booking.booking_reference} - Al Ansaar Foundation'
@@ -137,6 +172,22 @@ def send_payment_verified(payment, receipt):
         f'Your payment of R{amt} for {payment.invoice.invoice_number} has been verified. Receipt: {receipt.receipt_number}.',
         f'/invoices/{payment.invoice.pk}/'
     )
+    # Notify directors/admins
+    admin_emails = get_director_emails()
+    if admin_emails:
+        send_html_email(
+            f'Payment Verified - R{amt} - {exhibitor.company_name}',
+            'emails/admin_payment_verified.html', context, admin_emails
+        )
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    for staff in User.objects.filter(is_staff=True, is_active=True):
+        create_notification(
+            staff, 'payment',
+            f'Payment Verified: R{amt}',
+            f'{exhibitor.company_name} payment of R{amt} for {payment.invoice.invoice_number} verified. Receipt: {receipt.receipt_number}.',
+            f'/erp/payments/'
+        )
 
 
 def send_discount_request(dr):
