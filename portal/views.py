@@ -67,6 +67,26 @@ def erp_section_required(section, action='view'):
     return decorator
 
 
+@erp_login_required
+def api_search_exhibitors(request):
+    q = request.GET.get('q', '').strip()
+    if len(q) < 2:
+        return JsonResponse([], safe=False)
+    results = Booking.objects.filter(
+        Q(exhibitor__company_name__icontains=q) |
+        Q(exhibitor__fascia_name__icontains=q) |
+        Q(fascia_name__icontains=q)
+    ).values_list('exhibitor__company_name', 'exhibitor__fascia_name', 'fascia_name').distinct()[:20]
+    seen = set()
+    items = []
+    for company, exh_fascia, bk_fascia in results:
+        label = bk_fascia or exh_fascia or company or ''
+        if label and label not in seen:
+            seen.add(label)
+            items.append({'label': label})
+    return JsonResponse(items, safe=False)
+
+
 def erp_login(request):
     if request.user.is_authenticated and is_staff_user(request.user):
         return redirect('erp:dashboard')
@@ -395,9 +415,18 @@ def save_stalls(request, event_id):
 def erp_booking_list(request):
     bookings = Booking.objects.all().select_related('exhibitor', 'event', 'stall')
     status = request.GET.get('status')
+    q = request.GET.get('q', '').strip()
     if status:
         bookings = bookings.filter(status=status)
-    return render(request, 'portal/booking_list.html', {'bookings': bookings})
+    if q:
+        bookings = bookings.filter(
+            Q(exhibitor__company_name__icontains=q) |
+            Q(exhibitor__fascia_name__icontains=q) |
+            Q(fascia_name__icontains=q) |
+            Q(booking_reference__icontains=q) |
+            Q(stall__name__icontains=q)
+        )
+    return render(request, 'portal/booking_list.html', {'bookings': bookings, 'q': q})
 
 
 @erp_section_required('bookings')
@@ -454,8 +483,30 @@ def confirm_booking(request, pk):
 
 @erp_section_required('invoices')
 def erp_invoice_list(request):
-    invoices = Invoice.objects.all().select_related('exhibitor', 'booking')
-    return render(request, 'portal/invoice_list.html', {'invoices': invoices})
+    q = request.GET.get('q', '').strip()
+    invoices = Invoice.objects.all().select_related('exhibitor', 'booking', 'booking__stall')
+    if q:
+        invoices = invoices.filter(
+            Q(exhibitor__company_name__icontains=q) |
+            Q(exhibitor__fascia_name__icontains=q) |
+            Q(booking__fascia_name__icontains=q) |
+            Q(invoice_number__icontains=q) |
+            Q(booking__booking_reference__icontains=q) |
+            Q(booking__stall__name__icontains=q)
+        )
+    return render(request, 'portal/invoice_list.html', {'invoices': invoices, 'q': q})
+
+
+@erp_section_required('invoices')
+def erp_invoice_detail(request, pk):
+    invoice = get_object_or_404(Invoice.objects.select_related('exhibitor', 'booking', 'booking__stall', 'booking__event'), pk=pk)
+    booking = invoice.booking
+    payments = Payment.objects.filter(booking=booking).select_related('invoice').order_by('payment_date')
+    verified_total = payments.filter(status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
+    return render(request, 'portal/invoice_detail.html', {
+        'invoice': invoice, 'booking': booking,
+        'payments': payments, 'verified_total': verified_total,
+    })
 
 
 @erp_login_required
@@ -490,11 +541,21 @@ def create_invoice(request, booking_id):
 
 @erp_section_required('payments')
 def erp_payment_list(request):
-    payments = Payment.objects.all().select_related('invoice', 'booking__exhibitor')
+    payments = Payment.objects.all().select_related('invoice', 'booking__exhibitor', 'booking__stall')
     status = request.GET.get('status')
+    q = request.GET.get('q', '').strip()
     if status:
         payments = payments.filter(status=status)
-    return render(request, 'portal/payment_list.html', {'payments': payments})
+    if q:
+        payments = payments.filter(
+            Q(booking__exhibitor__company_name__icontains=q) |
+            Q(booking__exhibitor__fascia_name__icontains=q) |
+            Q(booking__fascia_name__icontains=q) |
+            Q(invoice__invoice_number__icontains=q) |
+            Q(reference_number__icontains=q) |
+            Q(booking__stall__name__icontains=q)
+        )
+    return render(request, 'portal/payment_list.html', {'payments': payments, 'q': q})
 
 
 @erp_login_required

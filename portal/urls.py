@@ -19,6 +19,7 @@ urlpatterns = [
     path('bookings/<int:pk>/reject/', views.reject_booking, name='reject_booking'),
     path('bookings/<int:pk>/confirm/', views.confirm_booking, name='confirm_booking'),
     path('invoices/', views.erp_invoice_list, name='invoice_list'),
+    path('invoices/<int:pk>/', views.erp_invoice_detail, name='invoice_detail'),
     path('invoices/create/<int:booking_id>/', views.create_invoice, name='create_invoice'),
     path('payments/', views.erp_payment_list, name='payment_list'),
     path('payments/<int:pk>/verify/', views.verify_payment, name='verify_payment'),
@@ -68,4 +69,5 @@ urlpatterns = [
     path('providers/<int:pk>/ledger/', views.erp_provider_ledger, name='provider_ledger'),
     path('login/', views.erp_login, name='login'),
     path('logout/', views.erp_logout, name='logout'),
+    path('api/search-exhibitors/', views.api_search_exhibitors, name='api_search_exhibitors'),
 ]

@@ -10,19 +10,63 @@
         <a href="{% url 'erp:booking_list' %}?status=confirmed" class="btn btn-outline-success">Confirmed</a>
     </div>
 </div>
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+            <div class="position-relative" style="flex:1;min-width:250px;">
+                <i class="bi bi-search position-absolute" style="left:10px;top:50%;transform:translateY(-50%);color:#999;"></i>
+                <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search by exhibitor, fascia name, booking ref, stall..." id="searchInput" autocomplete="off" style="padding-left:32px;">
+                <div id="searchDropdown" class="list-group position-absolute w-100" style="z-index:1000;display:none;top:100%;"></div>
+            </div>
+            {% if request.GET.status %}<input type="hidden" name="status" value="{{ request.GET.status }}">{% endif %}
+            <button type="submit" class="btn btn-purple btn-sm"><i class="bi bi-search"></i> Search</button>
+            {% if q %}<a href="{% url 'erp:booking_list' %}{% if request.GET.status %}?status={{ request.GET.status }}{% endif %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i> Clear</a>{% endif %}
+        </form>
+    </div>
+</div>
 <div class="card"><div class="card-body p-0">
 <div class="table-responsive"><table class="table table-hover mb-0">
-<thead class="table-purple"><tr><th>Ref</th><th>Exhibitor</th><th>Event</th><th>Stall</th><th>Amount</th><th>Status</th><th>Payment</th><th>Date</th><th>Actions</th></tr></thead>
+<thead class="table-purple"><tr><th>Ref</th><th>Exhibitor</th><th>Fascia</th><th>Event</th><th>Stall</th><th>Amount</th><th>Status</th><th>Payment</th><th>Date</th><th>Actions</th></tr></thead>
 <tbody>{% for b in bookings %}<tr>
     <td><a href="{% url 'erp:booking_detail' b.id %}"><strong>{{ b.booking_reference }}</strong></a></td>
-    <td>{{ b.exhibitor.company_name|truncatechars:20 }}</td>
-    <td>{{ b.event.name|truncatechars:20 }}</td>
+    <td>{{ b.exhibitor.company_name|truncatechars:18 }}</td>
+    <td>{{ b.fascia_name|default:"-"|truncatechars:15 }}</td>
+    <td>{{ b.event.name|truncatechars:18 }}</td>
     <td>{{ b.stall.name }}</td>
     <td>R{{ b.total_amount|floatformat:0 }}</td>
     <td><span class="badge bg-{% if b.status == 'pending' %}warning{% elif b.status == 'approved' %}info{% elif b.status == 'confirmed' %}success{% elif b.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ b.get_status_display }}</span></td>
     <td><span class="badge bg-{% if b.payment_status == 'paid' %}success{% elif b.payment_status == 'unpaid' %}danger{% else %}warning{% endif %}">{{ b.get_payment_status_display }}</span></td>
     <td>{{ b.booking_date|date:"d/m" }}</td>
     <td><a href="{% url 'erp:booking_detail' b.id %}" class="btn btn-sm btn-purple"><i class="bi bi-eye"></i></a></td>
-</tr>{% empty %}<tr><td colspan="9" class="text-center text-muted py-4">No bookings</td></tr>{% endfor %}</tbody>
+</tr>{% empty %}<tr><td colspan="10" class="text-center text-muted py-4">No bookings</td></tr>{% endfor %}</tbody>
 </table></div></div></div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+(function(){
+    var input=document.getElementById('searchInput'),dd=document.getElementById('searchDropdown'),timer;
+    input.addEventListener('input',function(){
+        clearTimeout(timer);
+        var q=this.value.trim();
+        if(q.length<2){dd.style.display='none';return;}
+        timer=setTimeout(function(){
+            fetch("{% url 'erp:api_search_exhibitors' %}?q="+encodeURIComponent(q))
+            .then(function(r){return r.json();})
+            .then(function(data){
+                dd.innerHTML='';
+                if(!data.length){dd.style.display='none';return;}
+                data.forEach(function(item){
+                    var a=document.createElement('a');
+                    a.href='#';a.className='list-group-item list-group-item-action py-2';
+                    a.textContent=item.label;
+                    a.addEventListener('click',function(e){e.preventDefault();input.value=item.label;dd.style.display='none';input.closest('form').submit();});
+                    dd.appendChild(a);
+                });
+                dd.style.display='block';
+            });
+        },250);
+    });
+    document.addEventListener('click',function(e){if(!e.target.closest('#searchInput')&&!e.target.closest('#searchDropdown'))dd.style.display='none';});
+})();
+</script>
 {% endblock %}

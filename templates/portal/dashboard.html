@@ -32,6 +32,9 @@
             <a href="{% url 'erp:booking_list' %}" class="btn btn-purple btn-sm w-100 mb-2"><i class="bi bi-check-circle"></i> Review Bookings</a>
             <a href="{% url 'erp:payment_list' %}?status=pending" class="btn btn-gold btn-sm w-100 mb-2"><i class="bi bi-shield-check"></i> Verify Payments</a>
             <a href="{% url 'erp:discount_list' %}" class="btn btn-purple btn-sm w-100"><i class="bi bi-percent"></i> Discount Approvals</a>
+            {% if user.user_type == 'admin' or user.user_type == 'superadmin' %}
+            <a href="{% url 'admin:index' %}" class="btn btn-outline-dark btn-sm w-100 mt-2"><i class="bi bi-gear"></i> Django Admin</a>
+            {% endif %}
         </div></div>
     </div>
     <div class="col-md-3">
