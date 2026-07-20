@@ -98,6 +98,47 @@
         </div>
     </div>
 
+    {% if stand_balances %}
+    <div style="margin-bottom:20px;">
+        <strong style="color:#5B2C6F;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Balance Per Stand</strong>
+        <table class="ledger-table" style="margin-top:8px;">
+            <thead><tr>
+                <th>Stall</th>
+                <th>Fascia</th>
+                <th>Event</th>
+                <th style="text-align:right;">Total (R)</th>
+                <th style="text-align:right;">Paid (R)</th>
+                <th style="text-align:right;">Balance (R)</th>
+                <th style="text-align:center;">Status</th>
+            </tr></thead>
+            <tbody>
+                {% for sb in stand_balances %}
+                <tr>
+                    <td><strong>{{ sb.stall_name }}</strong></td>
+                    <td>{{ sb.fascia_name }}</td>
+                    <td>{{ sb.event_name|truncatechars:25 }}</td>
+                    <td class="debit">R{{ sb.total|floatformat:2 }}</td>
+                    <td class="credit">R{{ sb.paid|floatformat:2 }}</td>
+                    <td class="balance-col {% if sb.balance > 0 %}text-danger{% elif sb.balance <= 0 %}text-success{% endif %} fw-bold">R{{ sb.balance|floatformat:2 }}</td>
+                    <td style="text-align:center;">
+                        {% if sb.balance <= 0 %}<span class="badge" style="background:#27ae60;color:#fff;">Paid</span>
+                        {% elif sb.paid > 0 %}<span class="badge" style="background:#f39c12;color:#fff;">Partial</span>
+                        {% else %}<span class="badge" style="background:#e74c3c;color:#fff;">Outstanding</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                <tr class="row-closing">
+                    <td colspan="3" style="text-align:right;"><strong>TOTALS</strong></td>
+                    <td class="debit"><strong>R{{ total_invoiced|floatformat:2 }}</strong></td>
+                    <td class="credit"><strong>R{{ total_paid|floatformat:2 }}</strong></td>
+                    <td class="balance-col {% if outstanding > 0 %}text-danger{% else %}text-success{% endif %}"><strong>R{{ outstanding|floatformat:2 }}</strong></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
     <table class="ledger-table">
         <thead><tr>
             <th style="width:12%;">Date</th>

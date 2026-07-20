@@ -855,7 +855,7 @@ def print_accessories(request, event_id):
 @erp_section_required('accounting')
 def erp_statement(request, exhibitor_id):
     exhibitor = get_object_or_404(User, pk=exhibitor_id, user_type='exhibitor')
-    entries = LedgerEntry.objects.filter(exhibitor=exhibitor).select_related('booking').order_by('entry_date', 'created_at')
+    entries = LedgerEntry.objects.filter(exhibitor=exhibitor).select_related('booking', 'booking__stall').order_by('entry_date', 'created_at')
     total_invoiced = entries.filter(entry_type='invoice').aggregate(s=Sum('debit'))['s'] or 0
     total_paid = entries.filter(entry_type='payment').aggregate(s=Sum('credit'))['s'] or 0
     total_debits = entries.aggregate(s=Sum('debit'))['s'] or 0
@@ -872,6 +872,22 @@ def erp_statement(request, exhibitor_id):
             elif days <= 30: aging_30 += bal
             elif days <= 60: aging_60 += bal
             else: aging_90 += bal
+    stand_balances = []
+    bookings = Booking.objects.filter(exhibitor=exhibitor).select_related('stall', 'event').prefetch_related('invoices', 'payments')
+    for bk in bookings:
+        inv = bk.invoices.first()
+        paid = bk.payments.filter(status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
+        total = inv.amount_incl if inv else bk.total_amount
+        balance = total - paid
+        stand_balances.append({
+            'booking': bk,
+            'stall_name': bk.stall.name if bk.stall else '-',
+            'fascia_name': bk.fascia_name or '-',
+            'event_name': bk.event.name if bk.event else '-',
+            'total': total,
+            'paid': paid,
+            'balance': balance,
+        })
     return render(request, 'printouts/statement.html', {
         'exhibitor': exhibitor, 'ledger': entries,
         'total_invoiced': total_invoiced, 'total_paid': total_paid,
@@ -880,6 +896,7 @@ def erp_statement(request, exhibitor_id):
         'closing_balance': closing_balance,
         'aging_current': aging_current, 'aging_30': aging_30,
         'aging_60': aging_60, 'aging_90': aging_90,
+        'stand_balances': stand_balances,
     })
 
 
