@@ -516,6 +516,11 @@ def verify_payment(request, pk):
             booking.balance_due = inv.balance_due
             if inv.balance_due <= 0:
                 booking.payment_status = 'paid'
+                if booking.status in ('pending', 'approved'):
+                    booking.status = 'confirmed'
+                    booking.confirmed_date = timezone.now()
+                    booking.stall.status = 'confirmed'
+                    booking.stall.save()
             booking.save()
             receipt = Receipt.objects.create(
                 receipt_number=payment.receipt_number,
@@ -580,6 +585,11 @@ def collect_cash(request, booking_id):
         booking.balance_due = inv.balance_due
         if inv.balance_due <= 0:
             booking.payment_status = 'paid'
+            if booking.status in ('pending', 'approved'):
+                booking.status = 'confirmed'
+                booking.confirmed_date = timezone.now()
+                booking.stall.status = 'confirmed'
+                booking.stall.save()
         elif inv.amount_paid > 0:
             booking.payment_status = 'partial'
         booking.save()

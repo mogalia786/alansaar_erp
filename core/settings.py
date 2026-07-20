@@ -157,7 +157,7 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Al Ansaar Foundation <info@alansaar.org.za>')
 
 SITE_NAME = 'Al Ansaar Event Management'
-SITE_URL = config('SITE_URL', default='http://127.0.0.1:8000')
+SITE_URL = config('SITE_URL', default='https://alansaar.site')
 CURRENCY_SYMBOL = 'R'
 CURRENCY_CODE = 'ZAR'
 VAT_RATE = 0.15
