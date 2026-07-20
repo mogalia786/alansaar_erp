@@ -62,7 +62,10 @@ def my_bookings(request):
 
 @login_required
 def booking_detail(request, pk):
-    booking = get_object_or_404(Booking, pk=pk, exhibitor=request.user)
+    booking = get_object_or_404(Booking, pk=pk)
+    if booking.exhibitor != request.user and not request.user.is_staff:
+        from django.http import Http404
+        raise Http404
     from events.models import AccessoryType
     accessories = AccessoryType.objects.filter(is_active=True)
     paid_amount = booking.amount_paid
