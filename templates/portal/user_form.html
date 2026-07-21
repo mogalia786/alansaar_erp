@@ -19,6 +19,14 @@
             <input type="email" name="email" class="form-control" required value="{% if edit %}{{ edit_user.email }}{% endif %}">
         </div>
         <div class="col-md-6">
+            <label class="form-label">First Name</label>
+            <input type="text" name="first_name" class="form-control" value="{% if edit %}{{ edit_user.first_name }}{% endif %}">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Last Name</label>
+            <input type="text" name="last_name" class="form-control" value="{% if edit %}{{ edit_user.last_name }}{% endif %}">
+        </div>
+        <div class="col-md-6">
             <label class="form-label">Password</label>
             <input type="password" name="password" class="form-control" placeholder="{% if edit %}Leave blank to keep current{% else %}Default: changeme123{% endif %}">
             {% if edit %}<small class="text-muted">Leave blank to keep current password.</small>{% endif %}

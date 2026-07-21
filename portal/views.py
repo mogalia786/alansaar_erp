@@ -1186,7 +1186,10 @@ def erp_user_edit(request, pk):
     roles = Role.objects.filter(is_active=True)
     if request.method == 'POST':
         utype = request.POST.get('user_type', 'staff')
+        user.username = request.POST.get('username', user.username)
         user.email = request.POST.get('email', '')
+        user.first_name = request.POST.get('first_name', '')
+        user.last_name = request.POST.get('last_name', '')
         user.user_type = utype
         user.is_staff = utype in ('staff', 'finance', 'director', 'admin', 'superadmin')
         user.phone = request.POST.get('phone', '')
