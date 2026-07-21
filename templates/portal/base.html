@@ -109,6 +109,17 @@
                             {% if request.user|has_perm:'expenses' %}<a href="{% url 'erp:expense_list' %}" class="d-block py-1">Expenses</a>{% endif %}
                             {% if request.user|has_perm:'rfq' %}<a href="{% url 'erp:rfq_list' %}" class="d-block py-1">RFQ / Procurement</a>{% endif %}
                             <a href="{% url 'fnb:dashboard' %}" class="d-block py-1">Banking</a>
+                            <a href="{% url 'erp:discount_list' %}" class="d-block py-1">Discounts</a>
+                            {% if request.user|has_perm:'accounting' %}
+                            <hr class="border-secondary my-2">
+                            <div class="text-uppercase" style="font-size:.7rem;color:var(--gold);letter-spacing:1px;">Accounting</div>
+                            <a href="{% url 'accounting:dashboard' %}" class="d-block py-1">Accounting Dashboard</a>
+                            <a href="{% url 'accounting:chart_of_accounts' %}" class="d-block py-1">Chart of Accounts</a>
+                            <a href="{% url 'accounting:journal_entries' %}" class="d-block py-1">Journal Entries</a>
+                            <a href="{% url 'accounting:trial_balance' %}" class="d-block py-1">Trial Balance</a>
+                            <a href="{% url 'accounting:income_statement' %}" class="d-block py-1">Income Statement</a>
+                            <a href="{% url 'accounting:balance_sheet' %}" class="d-block py-1">Balance Sheet</a>
+                            {% endif %}
                             {% if request.user|has_perm:'reports' %}<a href="{% url 'erp:reports' %}" class="d-block py-1">Reports</a>{% endif %}
                             <a href="{% url 'erp:logout' %}" class="d-block py-1">Logout</a>
                         </div>

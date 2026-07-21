@@ -28,6 +28,10 @@ class User(AbstractUser):
     def has_erp_permission(self, section, action='view'):
         if self.user_type in ('superadmin', 'admin'):
             return True
+        if self.user_type == 'director' and section in ('accounting', 'reports', 'expenses', 'rfq'):
+            return True
+        if self.user_type == 'finance' and section in ('accounting', 'reports', 'invoices', 'payments', 'expenses'):
+            return True
         if self.role:
             return self.role.permissions.filter(section=section, **{f'can_{action}': True}).exists()
         return False
