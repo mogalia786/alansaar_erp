@@ -881,15 +881,10 @@ def print_accessories(request, event_id):
 def erp_statement(request, exhibitor_id):
     exhibitor = get_object_or_404(User, pk=exhibitor_id, user_type='exhibitor')
     entries = LedgerEntry.objects.filter(exhibitor=exhibitor).select_related('booking', 'booking__stall').order_by('entry_date', 'created_at')
-    total_invoiced = Invoice.objects.filter(exhibitor=exhibitor).aggregate(s=Sum('amount_incl'))['s'] or Decimal('0')
     total_paid = Payment.objects.filter(booking__exhibitor=exhibitor, status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
-    total_debits = total_invoiced
-    total_credits = total_paid
-    closing_balance = total_debits - total_credits
-    outstanding = total_invoiced - total_paid
     today = timezone.now().date()
     aging_current = aging_30 = aging_60 = aging_90 = Decimal('0')
-    for inv in Invoice.objects.filter(exhibitor=exhibitor, status__in=['sent', 'partial', 'overdue']):
+    for inv in Invoice.objects.filter(Q(exhibitor=exhibitor) | Q(booking__exhibitor=exhibitor), status__in=['sent', 'partial', 'overdue']):
         bal = inv.balance_due
         if bal > 0:
             days = (today - inv.due_date).days
@@ -913,6 +908,11 @@ def erp_statement(request, exhibitor_id):
             'paid': paid,
             'balance': balance,
         })
+    total_invoiced = sum(sb['total'] for sb in stand_balances)
+    total_debits = total_invoiced
+    total_credits = total_paid
+    closing_balance = total_debits - total_credits
+    outstanding = total_invoiced - total_paid
     return render(request, 'printouts/statement.html', {
         'exhibitor': exhibitor, 'ledger': entries,
         'total_invoiced': total_invoiced, 'total_paid': total_paid,
