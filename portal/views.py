@@ -897,7 +897,9 @@ def erp_statement(request, exhibitor_id):
     for bk in bookings:
         inv = bk.invoices.first()
         paid = bk.payments.filter(status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
-        total = inv.amount_incl if inv else bk.total_amount
+        total = bk.total_amount
+        if inv and inv.amount_incl:
+            total = inv.amount_incl
         balance = total - paid
         stand_balances.append({
             'booking': bk,
