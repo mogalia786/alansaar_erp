@@ -181,6 +181,6 @@ CORS_ALLOW_CREDENTIALS = True
 # FNB Banking Integration
 FNB_CLIENT_ID = config('FNB_CLIENT_ID', default='E84OOE')
 FNB_CLIENT_SECRET = config('FNB_CLIENT_SECRET', default='621NZsDknRDWjqf8sKhyH0ktjPXtbsr4')
-FNB_BASE_URL = config('FNB_BASE_URL', default='https://api.fnb.co.za/apigateway')
+FNB_BASE_URL = config('FNB_BASE_URL', default='https://api.p.fnb.co.za/apigateway')
 FNB_DEBTOR_ACCOUNT = config('FNB_DEBTOR_ACCOUNT', default='63001731248')
 FNB_DEBTOR_BRANCH = config('FNB_DEBTOR_BRANCH', default='250655')
