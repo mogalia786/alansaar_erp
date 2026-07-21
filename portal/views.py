@@ -892,14 +892,15 @@ def erp_statement(request, exhibitor_id):
             elif days <= 30: aging_30 += bal
             elif days <= 60: aging_60 += bal
             else: aging_90 += bal
+    booking_ids = entries.values_list('booking_id', flat=True).distinct()
+    bookings = Booking.objects.filter(id__in=booking_ids).select_related('stall', 'event').prefetch_related('invoices', 'payments')
+    if not bookings.exists():
+        bookings = Booking.objects.filter(exhibitor=exhibitor).select_related('stall', 'event').prefetch_related('invoices', 'payments')
     stand_balances = []
-    bookings = Booking.objects.filter(exhibitor=exhibitor).select_related('stall', 'event').prefetch_related('invoices', 'payments')
     for bk in bookings:
         inv = bk.invoices.first()
         paid = bk.payments.filter(status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
-        total = bk.total_amount
-        if inv and inv.amount_incl:
-            total = inv.amount_incl
+        total = inv.amount_incl if inv and inv.amount_incl else bk.total_amount
         balance = total - paid
         stand_balances.append({
             'booking': bk,
