@@ -199,10 +199,14 @@ def request_discount(request, pk):
     if request.method == 'POST':
         from decimal import Decimal
         from .models import DiscountRequest
+        discount_percent = Decimal(request.POST.get('discount_percent', '0'))
+        discount_amount = (booking.total_amount * discount_percent / 100).quantize(Decimal('0.01'))
         DiscountRequest.objects.create(
             booking=booking,
-            requested_amount=Decimal(request.POST.get('discount_amount', '0')),
-            reason=request.POST.get('discount_reason', ''),
+            requested_by=request.user,
+            discount_percent=discount_percent,
+            discount_amount=discount_amount,
+            reason=request.POST.get('reason', ''),
         )
         messages.success(request, 'Discount request submitted.')
     return redirect('booking_detail', pk=pk)
