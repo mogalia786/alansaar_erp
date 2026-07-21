@@ -856,10 +856,10 @@ def print_accessories(request, event_id):
 def erp_statement(request, exhibitor_id):
     exhibitor = get_object_or_404(User, pk=exhibitor_id, user_type='exhibitor')
     entries = LedgerEntry.objects.filter(exhibitor=exhibitor).select_related('booking', 'booking__stall').order_by('entry_date', 'created_at')
-    total_invoiced = entries.filter(entry_type='invoice').aggregate(s=Sum('debit'))['s'] or 0
-    total_paid = entries.filter(entry_type='payment').aggregate(s=Sum('credit'))['s'] or 0
-    total_debits = entries.aggregate(s=Sum('debit'))['s'] or 0
-    total_credits = entries.aggregate(s=Sum('credit'))['s'] or 0
+    total_invoiced = Invoice.objects.filter(exhibitor=exhibitor).aggregate(s=Sum('amount_incl'))['s'] or Decimal('0')
+    total_paid = Payment.objects.filter(booking__exhibitor=exhibitor, status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
+    total_debits = total_invoiced
+    total_credits = total_paid
     closing_balance = total_debits - total_credits
     outstanding = total_invoiced - total_paid
     today = timezone.now().date()
