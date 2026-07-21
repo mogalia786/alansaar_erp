@@ -8,7 +8,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-erp-key-change-in-pro
 DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 if not DEBUG and '*' not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.extend(['alansaar-erp.onrender.com', 'alansaar.site', 'www.alansaar.site'])
+    ALLOWED_HOSTS.extend(['alansaar-erp-c9kq.onrender.com', 'alansaar-erp.onrender.com', 'alansaar.site', 'www.alansaar.site'])
 
 INSTALLED_APPS = [
     'django.contrib.admin',
