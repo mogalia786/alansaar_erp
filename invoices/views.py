@@ -139,8 +139,8 @@ def account_statement(request):
     total_invoiced = sum(sb['total'] for sb in stand_balances)
     total_paid = entries.filter(entry_type='payment').aggregate(s=Sum('credit'))['s'] or Decimal('0')
     outstanding = total_invoiced - total_paid
-    total_debits = entries.aggregate(s=Sum('debit'))['s'] or Decimal('0')
-    total_credits = entries.aggregate(s=Sum('credit'))['s'] or Decimal('0')
+    total_debits = total_invoiced
+    total_credits = total_paid
     closing_balance = total_debits - total_credits
     today = timezone.now().date()
     aging_current = aging_30 = aging_60 = aging_90 = Decimal('0')
