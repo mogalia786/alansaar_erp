@@ -772,6 +772,31 @@ def approve_discount(request, pk):
         dr.booking.balance_due = dr.booking.total_amount - dr.booking.amount_paid
         dr.booking.save()
         dr.save()
+        # Update the booking's invoice
+        inv = dr.booking.invoices.first()
+        if inv:
+            inv.amount_excl = dr.booking.subtotal
+            inv.vat_amount = dr.booking.vat_amount
+            inv.amount_incl = dr.booking.total_amount
+            inv.balance_due = inv.amount_incl - inv.amount_paid
+            if inv.balance_due <= 0:
+                inv.status = 'paid'
+            elif inv.amount_paid > 0:
+                inv.status = 'partial'
+            inv.save()
+            # Create credit note ledger entry for the discount
+            from invoices.models import LedgerEntry
+            LedgerEntry.objects.create(
+                exhibitor=dr.booking.exhibitor,
+                booking=dr.booking,
+                entry_type='credit',
+                description=f'Discount {dr.discount_percent}% approved - {dr.booking.booking_reference}',
+                reference=f'DISC-{dr.pk}',
+                debit=0,
+                credit=dr.discount_amount,
+                balance=inv.balance_due,
+                entry_date=timezone.now().date(),
+            )
         # Auto-post accounting adjustment
         from accounting.auto_post import auto_post_discount
         auto_post_discount(dr.booking, dr.discount_amount, request.user)

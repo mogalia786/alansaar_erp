@@ -199,15 +199,26 @@ def request_discount(request, pk):
     if request.method == 'POST':
         from decimal import Decimal
         from .models import DiscountRequest
+        from notifications.utils import send_discount_request, create_notification
+        from django.contrib.auth import get_user_model
         discount_percent = Decimal(request.POST.get('discount_percent', '0'))
         discount_amount = (booking.total_amount * discount_percent / 100).quantize(Decimal('0.01'))
-        DiscountRequest.objects.create(
+        dr = DiscountRequest.objects.create(
             booking=booking,
             requested_by=request.user,
             discount_percent=discount_percent,
             discount_amount=discount_amount,
             reason=request.POST.get('reason', ''),
         )
+        send_discount_request(dr)
+        User = get_user_model()
+        for staff in User.objects.filter(is_staff=True, is_active=True):
+            create_notification(
+                staff, 'discount',
+                f'Discount Request: {discount_percent}% - {booking.booking_reference}',
+                f'{request.user.company_name or request.user.username} requested a {discount_percent}% discount (R{discount_amount:.2f}) on {booking.booking_reference}.',
+                f'/erp/discounts/'
+            )
         messages.success(request, 'Discount request submitted.')
     return redirect('booking_detail', pk=pk)
 

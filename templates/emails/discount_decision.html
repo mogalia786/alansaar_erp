@@ -23,7 +23,11 @@
 <table width="100%" cellpadding="8" cellspacing="0" style="background:{% if dr.status == 'approved' %}#eafaf1{% else %}#fdedec{% endif %};border-radius:6px;margin:15px 0;">
 <tr><td style="border-bottom:1px solid #ccc;"><strong>Booking:</strong></td><td>{{ booking.booking_reference }}</td></tr>
 <tr><td style="border-bottom:1px solid #ccc;"><strong>Discount:</strong></td><td>{{ dr.discount_percent }}% (R{{ dr.discount_amount|floatformat:2 }})</td></tr>
-<tr><td><strong>Reason:</strong></td><td>{{ dr.reason }}</td></tr>
+<tr><td style="border-bottom:1px solid #ccc;"><strong>Reason:</strong></td><td>{{ dr.reason }}</td></tr>
+{% if dr.status == 'approved' %}
+<tr><td style="border-bottom:1px solid #ccc;"><strong>New Total:</strong></td><td>R{{ booking.total_amount|floatformat:2 }}</td></tr>
+<tr><td><strong>Balance Due:</strong></td><td>R{{ booking.balance_due|floatformat:2 }}</td></tr>
+{% endif %}
 </table>
 <p><a href="{{ site_url }}/bookings/{{ booking.pk }}/" style="display:inline-block;background:#5B2C6F;color:#ffffff;padding:12px 30px;border-radius:6px;text-decoration:none;font-weight:bold;">View Booking</a></p>
 </td></tr>
