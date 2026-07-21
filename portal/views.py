@@ -881,21 +881,7 @@ def print_accessories(request, event_id):
 def erp_statement(request, exhibitor_id):
     exhibitor = get_object_or_404(User, pk=exhibitor_id, user_type='exhibitor')
     entries = LedgerEntry.objects.filter(exhibitor=exhibitor).select_related('booking', 'booking__stall').order_by('entry_date', 'created_at')
-    total_paid = Payment.objects.filter(booking__exhibitor=exhibitor, status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
-    today = timezone.now().date()
-    aging_current = aging_30 = aging_60 = aging_90 = Decimal('0')
-    for inv in Invoice.objects.filter(Q(exhibitor=exhibitor) | Q(booking__exhibitor=exhibitor), status__in=['sent', 'partial', 'overdue']):
-        bal = inv.balance_due
-        if bal > 0:
-            days = (today - inv.due_date).days
-            if days <= 0: aging_current += bal
-            elif days <= 30: aging_30 += bal
-            elif days <= 60: aging_60 += bal
-            else: aging_90 += bal
-    booking_ids = entries.values_list('booking_id', flat=True).distinct()
-    bookings = Booking.objects.filter(id__in=booking_ids).select_related('stall', 'event').prefetch_related('invoices', 'payments')
-    if not bookings.exists():
-        bookings = Booking.objects.filter(exhibitor=exhibitor).select_related('stall', 'event').prefetch_related('invoices', 'payments')
+    bookings = Booking.objects.filter(exhibitor=exhibitor).select_related('stall', 'event').prefetch_related('invoices', 'payments')
     stand_balances = []
     for bk in bookings:
         inv = bk.invoices.first()
@@ -912,10 +898,24 @@ def erp_statement(request, exhibitor_id):
             'balance': balance,
         })
     total_invoiced = sum(sb['total'] for sb in stand_balances)
+    total_paid = Payment.objects.filter(booking__exhibitor=exhibitor, status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
+    outstanding = total_invoiced - total_paid
+    total_debits = entries.aggregate(s=Sum('debit'))['s'] or Decimal('0')
+    total_credits = entries.aggregate(s=Sum('credit'))['s'] or Decimal('0')
+    closing_balance = total_debits - total_credits
+    today = timezone.now().date()
+    aging_current = aging_30 = aging_60 = aging_90 = Decimal('0')
+    for inv in Invoice.objects.filter(Q(exhibitor=exhibitor) | Q(booking__exhibitor=exhibitor), status__in=['sent', 'partial', 'overdue']):
+        bal = inv.balance_due
+        if bal > 0:
+            days = (today - inv.due_date).days
+            if days <= 0: aging_current += bal
+            elif days <= 30: aging_30 += bal
+            elif days <= 60: aging_60 += bal
+            else: aging_90 += bal
     total_debits = total_invoiced
     total_credits = total_paid
     closing_balance = total_debits - total_credits
-    outstanding = total_invoiced - total_paid
     return render(request, 'printouts/statement.html', {
         'exhibitor': exhibitor, 'ledger': entries,
         'total_invoiced': total_invoiced, 'total_paid': total_paid,

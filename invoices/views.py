@@ -3,6 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Invoice, Payment, Receipt, LedgerEntry
+from bookings.models import Booking
 from django.utils import timezone
 from django.db.models import Sum, Q
 from notifications.utils import send_invoice_email, send_payment_received
@@ -119,29 +120,38 @@ def print_payments_receipt(request, pk):
 def account_statement(request):
     exhibitor = request.user
     entries = LedgerEntry.objects.filter(exhibitor=exhibitor).select_related('booking').order_by('entry_date', 'created_at')
-    total_invoiced = entries.filter(entry_type='invoice').aggregate(s=Sum('debit'))['s'] or 0
-    total_paid = entries.filter(entry_type='payment').aggregate(s=Sum('credit'))['s'] or 0
-    total_debits = entries.aggregate(s=Sum('debit'))['s'] or 0
-    total_credits = entries.aggregate(s=Sum('credit'))['s'] or 0
-    closing_balance = total_debits - total_credits
+    bookings = Booking.objects.filter(exhibitor=exhibitor).select_related('stall', 'event').prefetch_related('invoices', 'payments')
+    stand_balances = []
+    for bk in bookings:
+        inv = bk.invoices.first()
+        paid = bk.payments.filter(status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
+        total = inv.amount_incl if inv and inv.amount_incl else bk.total_amount
+        balance = total - paid
+        stand_balances.append({
+            'booking': bk,
+            'stall_name': bk.stall.name if bk.stall else '-',
+            'fascia_name': bk.fascia_name or '-',
+            'event_name': bk.event.name if bk.event else '-',
+            'total': total,
+            'paid': paid,
+            'balance': balance,
+        })
+    total_invoiced = sum(sb['total'] for sb in stand_balances)
+    total_paid = entries.filter(entry_type='payment').aggregate(s=Sum('credit'))['s'] or Decimal('0')
     outstanding = total_invoiced - total_paid
+    total_debits = entries.aggregate(s=Sum('debit'))['s'] or Decimal('0')
+    total_credits = entries.aggregate(s=Sum('credit'))['s'] or Decimal('0')
+    closing_balance = total_debits - total_credits
     today = timezone.now().date()
-    aging_current = Decimal('0')
-    aging_30 = Decimal('0')
-    aging_60 = Decimal('0')
-    aging_90 = Decimal('0')
+    aging_current = aging_30 = aging_60 = aging_90 = Decimal('0')
     for inv in Invoice.objects.filter(exhibitor=exhibitor, status__in=['sent', 'partial', 'overdue']):
         bal = inv.balance_due
         if bal > 0:
             days = (today - inv.due_date).days
-            if days <= 0:
-                aging_current += bal
-            elif days <= 30:
-                aging_30 += bal
-            elif days <= 60:
-                aging_60 += bal
-            else:
-                aging_90 += bal
+            if days <= 0: aging_current += bal
+            elif days <= 30: aging_30 += bal
+            elif days <= 60: aging_60 += bal
+            else: aging_90 += bal
     return render(request, 'printouts/statement.html', {
         'exhibitor': exhibitor, 'ledger': entries,
         'total_invoiced': total_invoiced, 'total_paid': total_paid,
@@ -150,4 +160,5 @@ def account_statement(request):
         'closing_balance': closing_balance,
         'aging_current': aging_current, 'aging_30': aging_30,
         'aging_60': aging_60, 'aging_90': aging_90,
+        'stand_balances': stand_balances,
     })
