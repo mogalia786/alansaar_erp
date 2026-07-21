@@ -1,7 +1,8 @@
-const CACHE_NAME = 'al-ansaar-v3';
+const CACHE_NAME = 'al-ansaar-v4';
 
 const PRECACHE_URLS = [
     '/',
+    '/login/',
     '/erp/',
     '/providers/dashboard/',
     '/rfqs/',

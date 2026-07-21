@@ -2,7 +2,7 @@
     "name": "Al Ansaar Events",
     "short_name": "Al Ansaar",
     "description": "Al Ansaar Foundation - Events, Bookings & Invoicing",
-    "start_url": "/",
+    "start_url": "/login/",
     "display": "standalone",
     "background_color": "#5B2C6F",
     "theme_color": "#5B2C6F",
