@@ -75,7 +75,7 @@
                     <li class="nav-item"><a class="nav-link" href="{% url 'event_list' %}">Events</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'rfq_list' %}">RFQs</a></li>
                     {% if user.is_authenticated %}
-                        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'my_bookings' %}">My Bookings</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'my_invoices' %}">Invoices</a></li>
                     {% endif %}
@@ -84,7 +84,7 @@
                     {% if user.is_authenticated %}
                         {% if user.notifications.count %}
                         <li class="nav-item">
-                            <a class="nav-link position-relative" href="{% url 'notifications' %}">
+                            <a class="nav-link position-relative" href="{% url 'accounts:notifications' %}">
                                 <i class="bi bi-bell"></i>
                                 {% with unread=user.notifications.count %}
                                 {% if unread %}
@@ -99,14 +99,14 @@
                                 <i class="bi bi-person-circle"></i> {{ user.company_name|default:user.username }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'dashboard' %}">Dashboard</a></li>
+                                <li><a class="dropdown-item" href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+                                <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">Logout</a></li>
                             </ul>
                         </li>
                     {% else %}
-                        <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
-                        <li class="nav-item"><a class="nav-link btn btn-gold text-dark px-3 ms-2" href="{% url 'register' %}">Register</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'accounts:login' %}">Login</a></li>
+                        <li class="nav-item"><a class="nav-link btn btn-gold text-dark px-3 ms-2" href="{% url 'accounts:register' %}">Register</a></li>
                     {% endif %}
                 </ul>
             </div>

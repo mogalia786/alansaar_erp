@@ -89,7 +89,7 @@ class E2ETest(TestCase):
             'phone': '0712345678',
             'password1': 'Exhibit123!', 'password2': 'Exhibit123!',
         }
-        resp = self.client.post(reverse('register'), reg_data, follow=True)
+        resp = self.client.post(reverse('accounts:register'), reg_data, follow=True)
         user_created = User.objects.filter(username='exhibitor2').exists()
         if not user_created:
             self.client.login(username='exhibitor1', password='exhibit123')

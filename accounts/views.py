@@ -8,7 +8,7 @@ from notifications.utils import send_welcome_email
 
 def exhibitor_register(request):
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        return redirect('accounts:dashboard')
     if request.method == 'POST':
         form = ExhibitorRegistrationForm(request.POST)
         if form.is_valid():
@@ -18,7 +18,7 @@ def exhibitor_register(request):
             send_welcome_email(user)
             login(request, user)
             messages.success(request, 'Registration successful! Welcome.')
-            return redirect('dashboard')
+            return redirect('accounts:dashboard')
     else:
         form = ExhibitorRegistrationForm()
     return render(request, 'accounts/register.html', {'form': form})
@@ -26,14 +26,14 @@ def exhibitor_register(request):
 
 def exhibitor_login(request):
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        return redirect('accounts:dashboard')
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             if user.user_type == 'exhibitor':
                 login(request, user)
-                return redirect('dashboard')
+                return redirect('accounts:dashboard')
             else:
                 messages.error(request, 'Invalid credentials.')
         else:
