@@ -353,3 +353,21 @@ def remote_reset(request, event_id, token):
     except Exception as e:
         import traceback
         return HttpResponse(f'<pre>{traceback.format_exc()}</pre>', status=500)
+
+
+@csrf_exempt
+def upload_images(request, event_id, token):
+    if token != 'dss2026reset':
+        return HttpResponse('Invalid token', status=403)
+    if request.method == 'POST':
+        import base64
+        from django.core.files.base import ContentFile
+        from django.core.files.storage import default_storage
+        data = json.loads(request.body)
+        results = []
+        for key, b64data in data.items():
+            raw = base64.b64decode(b64data)
+            saved_name = default_storage.save(key, ContentFile(raw))
+            results.append(f'{key} -> {saved_name} ({len(raw)} bytes)')
+        return HttpResponse('<br>'.join(results))
+    return HttpResponse('POST with JSON {key: base64data}')
