@@ -359,15 +359,9 @@ def remote_reset(request, event_id, token):
 def upload_images(request, event_id, token):
     if token != 'dss2026reset':
         return HttpResponse('Invalid token', status=403)
-    if request.method == 'POST':
-        import base64
-        from django.core.files.base import ContentFile
-        from django.core.files.storage import default_storage
-        data = json.loads(request.body)
-        results = []
-        for key, b64data in data.items():
-            raw = base64.b64decode(b64data)
-            saved_name = default_storage.save(key, ContentFile(raw))
-            results.append(f'{key} -> {saved_name} ({len(raw)} bytes)')
-        return HttpResponse('<br>'.join(results))
-    return HttpResponse('POST with JSON {key: base64data}')
+    from django.core.files.storage import default_storage
+    results = []
+    for f in request.FILES.values():
+        saved_name = default_storage.save(f.name, f)
+        results.append(f'{f.name} -> {saved_name} ({f.size} bytes)')
+    return HttpResponse('<br>'.join(results) if results else 'POST multipart files')
