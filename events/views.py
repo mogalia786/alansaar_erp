@@ -369,7 +369,7 @@ def upload_images(request, event_id, token):
             key = f.name
             body = f.read()
             encoded_key = key.replace('/', '%2F')
-            url = f'https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket_name}/objects/{encoded_key}'
+            url = f'https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket}/objects/{encoded_key}'
             resp = http_requests.put(
                 url,
                 headers={'Authorization': f'Bearer {api_token}'},
@@ -381,7 +381,14 @@ def upload_images(request, event_id, token):
                 results.append(f'{key} -> {pub_url} ({len(body)} bytes) - OK')
             else:
                 results.append(f'{key} -> FAILED: {rjson}')
-        return HttpResponse('<br>'.join(results) if results else 'POST multipart files')
+        if not request.FILES:
+            for sec in FloorPlanSection.objects.filter(event_id=event_id):
+                old_path = sec.section_image or ''
+                new_name = old_path.split('/')[-1] if '/' in old_path else old_path
+                sec.section_image = new_name
+                sec.save(update_fields=['section_image'])
+                results.append(f'{sec.name}: {old_path} -> {new_name}')
+        return HttpResponse('<br>'.join(results) if results else 'POST multipart files or GET to fix DB paths')
     except Exception as e:
         import traceback
         return HttpResponse(f'Error: {e}<br><pre>{traceback.format_exc()}</pre>', status=500)
