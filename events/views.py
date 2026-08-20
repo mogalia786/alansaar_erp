@@ -298,15 +298,26 @@ def remote_reset(request, event_id, token):
     stalls.delete()
     stall_file = os.path.join(str(settings.BASE_DIR), 'stall_export.json')
     created = 0
+    skipped_sections = []
     if os.path.exists(stall_file):
         with open(stall_file, 'r') as f:
             data = json.load(f)
         sections_map = {}
         for s in FloorPlanSection.objects.filter(event=event):
             sections_map[s.name] = s
+        section_defs = {
+            'Main Hall': {'display_order': 1, 'original_width': 4959, 'original_height': 7009, 'scale_factor': 35.0},
+            'East Lawn': {'display_order': 2, 'original_width': 9917, 'original_height': 7017, 'scale_factor': 87.5},
+            'North Plaza': {'display_order': 3, 'original_width': 4959, 'original_height': 7009, 'scale_factor': 35.0},
+        }
+        for name, defs in section_defs.items():
+            if name not in sections_map:
+                sec = FloorPlanSection.objects.create(event=event, name=name, **defs)
+                sections_map[name] = sec
         for d in data:
             section = sections_map.get(d['section'])
             if not section:
+                skipped_sections.append(d['section'])
                 continue
             Stall.objects.create(
                 event=event, section=section, name=d['name'],
