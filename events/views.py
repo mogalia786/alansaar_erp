@@ -281,67 +281,75 @@ def remote_reset(request, event_id, token):
         return HttpResponse('Invalid token', status=403)
     if request.GET.get('confirm') != 'yes':
         return HttpResponse('Add ?confirm=yes to run')
-    from bookings.models import Booking
-    from invoices.models import Invoice, Payment
-    event = get_object_or_404(Event, pk=event_id)
-    payments = Payment.objects.filter(invoice__booking__event=event)
-    invoices = Invoice.objects.filter(booking__event=event)
-    bookings = Booking.objects.filter(event=event)
-    stalls = Stall.objects.filter(event=event)
-    p_count = payments.count()
-    i_count = invoices.count()
-    b_count = bookings.count()
-    s_count = stalls.count()
-    payments.delete()
-    invoices.delete()
-    bookings.delete()
-    stalls.delete()
-    stall_file = os.path.join(str(settings.BASE_DIR), 'stall_export.json')
-    created = 0
-    skipped_sections = []
-    if os.path.exists(stall_file):
-        with open(stall_file, 'r') as f:
-            data = json.load(f)
-        sections_map = {}
-        for s in FloorPlanSection.objects.filter(event=event):
-            sections_map[s.name] = s
-        section_defs = {
-            'Main Hall': {'display_order': 1, 'original_width': 4959, 'original_height': 7009, 'scale_factor': 35.0, 'section_image': 'floor_plan_sections/1_main_hall_Oz2k97q.png'},
-            'East Lawn': {'display_order': 2, 'original_width': 9917, 'original_height': 7017, 'scale_factor': 87.5, 'section_image': 'floor_plan_sections/1_east_lawn_EfYF7ud.png'},
-            'North Plaza': {'display_order': 3, 'original_width': 4959, 'original_height': 7009, 'scale_factor': 35.0, 'section_image': 'floor_plan_sections/1_north_plaza_N3e1J9d.png'},
-        }
-        for name, defs in section_defs.items():
-            sec = FloorPlanSection.objects.filter(event=event, name=name).first()
-            if sec:
-                for k, v in defs.items():
-                    setattr(sec, k, v)
-                sec.save()
-                sections_map[name] = sec
-            else:
-                sec = FloorPlanSection.objects.create(event=event, name=name, **defs)
-                sections_map[name] = sec
-        for d in data:
-            section = sections_map.get(d['section'])
-            if not section:
-                skipped_sections.append(d['section'])
-                continue
-            Stall.objects.create(
-                event=event, section=section, name=d['name'],
-                position_x=d['position_x'], position_y=d['position_y'],
-                width=d['width'], height=d['height'], size_sqm=d['size_sqm'],
-                base_price=Decimal(str(d['base_price'])),
-                status=d.get('status', 'available'),
-                rotation=d.get('rotation', 0),
-                has_water=d.get('has_water', False),
-                is_corner=d.get('is_corner', False),
-                is_near_entrance=d.get('is_near_entrance', False),
-                is_accessible=d.get('is_accessible', False),
-            )
-            created += 1
-    sections_info = ', '.join(f'{s.name}: {s.stalls.count()}' for s in FloorPlanSection.objects.filter(event=event))
-    return HttpResponse(
-        f'Reset complete for {event.name}:<br>'
-        f'Deleted: {b_count} bookings, {i_count} invoices, {p_count} payments, {s_count} stalls<br>'
-        f'Imported: {created} stalls<br>'
-        f'Sections: {sections_info}'
-    )
+    try:
+        from bookings.models import Booking
+        from invoices.models import Invoice, Payment
+        event = get_object_or_404(Event, pk=event_id)
+        payments = Payment.objects.filter(invoice__booking__event=event)
+        invoices = Invoice.objects.filter(booking__event=event)
+        bookings = Booking.objects.filter(event=event)
+        stalls = Stall.objects.filter(event=event)
+        p_count = payments.count()
+        i_count = invoices.count()
+        b_count = bookings.count()
+        s_count = stalls.count()
+        payments.delete()
+        invoices.delete()
+        bookings.delete()
+        stalls.delete()
+        stall_file = os.path.join(str(settings.BASE_DIR), 'stall_export.json')
+        created = 0
+        skipped = []
+        if os.path.exists(stall_file):
+            with open(stall_file, 'r') as f:
+                data = json.load(f)
+            sections_map = {}
+            for s in FloorPlanSection.objects.filter(event=event):
+                sections_map[s.name] = s
+            section_defs = {
+                'Main Hall': {'display_order': 1, 'original_width': 4959, 'original_height': 7009, 'scale_factor': 35.0, 'section_image': 'floor_plan_sections/1_main_hall_Oz2k97q.png'},
+                'East Lawn': {'display_order': 2, 'original_width': 9917, 'original_height': 7017, 'scale_factor': 87.5, 'section_image': 'floor_plan_sections/1_east_lawn_EfYF7ud.png'},
+                'North Plaza': {'display_order': 3, 'original_width': 4959, 'original_height': 7009, 'scale_factor': 35.0, 'section_image': 'floor_plan_sections/1_north_plaza_N3e1J9d.png'},
+            }
+            for name, defs in section_defs.items():
+                sec = FloorPlanSection.objects.filter(event=event, name=name).first()
+                if sec:
+                    for k, v in defs.items():
+                        setattr(sec, k, v)
+                    sec.save()
+                    sections_map[name] = sec
+                else:
+                    sec = FloorPlanSection.objects.create(event=event, name=name, **defs)
+                    sections_map[name] = sec
+            for d in data:
+                section = sections_map.get(d['section'])
+                if not section:
+                    skipped.append(d['section'])
+                    continue
+                try:
+                    Stall.objects.create(
+                        event=event, section=section, name=d['name'],
+                        position_x=d['position_x'], position_y=d['position_y'],
+                        width=d['width'], height=d['height'], size_sqm=d['size_sqm'],
+                        base_price=Decimal(str(d['base_price'])),
+                        status=d.get('status', 'available'),
+                        rotation=d.get('rotation', 0),
+                        has_water=d.get('has_water', False),
+                        is_corner=d.get('is_corner', False),
+                        is_near_entrance=d.get('is_near_entrance', False),
+                        is_accessible=d.get('is_accessible', False),
+                    )
+                    created += 1
+                except Exception as stall_err:
+                    skipped.append(f'{d["name"]}: {stall_err}')
+        sections_info = ', '.join(f'{s.name}: {s.stalls.count()}' for s in FloorPlanSection.objects.filter(event=event))
+        return HttpResponse(
+            f'Reset complete for {event.name}:<br>'
+            f'Deleted: {b_count} bookings, {i_count} invoices, {p_count} payments, {s_count} stalls<br>'
+            f'Imported: {created} stalls<br>'
+            f'Skipped: {len(skipped)}<br>'
+            f'Sections: {sections_info}'
+        )
+    except Exception as e:
+        import traceback
+        return HttpResponse(f'<pre>{traceback.format_exc()}</pre>', status=500)
