@@ -307,9 +307,9 @@ def remote_reset(request, event_id, token):
             for s in FloorPlanSection.objects.filter(event=event):
                 sections_map[s.name] = s
             section_defs = {
-                'Main Hall': {'display_order': 1, 'original_width': 4959, 'original_height': 7009, 'scale_factor': 35.0, 'section_image': 'floor_plan_sections/1_main_hall_Oz2k97q.png'},
-                'East Lawn': {'display_order': 2, 'original_width': 9917, 'original_height': 7017, 'scale_factor': 87.5, 'section_image': 'floor_plan_sections/1_east_lawn_EfYF7ud.png'},
-                'North Plaza': {'display_order': 3, 'original_width': 4959, 'original_height': 7009, 'scale_factor': 35.0, 'section_image': 'floor_plan_sections/1_north_plaza_N3e1J9d.png'},
+                'Main Hall': {'display_order': 1, 'original_width': 4959, 'original_height': 7009, 'scale_factor': 35.0, 'section_image': '1_main_hall_Oz2k97q.png'},
+                'East Lawn': {'display_order': 2, 'original_width': 9917, 'original_height': 7017, 'scale_factor': 87.5, 'section_image': '1_east_lawn_EfYF7ud.png'},
+                'North Plaza': {'display_order': 3, 'original_width': 4959, 'original_height': 7009, 'scale_factor': 35.0, 'section_image': '1_north_plaza_N3e1J9d.png'},
             }
             for name, defs in section_defs.items():
                 sec = FloorPlanSection.objects.filter(event=event, name=name).first()
