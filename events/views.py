@@ -311,7 +311,13 @@ def remote_reset(request, event_id, token):
             'North Plaza': {'display_order': 3, 'original_width': 4959, 'original_height': 7009, 'scale_factor': 35.0, 'section_image': 'floor_plan_sections/1_north_plaza_N3e1J9d.png'},
         }
         for name, defs in section_defs.items():
-            if name not in sections_map:
+            sec = FloorPlanSection.objects.filter(event=event, name=name).first()
+            if sec:
+                for k, v in defs.items():
+                    setattr(sec, k, v)
+                sec.save()
+                sections_map[name] = sec
+            else:
                 sec = FloorPlanSection.objects.create(event=event, name=name, **defs)
                 sections_map[name] = sec
         for d in data:
