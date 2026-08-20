@@ -172,7 +172,7 @@ class Stall(models.Model):
 class FloorPlanSection(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='floor_plan_sections')
     name = models.CharField(max_length=100)
-    section_image = models.ImageField(upload_to='floor_plan_sections/')
+    section_image = models.ImageField(upload_to='floor_plan_sections/', blank=True, null=True)
     original_pdf = models.FileField(upload_to='floor_plan_pdfs/', blank=True, null=True)
     display_order = models.PositiveIntegerField(default=0)
     original_width = models.IntegerField(default=1600, help_text="Image width in pixels")
