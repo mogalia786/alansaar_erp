@@ -360,8 +360,12 @@ def upload_images(request, event_id, token):
     if token != 'dss2026reset':
         return HttpResponse('Invalid token', status=403)
     from django.core.files.storage import default_storage
-    results = []
-    for f in request.FILES.values():
-        saved_name = default_storage.save(f.name, f)
-        results.append(f'{f.name} -> {saved_name} ({f.size} bytes)')
-    return HttpResponse('<br>'.join(results) if results else 'POST multipart files')
+    try:
+        results = []
+        for f in request.FILES.values():
+            saved_name = default_storage.save(f.name, f)
+            results.append(f'{f.name} -> {saved_name} ({f.size} bytes)')
+        return HttpResponse('<br>'.join(results) if results else 'POST multipart files')
+    except Exception as e:
+        import traceback
+        return HttpResponse(f'Error: {e}<br><pre>{traceback.format_exc()}</pre>', status=500)
