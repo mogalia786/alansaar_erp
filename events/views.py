@@ -360,28 +360,26 @@ def upload_images(request, event_id, token):
     if token != 'dss2026reset':
         return HttpResponse('Invalid token', status=403)
     try:
-        import boto3
-        from botocore.config import Config
-        s3 = boto3.client(
-            's3',
-            endpoint_url=settings.AWS_S3_ENDPOINT_URL,
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            region_name='auto',
-            config=Config(signature_version='s3v4'),
-        )
+        import requests as http_requests
+        api_token = settings.AWS_ACCESS_KEY_ID
+        account_id = settings.AWS_S3_ENDPOINT_URL.split('//')[1].split('.')[0]
+        bucket = settings.AWS_STORAGE_BUCKET_NAME
         results = []
         for f in request.FILES.values():
             key = f.name
             body = f.read()
-            s3.put_object(
-                Bucket=settings.AWS_STORAGE_BUCKET_NAME,
-                Key=key,
-                Body=body,
-                ContentType=f.content_type or 'image/png',
+            url = f'https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket}/objects/{key}'
+            resp = http_requests.put(
+                url,
+                headers={'Authorization': f'Bearer {api_token}'},
+                data=body,
             )
-            url = f'https://{settings.AWS_S3_CUSTOM_DOMAIN}/{key}'
-            results.append(f'{key} -> {url} ({len(body)} bytes)')
+            rjson = resp.json()
+            if rjson.get('success'):
+                pub_url = f'https://{settings.AWS_S3_CUSTOM_DOMAIN}/{key}'
+                results.append(f'{key} -> {pub_url} ({len(body)} bytes) - OK')
+            else:
+                results.append(f'{key} -> FAILED: {rjson}')
         return HttpResponse('<br>'.join(results) if results else 'POST multipart files')
     except Exception as e:
         import traceback
