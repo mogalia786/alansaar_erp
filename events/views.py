@@ -368,7 +368,8 @@ def upload_images(request, event_id, token):
         for f in request.FILES.values():
             key = f.name
             body = f.read()
-            url = f'https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket}/objects/{key}'
+            encoded_key = key.replace('/', '%2F')
+            url = f'https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket_name}/objects/{encoded_key}'
             resp = http_requests.put(
                 url,
                 headers={'Authorization': f'Bearer {api_token}'},
