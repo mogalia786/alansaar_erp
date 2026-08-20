@@ -359,12 +359,29 @@ def remote_reset(request, event_id, token):
 def upload_images(request, event_id, token):
     if token != 'dss2026reset':
         return HttpResponse('Invalid token', status=403)
-    from django.core.files.storage import default_storage
     try:
+        import boto3
+        from botocore.config import Config
+        s3 = boto3.client(
+            's3',
+            endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name='auto',
+            config=Config(signature_version='s3v4'),
+        )
         results = []
         for f in request.FILES.values():
-            saved_name = default_storage.save(f.name, f)
-            results.append(f'{f.name} -> {saved_name} ({f.size} bytes)')
+            key = f.name
+            body = f.read()
+            s3.put_object(
+                Bucket=settings.AWS_STORAGE_BUCKET_NAME,
+                Key=key,
+                Body=body,
+                ContentType=f.content_type or 'image/png',
+            )
+            url = f'https://{settings.AWS_S3_CUSTOM_DOMAIN}/{key}'
+            results.append(f'{key} -> {url} ({len(body)} bytes)')
         return HttpResponse('<br>'.join(results) if results else 'POST multipart files')
     except Exception as e:
         import traceback
