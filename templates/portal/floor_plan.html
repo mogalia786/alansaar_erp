@@ -1,33 +1,60 @@
 {% extends 'portal/base.html' %}
 {% load static %}
-{% block title %}Floor Plan Editor - {{ event.name }}{% endblock %}
+{% block title %}Floor Plan - {{ event.name }}{% endblock %}
 {% block extra_head %}
 <style>
 :root { --purple: #5B2C6F; --gold: #D4AF37; }
-#editor-wrap { display: flex; gap: 15px; height: calc(100vh - 110px); }
-#toolbox { width: 220px; flex-shrink: 0; overflow-y: auto; }
-#canvas-wrap {
-    flex: 1; overflow: auto; background: #1a1a1a; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
+#fp-container { height: calc(100vh - 110px); display: flex; flex-direction: column; }
+.section-tabs {
+    display: flex; gap: 0; background: rgba(0,0,0,0.3); border-bottom: 2px solid rgba(255,255,255,0.06);
+    padding: 0 15px; overflow-x: auto; flex-shrink: 0;
 }
-#canvas-inner { position: relative; }
-@media (max-width: 768px) {
-    #editor-wrap { flex-direction: column; height: calc(100vh - 80px); }
-    #toolbox { width: 100%; max-height: 40vh; overflow-y: auto; flex-shrink: 0; }
-    #canvas-wrap { min-height: 50vh; }
+.section-tab {
+    padding: 10px 20px; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.4);
+    border: none; background: transparent; cursor: pointer; white-space: nowrap;
+    border-bottom: 3px solid transparent; transition: all .2s; display: flex; align-items: center; gap: 8px;
 }
-#canvas-inner > .fp-svg { display: block; overflow: visible !important; background: #1a1a1a; }
-#canvas-inner svg.fp-svg path { stroke: #999 !important; }
-#canvas-inner svg.fp-svg * { stroke-opacity: 1 !important; }
-#grid-bg {
-    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-    pointer-events: none; z-index: 1;
+.section-tab:hover { color: rgba(255,255,255,0.7); }
+.section-tab.active {
+    color: var(--gold); border-bottom-color: var(--gold);
+    background: rgba(212,175,55,0.05);
 }
+.section-tab .tab-badge {
+    background: rgba(46,204,113,0.2); color: #2ecc71; padding: 2px 8px;
+    border-radius: 10px; font-size: 10px; font-weight: 800;
+}
+#fp-toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 15px; flex-shrink: 0; flex-wrap: wrap; gap: 8px;
+}
+#fp-toolbar h5 { margin: 0; font-weight: 700; font-size: 14px; }
+#status-bar { display: flex; gap: 15px; font-size: 11px; color: #888; align-items: center; }
+#status-bar .badge { font-size: 10px; }
+.zoom-g {
+    display: flex; gap: 2px; background: rgba(255,255,255,0.08); border-radius: 8px; padding: 3px;
+}
+.zoom-g button {
+    width: 28px; height: 28px; border: none; border-radius: 5px; background: transparent;
+    color: #bbb; font-size: 13px; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; transition: all .15s;
+}
+.zoom-g button:hover { background: var(--purple); color: #fff; }
+.zoom-g .zl {
+    padding: 0 6px; font-size: 10px; font-weight: 700; color: var(--gold);
+    min-width: 36px; text-align: center; display: flex; align-items: center;
+}
+#fp-scroll {
+    flex: 1; overflow: auto; background: #1a1a1a;
+    display: flex; align-items: flex-start; justify-content: flex-start;
+}
+#fp-inner { position: relative; line-height: 0; }
+#fp-inner img { display: block; width: 100%; height: auto; }
+#grid-bg { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 1; }
 .stall-el {
-    position: absolute; cursor: move;
+    position: absolute; cursor: default;
     display: flex; align-items: center; justify-content: center;
     font-size: 11px; font-weight: 700; color: #fff; border-radius: 2px;
-    user-select: none; z-index: 5; transition: box-shadow .15s;
+    user-select: none; z-index: 5; transition: all .15s;
     text-shadow: 0 1px 1px rgba(0,0,0,.5);
     white-space: nowrap;
 }
@@ -37,470 +64,515 @@
 .stall-el.confirmed { background: rgba(220,53,69,0.7); border: 2px solid #dc3545; }
 .stall-el.blocked { background: rgba(108,117,125,0.7); border: 2px solid #6c757d; cursor: not-allowed; }
 .stall-el:hover { box-shadow: 0 0 0 2px rgba(91,44,111,0.6); z-index: 10; }
-.stall-el.selected { box-shadow: 0 0 0 3px var(--gold); z-index: 15; }
 .stall-el .label { pointer-events: none; }
-.walkway-el {
-    position: absolute; background: rgba(149,165,166,0.15); border: 2px dashed rgba(149,165,166,0.5);
-    pointer-events: none; z-index: 2; border-radius: 3px;
+#legend {
+    position: fixed; bottom: 15px; right: 15px; background: rgba(30,30,50,0.95);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px 14px;
+    z-index: 100; font-size: 10px; color: rgba(255,255,255,0.6);
 }
-.exit-el {
-    position: absolute; background: #e74c3c; color: #fff; border-radius: 20px;
-    display: flex; align-items: center; justify-content: center; z-index: 3;
-    font-size: 11px; font-weight: 700; padding: 4px 12px; cursor: default;
+#legend .d { display: flex; align-items: center; margin-bottom: 4px; }
+#legend .sw { width: 14px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 6px; }
+
+.edit-toggle {
+    padding: 5px 14px; border-radius: 20px; border: 2px solid var(--purple);
+    background: transparent; color: var(--purple); font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all .2s;
 }
-#status-bar { padding: 5px 0; display: flex; gap: 15px; font-size: 11px; color: #888; align-items: center; }
-#status-bar .badge { font-size: 10px; }
-#toast-msg { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; background: #333; color: #fff; padding: 8px 20px; border-radius: 6px; font-size: 13px; opacity: 0; transition: opacity .3s; }
-#toast-msg.show { opacity: 1; }
-#canvas-inner.drag-over { outline: 3px dashed var(--gold); outline-offset: -3px; }
+.edit-toggle.active { background: var(--gold); color: #000; border-color: var(--gold); }
+.stall-el.edit-mode { cursor: move; }
+.stall-el.edit-mode:hover { outline: 3px solid var(--gold); outline-offset: 2px; }
+.stall-el.dragging { opacity: 0.7; z-index: 100; cursor: grabbing; }
+
+.ctx-menu {
+    position: fixed; z-index: 99999; background: #fff; border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.3); min-width: 180px; display: none; overflow: hidden;
+}
+.ctx-menu.show { display: block; }
+.ctx-menu .cm-item {
+    padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 600; color: #333;
+    display: flex; align-items: center; gap: 10px; border: none; background: none; width: 100%; text-align: left;
+}
+.ctx-menu .cm-item:hover { background: #f5f5f5; }
+.ctx-menu .cm-item.danger { color: #e74c3c; }
+.ctx-menu .cm-sep { height: 1px; background: #eee; margin: 4px 0; }
+
+.rename-input {
+    position: fixed; z-index: 100000; border: 2px solid var(--gold); border-radius: 6px;
+    padding: 4px 8px; font-size: 14px; font-weight: 800; text-align: center;
+    outline: none; min-width: 60px; background: #fff;
+}
 </style>
 {% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-    <div class="d-flex align-items-center gap-3 flex-wrap">
-        <h4 class="fw-bold mb-0">{{ event.name }}</h4>
-        <span id="status-bar" class="d-none d-sm-inline-flex">
-            <span><i class="bi bi-grid-3x3"></i> Grid: <span id="grid-status">1m</span></span>
-            <span><i class="bi bi-bounding-box"></i> <span id="stall-count">0</span> stalls</span>
-            <span><i class="bi bi-arrows-move"></i> <span id="snap-status" class="badge bg-success">SNAP ON</span></span>
-        </span>
+<div id="fp-container">
+    {% if sections %}
+    <div class="section-tabs">
+        {% for s in sections %}
+        <button class="section-tab {% if s.id == active_section.id %}active{% endif %}"
+                onclick="switchSection({{ s.id }})">
+            <i class="bi bi-map"></i> {{ s.name }}
+            <span class="tab-badge">{{ s.stall_count }}</span>
+        </button>
+        {% endfor %}
     </div>
-    <div class="d-flex gap-2 align-items-center">
-        <button onclick="autoGenerate()" class="btn btn-sm btn-outline-purple"><i class="bi bi-grid"></i> Auto Grid</button>
-        <button onclick="undoLast()" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i></button>
-        <button onclick="toggleSnap()" class="btn btn-sm btn-outline-warning"><i class="bi bi-magnet"></i></button>
-        <span class="vr mx-1"></span>
-        <button onclick="zoomOut()" class="btn btn-sm btn-outline-secondary" title="Zoom Out"><i class="bi bi-dash"></i></button>
-        <span id="zoom-pct" class="text-muted" style="font-size:11px;min-width:40px;text-align:center;">100%</span>
-        <button onclick="zoomIn()" class="btn btn-sm btn-outline-secondary" title="Zoom In"><i class="bi bi-plus"></i></button>
-        <button onclick="zoomFit()" class="btn btn-sm btn-outline-info" title="Fit to Screen"><i class="bi bi-arrows-fullscreen"></i> Fit</button>
-        <button onclick="saveLayout()" class="btn btn-sm btn-purple"><i class="bi bi-save"></i> Save</button>
-    </div>
-</div>
+    {% endif %}
 
-<div id="editor-wrap">
-    <div id="toolbox">
-        <div class="card mb-2">
-            <div class="card-header"><i class="bi bi-tools"></i> Tools</div>
-            <div class="card-body">
-                <div class="tool-btn active" data-tool="select" onclick="setTool('select')"><i class="bi bi-arrow-up"></i> Select & Move</div>
-                <div class="tool-btn" data-tool="walkway" onclick="setTool('walkway')"><i class="bi bi-signpost-2"></i> Draw Walkway</div>
-                <div class="tool-btn" data-tool="exit" onclick="setTool('exit')"><i class="bi bi-exclamation-triangle"></i> Mark Exit</div>
-            </div>
+    <div id="fp-toolbar">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <h5 class="mb-0">{{ event.name }}{% if active_section %} &mdash; {{ active_section.name }}{% endif %}</h5>
+            <span id="status-bar">
+                <span><i class="bi bi-grid-3x3"></i> Grid: 1m</span>
+                <span><i class="bi bi-bounding-box"></i> <span id="stall-count">0</span> stalls</span>
+                <span><i class="bi bi-check-circle text-success"></i> <span id="avail-count">0</span> available</span>
+            </span>
         </div>
-        <div class="card mb-2">
-            <div class="card-header"><i class="bi bi-layers"></i> Zone</div>
-            <div class="card-body">
-                <select id="zone-select" class="form-select form-select-sm" style="font-size:11px;">
-                    {% for z in event.zones.all %}
-                    <option value="{{ z.id }}" style="background:{{ z.color }}20;color:#333;">{{ z.name }}</option>
-                    {% endfor %}
-                </select>
+        <div class="d-flex gap-2 align-items-center">
+            <button class="edit-toggle" id="editToggle" onclick="toggleEditMode()"><i class="bi bi-pencil-square"></i> Edit Mode</button>
+            <button class="btn btn-sm" style="background:var(--gold);color:#000;font-weight:700;" onclick="showAddStallModal()"><i class="bi bi-plus-circle"></i> Add Stall</button>
+            <div class="zoom-g">
+                <button onclick="zo()"><i class="bi bi-dash"></i></button>
+                <span class="zl" id="zpct">100%</span>
+                <button onclick="zi()"><i class="bi bi-plus"></i></button>
+                <button onclick="zf()" style="width:auto;padding:0 8px;font-size:10px;">Fit</button>
             </div>
-        </div>
-        <div class="card mb-2">
-            <div class="card-header"><i class="bi bi-shop"></i> Stall Types</div>
-            <div class="card-body">
-                <div class="stall-type-card" draggable="true" data-w="3" data-h="3" data-sqm="9" data-price="5000" data-prefix="Stand" onclick="addStall(3,3,9,5000,'Stand')">
-                    <span><span class="size">3×3m</span> <span class="text-muted">(9m²)</span></span>
-                    <span class="price">R5,000</span>
-                </div>
-                <div class="stall-type-card" draggable="true" data-w="3" data-h="4" data-sqm="12" data-price="6500" data-prefix="Stand" onclick="addStall(3,4,12,6500,'Stand')">
-                    <span><span class="size">3×4m</span> <span class="text-muted">(12m²)</span></span>
-                    <span class="price">R6,500</span>
-                </div>
-                <div class="stall-type-card" draggable="true" data-w="3" data-h="6" data-sqm="18" data-price="9000" data-prefix="Stand" onclick="addStall(3,6,18,9000,'Stand')">
-                    <span><span class="size">3×6m</span> <span class="text-muted">(18m²)</span></span>
-                    <span class="price">R9,000</span>
-                </div>
-                <div class="stall-type-card" draggable="true" data-w="2" data-h="3" data-sqm="6" data-price="3500" data-prefix="Stand" onclick="addStall(2,3,6,3500,'Stand')">
-                    <span><span class="size">2×3m</span> <span class="text-muted">(6m²)</span></span>
-                    <span class="price">R3,500</span>
-                </div>
-                <div class="stall-type-card" draggable="true" data-w="4" data-h="3" data-sqm="12" data-price="8000" data-prefix="Food" onclick="addStall(4,3,12,8000,'Food')" style="border-left:3px solid #f39c12;">
-                    <span><span class="size">Food 4×3m</span> <span class="text-muted">(12m²)</span></span>
-                    <span class="price">R8,000</span>
-                </div>
-                <div class="stall-type-card" draggable="true" data-w="6" data-h="6" data-sqm="36" data-price="15000" data-prefix="Kiddies" onclick="addStall(6,6,36,15000,'Kiddies')" style="border-left:3px solid #3498db;">
-                    <span><span class="size">Kiddies 6×6m</span> <span class="text-muted">(36m²)</span></span>
-                    <span class="price">R15,000</span>
-                </div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header"><i class="bi bi-palette"></i> Legend</div>
-            <div class="card-body" style="font-size:10px;">
-                <div class="d-flex align-items-center mb-1"><span style="display:inline-block;width:16px;height:12px;background:rgba(40,167,69,0.7);border:1px solid #28a745;border-radius:2px;margin-right:6px;"></span> Available</div>
-                <div class="d-flex align-items-center mb-1"><span style="display:inline-block;width:16px;height:12px;background:rgba(255,193,7,0.7);border:1px solid #ffc107;border-radius:2px;margin-right:6px;"></span> Reserved</div>
-                <div class="d-flex align-items-center mb-1"><span style="display:inline-block;width:16px;height:12px;background:rgba(220,53,69,0.7);border:1px solid #dc3545;border-radius:2px;margin-right:6px;"></span> Booked</div>
-                <div class="d-flex align-items-center mb-1"><span style="display:inline-block;width:16px;height:12px;background:rgba(108,117,125,0.7);border:1px solid #6c757d;border-radius:2px;margin-right:6px;"></span> Blocked</div>
-                <div class="d-flex align-items-center"><span style="display:inline-block;width:16px;height:12px;background:rgba(149,165,166,0.15);border:2px dashed rgba(149,165,166,0.5);border-radius:2px;margin-right:6px;"></span> Walkway</div>
-            </div>
+            <a href="{% url 'erp:event_detail' event.id %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back</a>
         </div>
     </div>
 
-    <div id="canvas-wrap">
-        <div id="canvas-inner">
-            {{ svg_content|safe }}
+    <div id="fp-scroll">
+        <div id="fp-inner">
+            <img id="fp-bg" src="{{ active_section.image_url }}" alt="Floor Plan" draggable="false">
             <div id="grid-bg"></div>
         </div>
     </div>
 </div>
 
-<div id="toast-msg"></div>
+<div id="legend">
+    <div class="d"><span class="sw" style="background:rgba(40,167,69,0.7);border:1px solid #28a745;"></span> Available</div>
+    <div class="d"><span class="sw" style="background:rgba(255,193,7,0.7);border:1px solid #ffc107;"></span> Reserved / Pending</div>
+    <div class="d"><span class="sw" style="background:rgba(220,53,69,0.7);border:1px solid #dc3545;"></span> Booked</div>
+    <div class="d"><span class="sw" style="background:rgba(108,117,125,0.7);border:1px solid #6c757d;"></span> Blocked</div>
+</div>
 
-<div class="modal fade" id="autoGridModal"><div class="modal-dialog modal-sm"><div class="modal-content">
-    <div class="modal-header bg-purple text-white"><h6 class="mb-0">Auto-Generate Grid</h6><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-    <form onsubmit="doAutoGenerate(event)">
-    <div class="modal-body">
-        <div class="mb-2"><label class="form-label">Hall Width (m)</label><input type="number" id="auto-w" class="form-control form-control-sm" value="50" step="1"></div>
-        <div class="mb-2"><label class="form-label">Hall Height (m)</label><input type="number" id="auto-h" class="form-control form-control-sm" value="50" step="1"></div>
-        <div class="mb-2"><label class="form-label">Stall Width (m)</label><input type="number" id="auto-sw" class="form-control form-control-sm" value="3" step="0.5"></div>
-        <div class="mb-2"><label class="form-label">Stall Height (m)</label><input type="number" id="auto-sh" class="form-control form-control-sm" value="3" step="0.5"></div>
-        <div class="mb-2"><label class="form-label">Aisle Width (m)</label><input type="number" id="auto-aw" class="form-control form-control-sm" value="2" step="0.5"></div>
-        <div class="mb-2"><label class="form-label">Base Price (R)</label><input type="number" id="auto-price" class="form-control form-control-sm" value="5000" step="100"></div>
-        <div class="mb-2"><label class="form-label">Stall Prefix</label><select id="auto-prefix" class="form-select form-select-sm"><option value="Stand">Stand</option><option value="Food">Food</option><option value="Kiddies">Kiddies</option></select></div>
-        <div class="form-check"><input type="checkbox" id="auto-snap" class="form-check-input" checked><label class="form-check-label"> Snap to grid</label></div>
+<div class="ctx-menu" id="ctxMenu">
+    <button class="cm-item" onclick="ctxRename()"><i class="bi bi-pencil"></i> Rename</button>
+    <button class="cm-item" onclick="ctxEditPrice()"><i class="bi bi-currency-dollar"></i> Edit Price</button>
+    <button class="cm-item" onclick="ctxRotate()"><i class="bi bi-arrow-clockwise"></i> Rotate</button>
+    <div class="cm-sep"></div>
+    <button class="cm-item" onclick="ctxResize()"><i class="bi bi-arrows-fullscreen"></i> Resize</button>
+    <div class="cm-sep"></div>
+    <button class="cm-item danger" onclick="ctxDelete()"><i class="bi bi-trash"></i> Delete</button>
+</div>
+
+<div class="modal fade" id="addStallModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:12px;">
+            <div class="modal-header" style="background:var(--purple);color:#fff;">
+                <h6 class="mb-0"><i class="bi bi-plus-circle"></i> Add New Stall</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-stall-form">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Stall Name</label>
+                        <input type="text" class="form-control" id="as-name" placeholder="e.g. Stand 1" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Width (m)</label>
+                            <input type="number" class="form-control" id="as-width" value="3" step="0.5" min="0.5" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Height (m)</label>
+                            <input type="number" class="form-control" id="as-height" value="3" step="0.5" min="0.5" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Price (ZAR)</label>
+                        <input type="number" class="form-control" id="as-price" value="5000" step="100" min="0" required>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-sm" style="background:var(--gold);color:#000;font-weight:700;"><i class="bi bi-plus-lg"></i> Add Stall</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-    <div class="modal-footer"><button type="submit" class="btn btn-purple btn-sm">Generate</button></div>
-    </form>
-</div></div></div>
+</div>
 {% endblock %}
 {% block extra_scripts %}
 <script>
-    const VB_W = {{ svg_w }};
-    const VB_H = {{ svg_h }};
-    const GRID = 1000;
-    let stalls = {{ stalls_data|safe }};
-    let walkways = {{ walkways_data|safe }};
-    let exits = {{ exits_data|safe }};
-    let undoStack = [];
-    let selectedId = null;
-    let currentTool = 'select';
-    let snapEnabled = true;
-    let dragData = null;
-    let idCounter = stalls.reduce((a,b) => Math.max(a, b.id), 0) + 1;
+(function(){
+    var VW = {{ svg_w }}, VH = {{ svg_h }};
+    var SCALE = {{ active_section.scale_factor }};
+    var stalls = {{ stalls_data|safe }};
+    var CSRF_TOKEN = '{{ csrf_token }}';
+    var wrap = document.getElementById('fp-scroll');
+    var inner = document.getElementById('fp-inner');
+    var fpBg = document.getElementById('fp-bg');
+    var gridBg = document.getElementById('grid-bg');
+    var zm = 1, baseZ = 1;
+    var editMode = false;
+    var ctxStallEl = null;
 
-    let zoomLevel = 3.84;
-    const ZOOM_STEP = 0.15;
-    const ZOOM_MIN = 0.1;
-    const ZOOM_MAX = 20;
+    document.getElementById('stall-count').textContent = stalls.length;
+    document.getElementById('avail-count').textContent = stalls.filter(function(s){return s.status==='available';}).length;
 
-    const canvasWrap = document.getElementById('canvas-wrap');
-    const canvasInner = document.getElementById('canvas-inner');
-    const gridBg = document.getElementById('grid-bg');
-    const svgEl = canvasInner.querySelector('svg');
+    function calcBase() { baseZ = wrap.clientWidth / VW; }
+    function getCssZoom() { return zm * baseZ; }
 
-    function getBaseZoom() { return canvasWrap.clientWidth / VB_W; }
-    function getCssZoom() { return zoomLevel * getBaseZoom(); }
-
-    function applyZoom() {
-        canvasInner.style.zoom = getCssZoom();
-        document.getElementById('zoom-pct').textContent = Math.round(zoomLevel * 100) + '%';
-        renderAll();
-    }
-
-    function zoomIn() { zoomLevel = Math.min(ZOOM_MAX, zoomLevel * (1 + ZOOM_STEP)); applyZoom(); }
-    function zoomOut() { zoomLevel = Math.max(ZOOM_MIN, zoomLevel * (1 - ZOOM_STEP)); applyZoom(); }
-    function zoomFit() {
-        zoomLevel = 3.84;
-        applyZoom();
-        const innerW = VB_W * getBaseZoom() * zoomLevel;
-        const innerH = VB_H * getBaseZoom() * zoomLevel;
-        if (stalls.length > 0) {
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            stalls.forEach(s => {
-                if (s.x < minX) minX = s.x;
-                if (s.y < minY) minY = s.y;
-                if (s.x + s.w > maxX) maxX = s.x + s.w;
-                if (s.y + s.h > maxY) maxY = s.y + s.h;
-            });
-            const centerMmX = (minX + maxX) / 2;
-            const centerMmY = (minY + maxY) / 2;
-            canvasWrap.scrollLeft = Math.max(0, (centerMmX / VB_W) * innerW - canvasWrap.clientWidth / 2);
-            canvasWrap.scrollTop = Math.max(0, (centerMmY / VB_H) * innerH - canvasWrap.clientHeight / 2);
-        } else {
-            canvasWrap.scrollLeft = Math.max(0, (innerW - canvasWrap.clientWidth) / 2);
-            canvasWrap.scrollTop = Math.max(0, (innerH - canvasWrap.clientHeight) / 2);
-        }
-    }
-
-    canvasWrap.addEventListener('wheel', e => {
-        if (e.ctrlKey || e.metaKey) {
-            e.preventDefault();
-            if (e.deltaY < 0) zoomIn(); else zoomOut();
-        }
-    }, { passive: false });
-
-    let panDrag = null;
-    canvasWrap.addEventListener('mousedown', e => {
-        if (e.button !== 0) return;
-        if (e.target.closest('.stall-el, .exit-el')) return;
-        panDrag = { sx: e.clientX, sy: e.clientY, sl: canvasWrap.scrollLeft, st: canvasWrap.scrollTop };
-        canvasWrap.style.cursor = 'grabbing';
-        e.preventDefault();
-    });
-    document.addEventListener('mousemove', e => {
-        if (!panDrag) return;
-        canvasWrap.scrollLeft = panDrag.sl - (e.clientX - panDrag.sx);
-        canvasWrap.scrollTop = panDrag.st - (e.clientY - panDrag.sy);
-    });
-    document.addEventListener('mouseup', () => {
-        if (panDrag) { panDrag = null; canvasWrap.style.cursor = ''; }
-    });
-    canvasWrap.addEventListener('mousemove', e => {
-        if (!panDrag && !e.target.closest('.stall-el, .exit-el')) canvasWrap.style.cursor = 'grab';
-    });
-
-    canvasWrap.addEventListener('touchstart', e => {
-        if (e.touches.length === 1 && !e.target.closest('.stall-el, .exit-el')) {
-            panDrag = { sx: e.touches[0].clientX, sy: e.touches[0].clientY, sl: canvasWrap.scrollLeft, st: canvasWrap.scrollTop };
-        }
-    }, { passive: true });
-    canvasWrap.addEventListener('touchmove', e => {
-        if (!panDrag || e.touches.length !== 1) return;
-        canvasWrap.scrollLeft = panDrag.sl - (e.touches[0].clientX - panDrag.sx);
-        canvasWrap.scrollTop = panDrag.st - (e.touches[0].clientY - panDrag.sy);
-    }, { passive: true });
-    canvasWrap.addEventListener('touchend', () => { panDrag = null; });
-
-    function snap(v) { return snapEnabled ? Math.round(v / GRID) * GRID : v; }
-    function mmToPct(mm) { return (mm / VB_W * 100); }
-    function mmToPctH(mm) { return (mm / VB_H * 100); }
-
-    function screenToMm(clientX, clientY) {
-        const rect = canvasInner.getBoundingClientRect();
-        const x = (clientX - rect.left) / rect.width * VB_W;
-        const y = (clientY - rect.top) / rect.height * VB_H;
-        return { x: Math.max(0, x), y: Math.max(0, y) };
-    }
-
-    function setTool(t) {
-        currentTool = t;
-        document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
-        canvasInner.style.cursor = t === 'select' ? 'default' : t === 'walkway' ? 'crosshair' : 'pointer';
-    }
-
-    function toast(msg) {
-        const el = document.getElementById('toast-msg');
-        el.textContent = msg; el.classList.add('show');
-        setTimeout(() => el.classList.remove('show'), 2000);
+    function drawGrid() {
+        var cssZ = getCssZoom();
+        var lineW = Math.max(0.5, 1 / cssZ);
+        var gridPx = SCALE;
+        gridBg.style.backgroundImage = [
+            'repeating-linear-gradient(to right, rgba(255,255,255,0.25) 0 ' + lineW + 'px, transparent ' + lineW + 'px ' + gridPx + 'px)',
+            'repeating-linear-gradient(to bottom, rgba(255,255,255,0.25) 0 ' + lineW + 'px, transparent ' + lineW + 'px ' + gridPx + 'px)'
+        ].join(',');
+        gridBg.style.backgroundSize = gridPx + 'px ' + gridPx + 'px';
     }
 
     function shortName(name) {
-        const m = name.match(/^(\w+)\s+(\d+)$/);
-        return m ? m[1].charAt(0) + m[2] : name;
+        var m = name.match(/^(\w+)\s*(\d+)$/);
+        return m ? m[1].substring(0,3) + m[2] : name.substring(0, 6);
     }
 
-    function renderAll() {
-        document.querySelectorAll('.stall-el, .walkway-el, .exit-el').forEach(el => el.remove());
-        const cssZoom = getCssZoom();
-
-        stalls.forEach(s => {
-            const d = document.createElement('div');
-            d.className = `stall-el ${s.status}`;
-            if (s.id === selectedId) d.classList.add('selected');
-            const fs = Math.max(8, Math.round(Math.min(s.w, s.h) * 0.55));
-            d.style.cssText = `left:${mmToPct(s.x)}%;top:${mmToPctH(s.y)}%;width:${mmToPct(s.w)}%;height:${mmToPctH(s.h)}%;font-size:${fs}px;overflow:hidden;text-overflow:ellipsis;text-align:center;line-height:1.2;`;
-            d.innerHTML = `<span class="label">${shortName(s.name)}</span>`;
+    function layout() {
+        inner.querySelectorAll('.stall-el').forEach(function(e){e.remove();});
+        stalls.forEach(function(s) {
+            var fs = Math.round(Math.min(s.w, s.h) * 0.4);
+            if (fs < 8) fs = 8;
+            var d = document.createElement('div');
+            d.className = 'stall-el ' + s.status;
+            if (editMode) d.classList.add('edit-mode');
+            d.style.left = (s.x / VW * 100) + '%';
+            d.style.top = (s.y / VH * 100) + '%';
+            d.style.width = (s.w / VW * 100) + '%';
+            d.style.height = (s.h / VH * 100) + '%';
+            d.style.fontSize = fs + 'px';
+            d.innerHTML = '<span class="label">' + shortName(s.name) + '</span>';
+            d.title = s.name + ' (' + (s.w/1000).toFixed(1) + 'm x ' + (s.h/1000).toFixed(1) + 'm) - R' + s.price.toLocaleString() + ' - ' + s.status;
             d.dataset.id = s.id;
-            d.addEventListener('mousedown', e => onStallMouseDown(e, s));
-            canvasInner.appendChild(d);
+            d.dataset.n = s.name;
+            d.dataset.p = s.price;
+            d.dataset.sq = s.size_sqm;
+            d.dataset.w = s.w;
+            d.dataset.h = s.h;
+            d.dataset.st = s.status;
+            d.dataset.z = s.zone;
+            d.dataset.pw = (s.w/1000).toFixed(1);
+            d.dataset.ph = (s.h/1000).toFixed(1);
+            d.dataset.rot = s.rotation || 0;
+            d.dataset.bp = s.price;
+            if (s.rotation) d.style.transform = 'rotate(' + s.rotation + 'deg)';
+            inner.appendChild(d);
         });
+    }
 
-        walkways.forEach(w => {
-            const d = document.createElement('div');
-            d.className = 'walkway-el';
-            d.style.cssText = `left:${mmToPct(w.x)}%;top:${mmToPctH(w.y)}%;width:${mmToPct(w.w)}%;height:${mmToPctH(w.h)}%;`;
-            canvasInner.appendChild(d);
-        });
-
-        exits.forEach(e => {
-            const d = document.createElement('div');
-            d.className = 'exit-el';
-            d.style.cssText = `left:${mmToPct(e.x)}%;top:${mmToPctH(e.y)}%;font-size:${Math.max(8, Math.round(11 / cssZoom))}px;padding:${Math.max(2, Math.round(4/cssZoom))}px ${Math.max(4, Math.round(12/cssZoom))}px;`;
-            d.textContent = e.label || 'EXIT';
-            canvasInner.appendChild(d);
-        });
-
-        updateCounts();
+    function applyZoom() {
+        calcBase();
+        inner.style.zoom = getCssZoom();
+        document.getElementById('zpct').textContent = Math.round(zm * 100) + '%';
+        layout();
         drawGrid();
     }
+    window.zi = function(){ zm = Math.min(12, zm * 1.25); applyZoom(); };
+    window.zo = function(){ zm = Math.max(0.1, zm / 1.25); applyZoom(); };
+    window.zf = function(){
+        zm = 1; applyZoom();
+        var iw = VW * baseZ, ih = VH * baseZ;
+        wrap.scrollLeft = Math.max(0, (iw - wrap.clientWidth) / 2);
+        wrap.scrollTop = Math.max(0, (ih - wrap.clientHeight) / 2);
+    };
 
-    function drawGrid() {
-        if (!svgEl) return;
-        const cssZoom = getCssZoom();
-        const svgRect = svgEl.getBoundingClientRect();
-        const w = svgRect.width;
-        const h = svgRect.height;
-        if (w === 0 || h === 0) return;
+    wrap.addEventListener('wheel', function(e){
+        if(e.ctrlKey||e.metaKey){e.preventDefault();e.deltaY<0?zi():zo();}
+    }, {passive:false});
 
-        const gridMm = GRID;
-        const lineW = Math.max(0.5, 1 / cssZoom);
-        const major = `rgba(255,255,255,0.3)`;
+    var drag = null;
+    wrap.addEventListener('mousedown', function(e){
+        if(e.button!==0||e.target.closest('.stall-el'))return;
+        drag={sx:e.clientX,sy:e.clientY,sl:wrap.scrollLeft,st:wrap.scrollTop};
+        wrap.style.cursor='grabbing';e.preventDefault();
+    });
+    document.addEventListener('mousemove',function(e){if(!drag)return;wrap.scrollLeft=drag.sl-(e.clientX-drag.sx);wrap.scrollTop=drag.st-(e.clientY-drag.sy);});
+    document.addEventListener('mouseup',function(){if(drag){drag=null;wrap.style.cursor=editMode?'default':'';}});
+    wrap.addEventListener('mousemove',function(e){if(!drag&&!e.target.closest('.stall-el'))wrap.style.cursor=editMode?'default':'grab';});
 
-        gridBg.style.backgroundImage = [
-            `repeating-linear-gradient(to right, ${major} 0 ${lineW}px, transparent ${lineW}px ${gridMm}px)`,
-            `repeating-linear-gradient(to bottom, ${major} 0 ${lineW}px, transparent ${lineW}px ${gridMm}px)`,
-        ].join(',');
-        gridBg.style.backgroundSize = `${gridMm}px ${gridMm}px`;
-        gridBg.style.backgroundPosition = '0 0';
+    window.toggleEditMode = function() {
+        editMode = !editMode;
+        var btn = document.getElementById('editToggle');
+        btn.classList.toggle('active', editMode);
+        btn.innerHTML = editMode ? '<i class="bi bi-pencil-square"></i> Editing' : '<i class="bi bi-pencil-square"></i> Edit Mode';
+        inner.querySelectorAll('.stall-el').forEach(function(el) {
+            el.classList.toggle('edit-mode', editMode);
+        });
+        wrap.style.cursor = editMode ? 'default' : '';
+    };
 
-        document.getElementById('grid-status').textContent = '1m';
-    }
+    var stallDrag = null;
+    inner.addEventListener('mousedown', function(e) {
+        if (!editMode) return;
+        var el = e.target.closest('.stall-el');
+        if (!el) return;
+        e.preventDefault();
+        e.stopPropagation();
+        stallDrag = {
+            el: el,
+            startPx: e.clientX,
+            startPy: e.clientY,
+            startLeft: parseFloat(el.style.left) / 100 * VW,
+            startTop: parseFloat(el.style.top) / 100 * VH,
+        };
+        el.classList.add('dragging');
+    });
 
-    function onStallMouseDown(e, stall) {
-        if (currentTool === 'select') {
-            e.stopPropagation();
-            selectedId = stall.id;
-            renderAll();
-            const el = canvasInner.querySelector(`.stall-el[data-id="${stall.id}"]`);
-            if (!el) return;
-            const offMm = screenToMm(e.clientX, e.clientY);
-            const offRelX = offMm.x - stall.x;
-            const offRelY = offMm.y - stall.y;
-            dragData = { id: stall.id, startX: stall.x, startY: stall.y, moved: false };
+    document.addEventListener('mousemove', function(e) {
+        if (!stallDrag) return;
+        var cssZ = getCssZoom();
+        var dx = (e.clientX - stallDrag.startPx) / cssZ;
+        var dy = (e.clientY - stallDrag.startPy) / cssZ;
+        var newX = stallDrag.startLeft + dx;
+        var newY = stallDrag.startTop + dy;
+        newX = Math.max(0, Math.min(VW - 10, newX));
+        newY = Math.max(0, Math.min(VH - 10, newY));
+        stallDrag.el.style.left = (newX / VW * 100) + '%';
+        stallDrag.el.style.top = (newY / VH * 100) + '%';
+        stallDrag.newX = newX;
+        stallDrag.newY = newY;
+    });
 
-            const onMove = (ev) => {
-                dragData.moved = true;
-                const mm = screenToMm(ev.clientX, ev.clientY);
-                stall.x = Math.max(0, snap(mm.x - offRelX));
-                stall.y = Math.max(0, snap(mm.y - offRelY));
-                el.style.left = mmToPct(stall.x) + '%';
-                el.style.top = mmToPctH(stall.y) + '%';
-            };
-            const onUp = () => {
-                document.removeEventListener('mousemove', onMove);
-                document.removeEventListener('mouseup', onUp);
-                if (dragData.moved && (stall.x !== dragData.startX || stall.y !== dragData.startY)) {
-                    undoStack.push({type:'move', id:stall.id, fromX:dragData.startX, fromY:dragData.startY, toX:stall.x, toY:stall.y});
-                }
-                dragData = null;
-                renderAll();
-            };
-            document.addEventListener('mousemove', onMove);
-            document.addEventListener('mouseup', onUp);
+    document.addEventListener('mouseup', function(e) {
+        if (!stallDrag) return;
+        stallDrag.el.classList.remove('dragging');
+        if (stallDrag.newX !== undefined) {
+            var id = stallDrag.el.dataset.id;
+            fetch('/events/{{ event.id }}/stall/' + id + '/update/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+                body: JSON.stringify({
+                    position_x: Math.round(stallDrag.newX),
+                    position_y: Math.round(stallDrag.newY),
+                })
+            }).then(function(r){return r.json();}).then(function(d){
+                if (!d.ok) alert('Error: ' + d.error);
+            });
         }
-    }
+        stallDrag = null;
+    });
 
-    function addStall(w, h, sqm, price, prefix, dropX, dropY) {
-        const sw = w * 1000, sh = h * 1000;
-        const x = dropX !== undefined ? snap(dropX) : snap(3000);
-        const y = dropY !== undefined ? snap(dropY) : snap(3000);
-        const id = idCounter++;
-        const num = stalls.filter(s => s.name.startsWith(prefix)).length + 1;
-        const zoneId = parseInt(document.getElementById('zone-select').value) || null;
-        stalls.push({ id, name: prefix + ' ' + num, x, y, w: sw, h: sh, size_sqm: sqm, base_price: price, corner_premium: 0, entrance_premium: 0, status: 'available', is_corner: false, has_water: false, zone: zoneId, prefix });
-        undoStack.push({type:'add', stall: JSON.parse(JSON.stringify(stalls[stalls.length-1]))});
-        renderAll();
-        toast(`Added ${shortName(prefix + ' ' + num)} (${w}m x ${h}m)`);
-    }
+    inner.addEventListener('contextmenu', function(e) {
+        if (!editMode) return;
+        var el = e.target.closest('.stall-el');
+        if (!el) return;
+        e.preventDefault();
+        e.stopPropagation();
+        ctxStallEl = el;
+        var menu = document.getElementById('ctxMenu');
+        menu.style.left = e.clientX + 'px';
+        menu.style.top = e.clientY + 'px';
+        menu.classList.add('show');
+    });
 
-    document.querySelectorAll('.stall-type-card').forEach(card => {
-        card.addEventListener('dragstart', e => {
-            e.dataTransfer.setData('application/json', JSON.stringify({ w: parseInt(card.dataset.w), h: parseInt(card.dataset.h), sqm: parseFloat(card.dataset.sqm), price: parseFloat(card.dataset.price), prefix: card.dataset.prefix }));
-            e.dataTransfer.effectAllowed = 'copy';
+    document.addEventListener('click', function() {
+        document.getElementById('ctxMenu').classList.remove('show');
+    });
+
+    window.ctxRename = function() {
+        if (!ctxStallEl) return;
+        document.getElementById('ctxMenu').classList.remove('show');
+        var el = ctxStallEl;
+        var oldName = el.dataset.n;
+        var rect = el.getBoundingClientRect();
+        var inp = document.createElement('input');
+        inp.className = 'rename-input';
+        inp.value = oldName;
+        inp.style.left = rect.left + 'px';
+        inp.style.top = rect.top + 'px';
+        inp.style.width = Math.max(80, rect.width) + 'px';
+        document.body.appendChild(inp);
+        inp.focus();
+        inp.select();
+        function save() {
+            var newName = inp.value.trim();
+            if (newName && newName !== oldName) {
+                fetch('/events/{{ event.id }}/stall/' + el.dataset.id + '/update/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+                    body: JSON.stringify({ name: newName })
+                }).then(function(r){return r.json();}).then(function(d){
+                    if (d.ok) {
+                        el.dataset.n = d.name;
+                        el.querySelector('.label').textContent = shortName(d.name);
+                    } else {
+                        alert('Error: ' + d.error);
+                    }
+                });
+            }
+            inp.remove();
+        }
+        inp.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') save();
+            if (e.key === 'Escape') inp.remove();
+        });
+        inp.addEventListener('blur', save);
+    };
+
+    window.ctxRotate = function() {
+        if (!ctxStallEl) return;
+        document.getElementById('ctxMenu').classList.remove('show');
+        var el = ctxStallEl;
+        var cur = parseInt(el.dataset.rot || '0');
+        var angle = prompt('Enter rotation angle (degrees):', cur);
+        if (angle === null) return;
+        angle = parseInt(angle);
+        if (isNaN(angle)) return;
+        angle = ((angle % 360) + 360) % 360;
+        fetch('/events/{{ event.id }}/stall/' + el.dataset.id + '/update/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+            body: JSON.stringify({ rotation: angle })
+        }).then(function(r){return r.json();}).then(function(d){
+            if (d.ok) {
+                el.dataset.rot = d.rotation;
+                el.style.transform = 'rotate(' + d.rotation + 'deg)';
+            }
+        });
+    };
+
+    window.ctxEditPrice = function() {
+        if (!ctxStallEl) return;
+        document.getElementById('ctxMenu').classList.remove('show');
+        var el = ctxStallEl;
+        var curPrice = parseFloat(el.dataset.bp || el.dataset.p);
+        var newPrice = prompt('Enter new price (ZAR):', curPrice);
+        if (newPrice === null) return;
+        newPrice = parseFloat(newPrice);
+        if (isNaN(newPrice) || newPrice < 0) return;
+        fetch('/events/{{ event.id }}/stall/' + el.dataset.id + '/update/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+            body: JSON.stringify({ base_price: newPrice })
+        }).then(function(r){return r.json();}).then(function(d){
+            if (d.ok) {
+                el.dataset.bp = d.base_price;
+                el.dataset.p = d.base_price;
+                el.title = el.dataset.n + ' (' + el.dataset.pw + 'm x ' + el.dataset.ph + 'm) - R' + d.base_price.toLocaleString() + ' - ' + el.dataset.st;
+            }
+        });
+    };
+
+    window.ctxResize = function() {
+        if (!ctxStallEl) return;
+        document.getElementById('ctxMenu').classList.remove('show');
+        var el = ctxStallEl;
+        var curW = parseFloat(el.dataset.pw);
+        var curH = parseFloat(el.dataset.ph);
+        var dim = prompt('Enter new size (WxH in meters):', curW + 'x' + curH);
+        if (!dim) return;
+        var parts = dim.split('x');
+        if (parts.length !== 2) return;
+        var newW = parseFloat(parts[0]);
+        var newH = parseFloat(parts[1]);
+        if (isNaN(newW) || isNaN(newH) || newW <= 0 || newH <= 0) return;
+        fetch('/events/{{ event.id }}/stall/' + el.dataset.id + '/update/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+            body: JSON.stringify({ width: newW, height: newH })
+        }).then(function(r){return r.json();}).then(function(d){
+            if (d.ok) location.reload();
+        });
+    };
+
+    window.ctxDelete = function() {
+        if (!ctxStallEl) return;
+        document.getElementById('ctxMenu').classList.remove('show');
+        if (!confirm('Delete stall "' + ctxStallEl.dataset.n + '"?')) return;
+        var el = ctxStallEl;
+        fetch('/events/{{ event.id }}/stall/' + el.dataset.id + '/update/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+            body: JSON.stringify({ delete: true })
+        }).then(function(r){return r.json();}).then(function(d){
+            if (d.ok) {
+                el.remove();
+                stalls = stalls.filter(function(s){ return s.id != el.dataset.id; });
+                document.getElementById('stall-count').textContent = stalls.length;
+                document.getElementById('avail-count').textContent = stalls.filter(function(s){return s.status==='available';}).length;
+            }
+        });
+    };
+
+    var addStallModal = new bootstrap.Modal(document.getElementById('addStallModal'));
+    window.showAddStallModal = function() {
+        document.getElementById('as-name').value = '';
+        document.getElementById('as-width').value = '3';
+        document.getElementById('as-height').value = '3';
+        document.getElementById('as-price').value = '5000';
+        addStallModal.show();
+    };
+
+    document.getElementById('add-stall-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var name = document.getElementById('as-name').value.trim();
+        var width = parseFloat(document.getElementById('as-width').value);
+        var height = parseFloat(document.getElementById('as-height').value);
+        var price = parseFloat(document.getElementById('as-price').value);
+        if (!name || !width || !height) return;
+        var btn = this.querySelector('[type=submit]');
+        btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Adding...';
+        fetch('/events/{{ event.id }}/stall/create/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+            body: JSON.stringify({
+                name: name, width: width, height: height, price: price,
+                section_id: {{ active_section.id }},
+                x: Math.round(VW / 2), y: Math.round(VH / 2),
+            })
+        }).then(function(r){
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }).then(function(d){
+            btn.disabled = false; btn.innerHTML = '<i class="bi bi-plus-lg"></i> Add Stall';
+            if (d.ok) {
+                stalls.push({
+                    id: d.id, name: d.name,
+                    x: d.x, y: d.y, w: d.w, h: d.h,
+                    price: d.price, status: d.status,
+                    size_sqm: d.size_sqm, rotation: d.rotation || 0,
+                    zone: '', is_corner: false, has_water: false,
+                });
+                document.getElementById('stall-count').textContent = stalls.length;
+                document.getElementById('avail-count').textContent = stalls.filter(function(s){return s.status==='available';}).length;
+                layout();
+                var cssZ = getCssZoom();
+                var stallPxX = d.x * cssZ;
+                var stallPxY = d.y * cssZ;
+                wrap.scrollLeft = Math.max(0, stallPxX - wrap.clientWidth / 2);
+                wrap.scrollTop = Math.max(0, stallPxY - wrap.clientHeight / 2);
+                addStallModal.hide();
+            } else {
+                alert('Error: ' + d.error);
+            }
+        }).catch(function(err){
+            btn.disabled = false; btn.innerHTML = '<i class="bi bi-plus-lg"></i> Add Stall';
+            alert('Failed to add stall: ' + err.message);
         });
     });
 
-    canvasInner.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; canvasInner.classList.add('drag-over'); });
-    canvasInner.addEventListener('dragleave', () => canvasInner.classList.remove('drag-over'));
-    canvasInner.addEventListener('drop', e => {
-        e.preventDefault(); canvasInner.classList.remove('drag-over');
-        try {
-            const data = JSON.parse(e.dataTransfer.getData('application/json'));
-            const mm = screenToMm(e.clientX, e.clientY);
-            addStall(data.w, data.h, data.sqm, data.price, data.prefix, mm.x - (data.w * 1000) / 2, mm.y - (data.h * 1000) / 2);
-        } catch(ex) { toast('Drop failed'); }
-    });
+    window.switchSection = function(sectionId) {
+        window.location.href = '/erp/events/{{ event.id }}/floor-plan/?section=' + sectionId;
+    };
 
-    canvasInner.addEventListener('dblclick', e => {
-        if (currentTool !== 'select') return;
-        const mm = screenToMm(e.clientX, e.clientY);
-        addStall(3, 3, 9, 5000, 'S', mm.x - 1500, mm.y - 1500);
-    });
-
-    function autoGenerate() { new bootstrap.Modal(document.getElementById('autoGridModal')).show(); }
-
-    function doAutoGenerate(e) {
-        e.preventDefault();
-        const hw = parseFloat(document.getElementById('auto-w').value) * 1000;
-        const hh = parseFloat(document.getElementById('auto-h').value) * 1000;
-        const sw = parseFloat(document.getElementById('auto-sw').value) * 1000;
-        const sh = parseFloat(document.getElementById('auto-sh').value) * 1000;
-        const aw = parseFloat(document.getElementById('auto-aw').value) * 1000;
-        const price = parseFloat(document.getElementById('auto-price').value);
-        const prefix = document.getElementById('auto-prefix').value;
-        snapEnabled = document.getElementById('auto-snap').checked;
-        const cols = Math.floor(hw / (sw + aw));
-        const rows = Math.floor(hh / (sh + aw));
-        const zoneId = parseInt(document.getElementById('zone-select').value) || null;
-        let num = stalls.filter(s => s.name.startsWith(prefix)).length + 1;
-        for (let row = 0; row < rows; row++) {
-            for (let col = 0; col < cols; col++) {
-                let x = col * (sw + aw) + aw / 2;
-                let y = row * (sh + aw) + aw / 2;
-                if (snapEnabled) { x = snap(x); y = snap(y); }
-                stalls.push({ id: idCounter++, name: prefix + ' ' + (num++), x, y, w: sw, h: sh, size_sqm: (sw/1000)*(sh/1000), base_price: price, corner_premium: 0, entrance_premium: 0, status: 'available', is_corner: false, has_water: false, zone: zoneId, prefix });
-            }
-        }
-        renderAll();
-        toast(`Generated ${rows*cols} stalls (${cols}x${rows})`);
-        bootstrap.Modal.getInstance(document.getElementById('autoGridModal')).hide();
-    }
-
-    function toggleSnap() {
-        snapEnabled = !snapEnabled;
-        document.getElementById('snap-status').textContent = snapEnabled ? 'SNAP ON' : 'SNAP OFF';
-        document.getElementById('snap-status').className = `badge bg-${snapEnabled ? 'success' : 'secondary'}`;
-    }
-
-    function undoLast() {
-        const action = undoStack.pop();
-        if (!action) { toast('Nothing to undo'); return; }
-        if (action.type === 'add') stalls = stalls.filter(s => s.id !== action.stall.id);
-        else if (action.type === 'move') { const s = stalls.find(x => x.id === action.id); if (s) { s.x = action.fromX; s.y = action.fromY; } }
-        renderAll(); toast('Undo');
-    }
-
-    function saveLayout() {
-        const stallPayload = stalls.map(s => ({ id: s.id, name: s.name, x: s.x, y: s.y, w: s.w, h: s.h, size_sqm: s.size_sqm, base_price: s.base_price, corner_premium: s.corner_premium||0, is_corner: s.is_corner||false, has_water: s.has_water||false, prefix: s.prefix||s.name.charAt(0), zone: s.zone||null }));
-        const walkwayPayload = walkways.map(w => ({x:w.x,y:w.y,w:w.w,h:w.h}));
-        const exitPayload = exits.map(e => ({x:e.x,y:e.y,label:e.label||'EXIT'}));
-        fetch('{% url "erp:save_stalls" event.id %}', { method:'POST', headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/json'}, body: JSON.stringify(stallPayload) })
-        .then(r => r.json()).then(d => {
-            if (d.ok) {
-                fetch('{% url "erp:save_floor_plan_meta" event.id %}', { method:'POST', headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/json'}, body: JSON.stringify({walkways: walkwayPayload, exits: exitPayload}) })
-                .then(r2 => r2.json()).then(d2 => { if (d2.ok) toast(`Saved ${d.updated||stallPayload.length} stalls`); });
-            } else toast('Save failed');
-        }).catch(() => toast('Save failed'));
-    }
-
-    function updateCounts() { document.getElementById('stall-count').textContent = stalls.length; }
-
-    canvasInner.addEventListener('click', e => {
-        if (currentTool === 'walkway') {
-            const mm = screenToMm(e.clientX, e.clientY);
-            walkways.push({x:snap(mm.x),y:snap(mm.y),w:6000,h:2000});
-            renderAll(); toast('Walkway added');
-        } else if (currentTool === 'exit') {
-            const mm = screenToMm(e.clientX, e.clientY);
-            const label = prompt('Exit label:', 'EXIT');
-            if (label) { exits.push({x:snap(mm.x),y:snap(mm.y),label}); renderAll(); toast('Exit marker added'); }
-        }
-    });
-
-    document.addEventListener('keydown', e => {
-        if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && currentTool === 'select') {
-            const idx = stalls.findIndex(s => s.id === selectedId);
-            if (idx !== -1) { undoStack.push({type:'add',stall:JSON.parse(JSON.stringify(stalls[idx]))}); stalls.splice(idx,1); selectedId=null; renderAll(); toast('Deleted'); }
-        }
-        if (e.key === 'z' && (e.ctrlKey||e.metaKey)) { e.preventDefault(); undoLast(); }
-        if (e.key === 's' && (e.ctrlKey||e.metaKey)) { e.preventDefault(); saveLayout(); }
-    });
-
-    window.addEventListener('resize', () => { applyZoom(); zoomFit(); });
-    renderAll();
-    setTimeout(zoomFit, 100);
+    zm = 1; applyZoom();
+    setTimeout(function(){
+        var cssZ = getCssZoom();
+        var iw = VW * cssZ, ih = VH * cssZ;
+        wrap.scrollLeft = Math.max(0, (iw - wrap.clientWidth) / 2);
+        wrap.scrollTop = Math.max(0, (ih - wrap.clientHeight) / 2);
+    }, 100);
+    window.addEventListener('resize', function(){ applyZoom(); });
+})();
 </script>
 {% endblock %}

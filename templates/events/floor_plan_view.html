@@ -28,14 +28,33 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
 }
 .zoom-g button:hover { background: var(--gold); color: #000; }
 .zoom-g .zl { padding: 0 8px; font-size: 11px; font-weight: 700; color: var(--gold); min-width: 40px; text-align: center; display:flex; align-items:center; }
+
+.section-tabs {
+    display: flex; gap: 0; background: rgba(0,0,0,0.3); border-bottom: 2px solid rgba(255,255,255,0.06);
+    padding: 0 20px; overflow-x: auto;
+}
+.section-tab {
+    padding: 12px 24px; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.4);
+    border: none; background: transparent; cursor: pointer; white-space: nowrap;
+    border-bottom: 3px solid transparent; transition: all .2s; display: flex; align-items: center; gap: 8px;
+}
+.section-tab:hover { color: rgba(255,255,255,0.7); }
+.section-tab.active {
+    color: var(--gold); border-bottom-color: var(--gold);
+    background: rgba(212,175,55,0.05);
+}
+.section-tab .tab-badge {
+    background: rgba(46,204,113,0.2); color: #2ecc71; padding: 2px 8px;
+    border-radius: 10px; font-size: 10px; font-weight: 800;
+}
+
 #fp-wrap {
     overflow: auto; background: #1a1a1a;
-    height: calc(100vh - 70px); position: relative;
+    height: calc(100vh - 120px); position: relative;
     display: flex; align-items: flex-start; justify-content: flex-start;
 }
 #fp-inner { position: relative; line-height: 0; }
-#fp-inner svg { display: block; overflow: visible !important; }
-#fp-inner svg path { stroke-opacity: 1 !important; }
+#fp-inner img { display: block; width: 100%; height: auto; }
 #grid-bg { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 1; }
 .stall {
     position: absolute; border-radius: 3px;
@@ -49,7 +68,10 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
     box-shadow: 0 1px 6px rgba(39,174,96,0.4);
     animation: gpulse 2s ease-in-out infinite;
 }
-.stall.avail:hover { transform: scale(1.1); z-index: 20; box-shadow: 0 0 0 3px rgba(39,174,96,0.4), 0 4px 16px rgba(39,174,96,0.5); }
+.stall.avail:hover {
+    transform: scale(1.15); z-index: 20;
+    box-shadow: 0 0 0 3px rgba(39,174,96,0.4), 0 4px 16px rgba(39,174,96,0.5);
+}
 @keyframes gpulse { 0%,100%{box-shadow:0 1px 6px rgba(39,174,96,0.4)} 50%{box-shadow:0 1px 12px rgba(39,174,96,0.7)} }
 .stall.reserved { background: rgba(243,156,18,0.8); border: 2px solid #f39c12; }
 .stall.pending { background: rgba(243,156,18,0.8); border: 2px solid #f39c12; }
@@ -70,18 +92,42 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
 .ttip .tf.book { background: linear-gradient(135deg, #27ae60, #2ecc71); color: #fff; font-weight: 800; font-size: 12px; cursor: pointer; }
 #bookingModal { z-index: 10600 !important; }
 #bookingModal .modal-dialog {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    margin: 0 !important;
-    max-width: 420px !important;
-    width: 90vw !important;
-    max-height: 85vh;
+    position: fixed !important; top: 50% !important; left: 50% !important;
+    transform: translate(-50%, -50%) !important; margin: 0 !important;
+    max-width: 420px !important; width: 90vw !important; max-height: 85vh;
 }
 #bookingModal .modal-content { border: none; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.4); max-height: 85vh; overflow-y: auto; }
 .modal-backdrop { z-index: 10500 !important; }
 .modal-backdrop.show { opacity: 0.7; }
+
+.edit-toggle {
+    padding: 6px 16px; border-radius: 20px; border: 2px solid rgba(255,255,255,0.2);
+    background: transparent; color: rgba(255,255,255,0.5); font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all .2s;
+}
+.edit-toggle.active { background: var(--gold); color: #000; border-color: var(--gold); }
+.stall.edit-mode { cursor: move; }
+.stall.edit-mode:hover { outline: 3px solid var(--gold); outline-offset: 2px; }
+.stall.dragging { opacity: 0.7; z-index: 100; cursor: grabbing; }
+
+.ctx-menu {
+    position: fixed; z-index: 99999; background: #fff; border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.3); min-width: 180px; display: none; overflow: hidden;
+}
+.ctx-menu.show { display: block; }
+.ctx-menu .cm-item {
+    padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 600; color: #333;
+    display: flex; align-items: center; gap: 10px; border: none; background: none; width: 100%; text-align: left;
+}
+.ctx-menu .cm-item:hover { background: #f5f5f5; }
+.ctx-menu .cm-item.danger { color: #e74c3c; }
+.ctx-menu .cm-sep { height: 1px; background: #eee; margin: 4px 0; }
+
+.rename-input {
+    position: fixed; z-index: 100000; border: 2px solid var(--gold); border-radius: 6px;
+    padding: 4px 8px; font-size: 14px; font-weight: 800; text-align: center;
+    outline: none; min-width: 60px; background: #fff;
+}
 </style>
 {% endblock %}
 {% block content %}
@@ -91,6 +137,8 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
         <p class="sub">Pick your <b>perfect stand</b> and book online</p>
     </div>
     <div class="right">
+        <button class="edit-toggle" id="editToggle" onclick="toggleEditMode()"><i class="bi bi-pencil-square"></i> Edit Mode</button>
+        <button class="edit-toggle" onclick="showAddStallModal()" style="border-color:var(--gold);color:var(--gold);"><i class="bi bi-plus-circle"></i> Add Stall</button>
         <div class="legend">
             <div class="d"><span class="sw" style="background:#27ae60;"></span> Available</div>
             <div class="d"><span class="sw" style="background:#f39c12;"></span> Reserved</div>
@@ -107,9 +155,21 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
     </div>
 </div>
 
+{% if sections %}
+<div class="section-tabs" id="section-tabs">
+    {% for s in sections %}
+    <button class="section-tab {% if s.id == active_section.id %}active{% endif %}"
+            data-section-id="{{ s.id }}" onclick="switchSection({{ s.id }})">
+        <i class="bi bi-map"></i> {{ s.name }}
+        <span class="tab-badge">{{ s.stall_count }}</span>
+    </button>
+    {% endfor %}
+</div>
+{% endif %}
+
 <div id="fp-wrap">
     <div id="fp-inner">
-        {{ svg_content|safe }}
+        <img id="fp-bg" src="{{ active_section.image_url }}" alt="Floor Plan" draggable="false">
         <div id="grid-bg"></div>
     </div>
 </div>
@@ -128,7 +188,54 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
     <div class="tf" id="tft"></div>
 </div>
 
-    <div class="modal fade" id="bookingModal" tabindex="-1">
+<div class="ctx-menu" id="ctxMenu">
+    <button class="cm-item" onclick="ctxRename()"><i class="bi bi-pencil"></i> Rename</button>
+    <button class="cm-item" onclick="ctxEditPrice()"><i class="bi bi-currency-dollar"></i> Edit Price</button>
+    <button class="cm-item" onclick="ctxRotate()"><i class="bi bi-arrow-clockwise"></i> Rotate</button>
+    <div class="cm-sep"></div>
+    <button class="cm-item" onclick="ctxResize()"><i class="bi bi-arrows-fullscreen"></i> Resize</button>
+    <div class="cm-sep"></div>
+    <button class="cm-item danger" onclick="ctxDelete()"><i class="bi bi-trash"></i> Delete</button>
+</div>
+
+<div class="modal fade" id="addStallModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:12px;">
+            <div class="modal-header" style="background:var(--purple);color:#fff;">
+                <h6 class="mb-0"><i class="bi bi-plus-circle"></i> Add New Stall</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-stall-form">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Stall Name</label>
+                        <input type="text" class="form-control" id="as-name" placeholder="e.g. Stand 1" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Width (m)</label>
+                            <input type="number" class="form-control" id="as-width" value="3" step="0.5" min="0.5" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Height (m)</label>
+                            <input type="number" class="form-control" id="as-height" value="3" step="0.5" min="0.5" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Price (ZAR)</label>
+                        <input type="number" class="form-control" id="as-price" value="5000" step="100" min="0" required>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-sm" style="background:var(--gold);color:#000;font-weight:700;"><i class="bi bi-plus-lg"></i> Add Stall</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="bookingModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header" style="background:var(--purple);color:#fff;">
@@ -191,9 +298,17 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
 <script>
 (function(){
     var VW = {{ svg_w }}, VH = {{ svg_h }};
+    var SCALE = {{ active_section.scale_factor }};
     var stalls = {{ stalls_data|safe }};
+    var sectionsData = [
+        {% for s in sections %}
+        { id: {{ s.id }}, name: '{{ s.name }}', url: '{{ s.image_url }}', w: {{ s.width }}, h: {{ s.height }}, count: {{ s.stall_count }} }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    var activeSectionId = {{ active_section.id }};
     var wrap = document.getElementById('fp-wrap');
     var inner = document.getElementById('fp-inner');
+    var fpBg = document.getElementById('fp-bg');
     var gridBg = document.getElementById('grid-bg');
     var zm = 1, baseZ = 1;
 
@@ -206,12 +321,12 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
     function drawGrid() {
         var cssZ = getCssZoom();
         var lineW = Math.max(0.5, 1 / cssZ);
-        var gridMm = 1000;
+        var gridPx = SCALE;
         gridBg.style.backgroundImage = [
-            'repeating-linear-gradient(to right, rgba(255,255,255,0.25) 0 ' + lineW + 'px, transparent ' + lineW + 'px ' + gridMm + 'px)',
-            'repeating-linear-gradient(to bottom, rgba(255,255,255,0.25) 0 ' + lineW + 'px, transparent ' + lineW + 'px ' + gridMm + 'px)'
+            'repeating-linear-gradient(to right, rgba(255,255,255,0.15) 0 ' + lineW + 'px, transparent ' + lineW + 'px ' + gridPx + 'px)',
+            'repeating-linear-gradient(to bottom, rgba(255,255,255,0.15) 0 ' + lineW + 'px, transparent ' + lineW + 'px ' + gridPx + 'px)'
         ].join(',');
-        gridBg.style.backgroundSize = gridMm + 'px ' + gridMm + 'px';
+        gridBg.style.backgroundSize = gridPx + 'px ' + gridPx + 'px';
         gridBg.style.backgroundPosition = '0 0';
     }
 
@@ -219,6 +334,7 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
         inner.querySelectorAll('.stall').forEach(function(e){e.remove();});
         stalls.forEach(function(s) {
             var fs = Math.round(Math.min(s.w, s.h) * 0.28);
+            if (fs < 8) fs = 8;
             var d = document.createElement('div');
             var cls = s.status === 'available' ? 'avail' : s.status;
             d.className = 'stall ' + cls;
@@ -227,22 +343,30 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
             d.style.width = (s.w / VW * 100) + '%';
             d.style.height = (s.h / VH * 100) + '%';
             d.style.fontSize = fs + 'px';
-            var m = s.name.match(/^(\w+)\s+(\d+)$/);
-            d.textContent = m ? m[1].charAt(0) + m[2] : s.name;
-            d.dataset.n = s.name; d.dataset.p = s.price; d.dataset.sq = s.size_sqm;
-            d.dataset.w = s.w; d.dataset.h = s.h; d.dataset.st = s.status; d.dataset.z = s.zone; d.dataset.id = s.id;
+            var m = s.name.match(/^(\w+)\s*(\d+)$/);
+            d.textContent = m ? m[1].substring(0,3) + m[2] : s.name.substring(0, 6);
+            d.dataset.n = s.name;
+            d.dataset.p = s.price;
+            d.dataset.sq = s.size_sqm;
+            d.dataset.w = s.w;
+            d.dataset.h = s.h;
+            d.dataset.st = s.status;
+            d.dataset.z = s.zone;
+            d.dataset.id = s.id;
+            d.dataset.pw = (s.w/1000).toFixed(1);
+            d.dataset.ph = (s.h/1000).toFixed(1);
+            d.dataset.rot = s.rotation || 0;
+            d.dataset.bp = s.price;
+            if (s.rotation) d.style.transform = 'rotate(' + s.rotation + 'deg)';
             inner.appendChild(d);
         });
-        inner.querySelectorAll('.stall.avail').forEach(function(el){
+        inner.querySelectorAll('.stall').forEach(function(el){
             el.onmouseenter = function(e){showTT(e,el);};
             el.onmousemove = moveTT;
             el.onmouseleave = hideTT;
-            el.onclick = function(){ showBookingModal(el.dataset); };
-        });
-        inner.querySelectorAll('.stall:not(.avail)').forEach(function(el){
-            el.onmouseenter = function(e){showTT(e,el);};
-            el.onmousemove = moveTT;
-            el.onmouseleave = hideTT;
+            if (el.classList.contains('avail')) {
+                el.onclick = function(){ showBookingModal(el.dataset); };
+            }
         });
     }
 
@@ -268,21 +392,282 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
     }, {passive:false});
 
     var drag = null;
+    var editMode = false;
+    var ctxStallEl = null;
+    var CSRF_TOKEN = '{{ csrf_token }}';
+
+    window.toggleEditMode = function() {
+        editMode = !editMode;
+        var btn = document.getElementById('editToggle');
+        btn.classList.toggle('active', editMode);
+        btn.innerHTML = editMode ? '<i class="bi bi-pencil-square"></i> Editing' : '<i class="bi bi-pencil-square"></i> Edit Mode';
+        inner.querySelectorAll('.stall').forEach(function(el) {
+            el.classList.toggle('edit-mode', editMode);
+        });
+        wrap.style.cursor = editMode ? 'default' : '';
+    };
+
     wrap.addEventListener('mousedown', function(e){
         if(e.button!==0||e.target.closest('.stall'))return;
         drag={sx:e.clientX,sy:e.clientY,sl:wrap.scrollLeft,st:wrap.scrollTop};
         wrap.style.cursor='grabbing';e.preventDefault();
     });
-    document.addEventListener('mousemove',function(e){if(!drag)return;wrap.scrollLeft=drag.sl-(e.clientX-drag.sx);wrap.scrollTop=drag.st-(e.clientY-drag.sy);});
-    document.addEventListener('mouseup',function(){if(drag){drag=null;wrap.style.cursor='';}});
-    wrap.addEventListener('mousemove',function(e){if(!drag&&!e.target.closest('.stall'))wrap.style.cursor='grab';});
+    document.addEventListener('mousemove',function(e){
+        if(!drag)return;
+        wrap.scrollLeft=drag.sl-(e.clientX-drag.sx);
+        wrap.scrollTop=drag.st-(e.clientY-drag.sy);
+    });
+    document.addEventListener('mouseup',function(){if(drag){drag=null;wrap.style.cursor=editMode?'default':'';}});
+    wrap.addEventListener('mousemove',function(e){if(!drag&&!e.target.closest('.stall'))wrap.style.cursor=editMode?'default':'grab';});
+
+    var stallDrag = null;
+    inner.addEventListener('mousedown', function(e) {
+        if (!editMode) return;
+        var el = e.target.closest('.stall');
+        if (!el) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var rect = inner.getBoundingClientRect();
+        stallDrag = {
+            el: el,
+            startPx: e.clientX,
+            startPy: e.clientY,
+            startLeft: parseFloat(el.style.left) / 100 * VW,
+            startTop: parseFloat(el.style.top) / 100 * VH,
+        };
+        el.classList.add('dragging');
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!stallDrag) return;
+        var cssZ = getCssZoom();
+        var dx = (e.clientX - stallDrag.startPx) / cssZ;
+        var dy = (e.clientY - stallDrag.startPy) / cssZ;
+        var newX = stallDrag.startLeft + dx;
+        var newY = stallDrag.startTop + dy;
+        newX = Math.max(0, Math.min(VW - 10, newX));
+        newY = Math.max(0, Math.min(VH - 10, newY));
+        stallDrag.el.style.left = (newX / VW * 100) + '%';
+        stallDrag.el.style.top = (newY / VH * 100) + '%';
+        stallDrag.newX = newX;
+        stallDrag.newY = newY;
+    });
+
+    document.addEventListener('mouseup', function(e) {
+        if (!stallDrag) return;
+        stallDrag.el.classList.remove('dragging');
+        if (stallDrag.newX !== undefined) {
+            var id = stallDrag.el.dataset.id;
+            var cssZ = getCssZoom();
+            var scale = VW / ({{ active_section.scale_factor }} * 0.001);
+            fetch('/events/{{ event.id }}/stall/' + id + '/update/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+                body: JSON.stringify({
+                    position_x: Math.round(stallDrag.newX * 1000 / cssZ / cssZ),
+                    position_y: Math.round(stallDrag.newY * 1000 / cssZ / cssZ),
+                })
+            }).then(function(r){return r.json();}).then(function(d){
+                if (!d.ok) alert('Error: ' + d.error);
+            });
+        }
+        stallDrag = null;
+    });
+
+    inner.addEventListener('contextmenu', function(e) {
+        if (!editMode) return;
+        var el = e.target.closest('.stall');
+        if (!el) return;
+        e.preventDefault();
+        e.stopPropagation();
+        ctxStallEl = el;
+        var menu = document.getElementById('ctxMenu');
+        menu.style.left = e.clientX + 'px';
+        menu.style.top = e.clientY + 'px';
+        menu.classList.add('show');
+    });
+
+    document.addEventListener('click', function() {
+        document.getElementById('ctxMenu').classList.remove('show');
+    });
+
+    function ctxRename() {
+        if (!ctxStallEl) return;
+        document.getElementById('ctxMenu').classList.remove('show');
+        var el = ctxStallEl;
+        var oldName = el.dataset.n;
+        var rect = el.getBoundingClientRect();
+        var inp = document.createElement('input');
+        inp.className = 'rename-input';
+        inp.value = oldName;
+        inp.style.left = rect.left + 'px';
+        inp.style.top = rect.top + 'px';
+        inp.style.width = Math.max(80, rect.width) + 'px';
+        document.body.appendChild(inp);
+        inp.focus();
+        inp.select();
+        function save() {
+            var newName = inp.value.trim();
+            if (newName && newName !== oldName) {
+                fetch('/events/{{ event.id }}/stall/' + el.dataset.id + '/update/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+                    body: JSON.stringify({ name: newName })
+                }).then(function(r){return r.json();}).then(function(d){
+                    if (d.ok) {
+                        el.dataset.n = d.name;
+                        var m = d.name.match(/^(\w+)\s*(\d+)$/);
+                        el.textContent = m ? m[1].substring(0,3) + m[2] : d.name.substring(0, 6);
+                    } else {
+                        alert('Error: ' + d.error);
+                    }
+                });
+            }
+            inp.remove();
+        }
+        inp.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') save();
+            if (e.key === 'Escape') inp.remove();
+        });
+        inp.addEventListener('blur', save);
+    }
+
+    function ctxRotate() {
+        if (!ctxStallEl) return;
+        document.getElementById('ctxMenu').classList.remove('show');
+        var el = ctxStallEl;
+        var cur = parseInt(el.dataset.rot || '0');
+        var angle = prompt('Enter rotation angle (degrees):', cur);
+        if (angle === null) return;
+        angle = parseInt(angle);
+        if (isNaN(angle)) return;
+        angle = ((angle % 360) + 360) % 360;
+        fetch('/events/{{ event.id }}/stall/' + el.dataset.id + '/update/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+            body: JSON.stringify({ rotation: angle })
+        }).then(function(r){return r.json();}).then(function(d){
+            if (d.ok) {
+                el.dataset.rot = d.rotation;
+                el.style.transform = 'rotate(' + d.rotation + 'deg)';
+            }
+        });
+    }
+
+    function ctxEditPrice() {
+        if (!ctxStallEl) return;
+        document.getElementById('ctxMenu').classList.remove('show');
+        var el = ctxStallEl;
+        var curPrice = parseFloat(el.dataset.bp || el.dataset.p);
+        var newPrice = prompt('Enter new price (ZAR):', curPrice);
+        if (newPrice === null) return;
+        newPrice = parseFloat(newPrice);
+        if (isNaN(newPrice) || newPrice < 0) return;
+        fetch('/events/{{ event.id }}/stall/' + el.dataset.id + '/update/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+            body: JSON.stringify({ base_price: newPrice })
+        }).then(function(r){return r.json();}).then(function(d){
+            if (d.ok) {
+                el.dataset.bp = d.base_price;
+                el.dataset.p = d.base_price;
+            }
+        });
+    }
+
+    function ctxResize() {
+        if (!ctxStallEl) return;
+        document.getElementById('ctxMenu').classList.remove('show');
+        var el = ctxStallEl;
+        var curW = parseFloat(el.dataset.pw);
+        var curH = parseFloat(el.dataset.ph);
+        var dim = prompt('Enter new size (WxH in meters):', curW + 'x' + curH);
+        if (!dim) return;
+        var parts = dim.split('x');
+        if (parts.length !== 2) return;
+        var newW = parseFloat(parts[0]);
+        var newH = parseFloat(parts[1]);
+        if (isNaN(newW) || isNaN(newH) || newW <= 0 || newH <= 0) return;
+        fetch('/events/{{ event.id }}/stall/' + el.dataset.id + '/update/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+            body: JSON.stringify({ width: newW, height: newH })
+        }).then(function(r){return r.json();}).then(function(d){
+            if (d.ok) location.reload();
+        });
+    }
+
+    function ctxDelete() {
+        if (!ctxStallEl) return;
+        document.getElementById('ctxMenu').classList.remove('show');
+        if (!confirm('Delete stall "' + ctxStallEl.dataset.n + '"?')) return;
+        var el = ctxStallEl;
+        fetch('/events/{{ event.id }}/stall/' + el.dataset.id + '/update/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+            body: JSON.stringify({ delete: true })
+        }).then(function(r){return r.json();}).then(function(d){
+            if (d.ok) el.remove();
+        });
+    }
+
+    var addStallModal = new bootstrap.Modal(document.getElementById('addStallModal'));
+    window.showAddStallModal = function() {
+        document.getElementById('as-name').value = '';
+        document.getElementById('as-width').value = '3';
+        document.getElementById('as-height').value = '3';
+        document.getElementById('as-price').value = '5000';
+        addStallModal.show();
+    };
+
+    document.getElementById('add-stall-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var name = document.getElementById('as-name').value.trim();
+        var width = parseFloat(document.getElementById('as-width').value);
+        var height = parseFloat(document.getElementById('as-height').value);
+        var price = parseFloat(document.getElementById('as-price').value);
+        if (!name || !width || !height) return;
+        fetch('/events/{{ event.id }}/stall/create/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+            body: JSON.stringify({
+                name: name, width: width, height: height, price: price,
+                section_id: {{ active_section.id }},
+                x: Math.round(VW / 2), y: Math.round(VH / 2),
+            })
+        }).then(function(r){
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }).then(function(d){
+            if (d.ok) {
+                stalls.push({
+                    id: d.id, name: d.name,
+                    x: d.x, y: d.y, w: d.w, h: d.h,
+                    price: d.price, status: d.status,
+                    size_sqm: d.size_sqm, rotation: d.rotation || 0,
+                    zone: '',
+                });
+                layout();
+                var cssZ = getCssZoom();
+                var stallPxX = d.x * cssZ;
+                var stallPxY = d.y * cssZ;
+                wrap.scrollLeft = Math.max(0, stallPxX - wrap.clientWidth / 2);
+                wrap.scrollTop = Math.max(0, stallPxY - wrap.clientHeight / 2);
+                addStallModal.hide();
+            } else {
+                alert('Error: ' + d.error);
+            }
+        }).catch(function(err){
+            alert('Failed to add stall: ' + err.message);
+        });
+    });
 
     var tt = document.getElementById('tt');
     function showTT(e,el){
         var d=el.dataset, c={available:'#27ae60',reserved:'#f39c12',pending:'#f39c12',confirmed:'#c0392b',blocked:'#78788c'};
         document.getElementById('tth').textContent=d.n;
         document.getElementById('tth').style.background=c[d.st]||'#666';
-        document.getElementById('tsz').textContent=(d.w/1000).toFixed(1)+'m x '+(d.h/1000).toFixed(1)+'m ('+d.sq+' m\u00B2)';
+        document.getElementById('tsz').textContent=d.pw+'m x '+d.ph+'m ('+d.sq+' m\u00B2)';
         document.getElementById('tzn').textContent=d.z||'General';
         var se=document.getElementById('tst');se.textContent=d.st.charAt(0).toUpperCase()+d.st.slice(1);se.style.color=c[d.st]||'#666';
         document.getElementById('tpr').textContent='R'+parseFloat(d.p).toLocaleString();
@@ -299,16 +684,20 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
     var form = document.getElementById('booking-form');
     function showBookingModal(d) {
         document.getElementById('modal-stall-name').textContent = d.n;
-        document.getElementById('modal-size').textContent = (d.w/1000).toFixed(1) + 'm x ' + (d.h/1000).toFixed(1) + 'm (' + d.sq + ' m\u00B2)';
+        document.getElementById('modal-size').textContent = d.pw + 'm x ' + d.ph + 'm (' + d.sq + ' m\u00B2)';
         document.getElementById('modal-price').textContent = 'R' + parseFloat(d.p).toLocaleString();
         var ms = document.getElementById('modal-status');
         ms.className = 'badge bg-success';
         ms.textContent = 'Available';
-        form.action = '/events/{{ event.id }}/stall/' + d.id + '/book/';
+        if (form) form.action = '/events/{{ event.id }}/stall/' + d.id + '/book/';
         bsModal.show();
     }
 
-    zm = 3.24; applyZoom();
+    window.switchSection = function(sectionId) {
+        window.location.href = '/events/{{ event.id }}/floor-plan/?section=' + sectionId;
+    };
+
+    zm = 1; applyZoom();
     setTimeout(function(){
         var cssZ = getCssZoom();
         var iw = VW * cssZ, ih = VH * cssZ;

@@ -1,6 +1,9 @@
 from django.shortcuts import render, get_object_or_404
-from .models import Event, Stall
+from .models import Event, Stall, FloorPlanSection
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 import os, re, json
+from decimal import Decimal
 from django.conf import settings
 
 
@@ -108,25 +111,164 @@ def _load_svg_content():
     return raw, fp_w, fp_h
 
 
-def floor_plan_view(request, event_id):
+def floor_plan_view(request, event_id, section_id=None):
     event = get_object_or_404(Event, pk=event_id)
-    stalls = event.stalls.all().select_related('zone').order_by('name')
+    sections = event.floor_plan_sections.all().order_by('display_order')
+    active_section_id = section_id or request.GET.get('section')
+    
+    if not sections.exists():
+        svg_content, fp_w, fp_h = _load_svg_content()
+        stalls = event.stalls.all().select_related('zone').order_by('name')
+        stalls_data = [{
+            'id': s.id, 'name': s.name,
+            'x': s.position_x, 'y': s.position_y,
+            'w': s.width, 'h': s.height,
+            'price': float(s.total_price),
+            'status': s.status,
+            'size_sqm': float(s.size_sqm),
+            'zone': s.zone.name if s.zone else '',
+        } for s in stalls]
+        return render(request, 'events/floor_plan_view.html', {
+            'event': event,
+            'svg_content': svg_content,
+            'svg_w': fp_w,
+            'svg_h': fp_h,
+            'stalls_data': json.dumps(stalls_data),
+            'sections': [],
+            'active_section': None,
+        })
+
+    if active_section_id:
+        active_section = FloorPlanSection.objects.filter(pk=active_section_id, event=event).first()
+    if not active_section_id or not active_section:
+        active_section = sections.first()
+
+    stalls = event.stalls.filter(section=active_section).select_related('zone').order_by('name')
+    scale = float(active_section.scale_factor)
     stalls_data = [{
         'id': s.id, 'name': s.name,
-        'x': s.position_x, 'y': s.position_y,
-        'w': s.width, 'h': s.height,
+        'x': round(s.position_x * scale / 1000),
+        'y': round(s.position_y * scale / 1000),
+        'w': round(s.width * scale / 1000),
+        'h': round(s.height * scale / 1000),
         'price': float(s.total_price),
         'status': s.status,
         'size_sqm': float(s.size_sqm),
         'zone': s.zone.name if s.zone else '',
+        'rotation': s.rotation,
     } for s in stalls]
 
-    svg_content, fp_w, fp_h = _load_svg_content()
+    sections_data = [{
+        'id': s.id,
+        'name': s.name,
+        'image_url': s.section_image.url if s.section_image else '',
+        'width': s.original_width,
+        'height': s.original_height,
+        'stall_count': s.stalls.count(),
+        'scale_factor': s.scale_factor,
+    } for s in sections]
 
     return render(request, 'events/floor_plan_view.html', {
         'event': event,
-        'svg_content': svg_content,
-        'svg_w': fp_w,
-        'svg_h': fp_h,
+        'sections': sections_data,
+        'active_section': {
+            'id': active_section.id,
+            'name': active_section.name,
+            'image_url': active_section.section_image.url if active_section.section_image else '',
+            'width': active_section.original_width,
+            'height': active_section.original_height,
+            'scale_factor': active_section.scale_factor,
+        },
         'stalls_data': json.dumps(stalls_data),
+        'svg_content': '',
+        'svg_w': active_section.original_width if active_section else 1600,
+        'svg_h': active_section.original_height if active_section else 900,
+    })
+
+
+@require_POST
+def stall_update(request, event_id, stall_id):
+    event = get_object_or_404(Event, pk=event_id)
+    stall = get_object_or_404(Stall, pk=stall_id, event=event)
+    data = json.loads(request.body)
+    scale = 1000 / float(stall.section.scale_factor) if stall.section else 1
+    if 'position_x' in data:
+        stall.position_x = round(data['position_x'] * scale)
+    if 'position_y' in data:
+        stall.position_y = round(data['position_y'] * scale)
+    if 'width' in data:
+        stall.width = round(float(data['width']) * 1000)
+    if 'height' in data:
+        stall.height = round(float(data['height']) * 1000)
+        stall.size_sqm = round(float(data['width'] if 'width' in data else stall.width / 1000) * float(data['height']), 2)
+    if 'rotation' in data:
+        stall.rotation = int(data['rotation'])
+    if 'name' in data:
+        new_name = data['name'].strip()
+        if new_name and new_name != stall.name:
+            if Stall.objects.filter(section=stall.section, name=new_name).exclude(pk=stall.pk).exists():
+                return JsonResponse({'ok': False, 'error': f'Stall "{new_name}" already exists in this section'})
+            stall.name = new_name
+    if data.get('delete'):
+        stall.delete()
+        return JsonResponse({'ok': True, 'deleted': True})
+    if 'base_price' in data:
+        stall.base_price = Decimal(str(data['base_price']))
+    stall.save()
+    section = stall.section
+    scale_fwd = float(section.scale_factor) if section else 1
+    return JsonResponse({
+        'ok': True,
+        'id': stall.id,
+        'name': stall.name,
+        'x': round(stall.position_x * scale_fwd / 1000),
+        'y': round(stall.position_y * scale_fwd / 1000),
+        'w': round(stall.width * scale_fwd / 1000),
+        'h': round(stall.height * scale_fwd / 1000),
+        'rotation': stall.rotation,
+        'size_sqm': float(stall.size_sqm),
+        'base_price': float(stall.base_price),
+    })
+
+
+@require_POST
+def stall_create(request, event_id):
+    event = get_object_or_404(Event, pk=event_id)
+    data = json.loads(request.body)
+    section_id = data.get('section_id')
+    section = get_object_or_404(FloorPlanSection, pk=section_id, event=event) if section_id else None
+    name = data.get('name', '').strip()
+    if not name:
+        return JsonResponse({'ok': False, 'error': 'Name is required'})
+    if section and Stall.objects.filter(section=section, name=name).exists():
+        return JsonResponse({'ok': False, 'error': f'Stall "{name}" already exists in this section'})
+    scale = 1000 / float(section.scale_factor) if section else 1
+    width_m = float(data.get('width', 3))
+    height_m = float(data.get('height', 3))
+    price = Decimal(str(data.get('price', 0)))
+    stall = Stall.objects.create(
+        event=event,
+        section=section,
+        name=name,
+        position_x=round(float(data.get('x', 0)) * scale),
+        position_y=round(float(data.get('y', 0)) * scale),
+        width=round(width_m * 1000),
+        height=round(height_m * 1000),
+        size_sqm=round(width_m * height_m, 2),
+        base_price=price,
+        status='available',
+    )
+    scale_fwd = float(section.scale_factor) if section else 1
+    return JsonResponse({
+        'ok': True,
+        'id': stall.id,
+        'name': stall.name,
+        'x': round(stall.position_x * scale_fwd / 1000),
+        'y': round(stall.position_y * scale_fwd / 1000),
+        'w': round(stall.width * scale_fwd / 1000),
+        'h': round(stall.height * scale_fwd / 1000),
+        'price': float(stall.base_price),
+        'size_sqm': float(stall.size_sqm),
+        'status': stall.status,
+        'rotation': 0,
     })

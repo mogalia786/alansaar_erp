@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Sum, Count, Q
-from events.models import Event, FloorPlan, Zone, Stall, AccessoryType
+from events.models import Event, FloorPlan, FloorPlanSection, Zone, Stall, AccessoryType
 import re, json, os
 from bookings.models import Booking, DiscountRequest
 from invoices.models import Invoice, Payment, Receipt, LedgerEntry
@@ -138,9 +138,55 @@ def erp_event_detail(request, event_id):
 
 @erp_section_required('floor_plan')
 def erp_floor_plan(request, event_id):
-    SCALE = 1
     event = get_object_or_404(Event, pk=event_id)
     floor_plan = getattr(event, 'floor_plan', None)
+    sections = event.floor_plan_sections.all().order_by('display_order')
+    active_section_id = request.GET.get('section')
+
+    if sections.exists():
+        if active_section_id:
+            active_section = get_object_or_404(FloorPlanSection, pk=active_section_id, event=event)
+        else:
+            active_section = sections.first()
+
+        stalls = event.stalls.filter(section=active_section).select_related('zone')
+        scale = float(active_section.scale_factor)
+        stalls_data = [{
+            'id': s.id, 'name': s.name,
+            'x': round(s.position_x * scale / 1000),
+            'y': round(s.position_y * scale / 1000),
+            'w': round(s.width * scale / 1000),
+            'h': round(s.height * scale / 1000),
+            'status': s.status,
+            'price': float(s.total_price), 'is_corner': s.is_corner,
+            'has_water': s.has_water, 'zone': s.zone_id,
+            'size_sqm': float(s.size_sqm),
+        } for s in stalls]
+        sections_data = [{
+            'id': s.id, 'name': s.name,
+            'image_url': s.section_image.url if s.section_image else '',
+            'width': s.original_width, 'height': s.original_height,
+            'stall_count': s.stalls.count(),
+        } for s in sections]
+        return render(request, 'portal/floor_plan.html', {
+            'event': event, 'floor_plan': floor_plan,
+            'stalls_data': json.dumps(stalls_data),
+            'walkways_data': '[]', 'exits_data': '[]',
+            'svg_content': '', 'zones': '[]',
+            'svg_w': active_section.original_width if active_section else 1600,
+            'svg_h': active_section.original_height if active_section else 900,
+            'scale': 1,
+            'sections': sections_data,
+            'active_section': {
+                'id': active_section.id,
+                'name': active_section.name,
+                'image_url': active_section.section_image.url if active_section.section_image else '',
+                'width': active_section.original_width,
+                'height': active_section.original_height,
+                'scale_factor': active_section.scale_factor,
+            },
+        })
+
     stalls = event.stalls.all().select_related('zone')
     zones = list(event.zones.all().values('id', 'name', 'zone_type', 'color'))
     stalls_data = [{
@@ -151,10 +197,7 @@ def erp_floor_plan(request, event_id):
         'size_sqm': float(s.size_sqm),
     } for s in stalls]
     walkways_raw = json.loads(floor_plan.walkways_json) if floor_plan and floor_plan.walkways_json else []
-    walkways_data = walkways_raw
     exits_raw = json.loads(floor_plan.exit_markers_json) if floor_plan and floor_plan.exit_markers_json else []
-    exits_data = exits_raw
-
     svg_content = ''
     fp_w, fp_h = 502485, 721189
     paths_to_try = ['floor_plans/dec_full_floor_plan.svg', 'dec_full_floor_plan.svg']
@@ -164,43 +207,21 @@ def erp_floor_plan(request, event_id):
             break
         try:
             from django.core.files.storage import default_storage
-            print(f'portal SVG: trying storage path={svg_rel_path}, storage={type(default_storage).__name__}')
             if default_storage.exists(svg_rel_path):
                 f = default_storage.open(svg_rel_path)
                 raw = f.read()
                 f.close()
                 if isinstance(raw, bytes):
                     raw = raw.decode('utf-8', errors='replace')
-                print(f'portal SVG: loaded from storage path={svg_rel_path}, size={len(raw)}')
-        except Exception as e:
-            print(f'portal SVG: storage failed for {svg_rel_path}: {e}')
-    for svg_rel_path in paths_to_try:
-        if raw is not None:
-            break
-        try:
-            import requests as http_requests
-            r2_domain = getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', '')
-            if r2_domain:
-                url = f"https://{r2_domain}/{svg_rel_path}"
-                print(f'portal SVG: trying public URL={url}')
-                resp = http_requests.get(url, timeout=30)
-                if resp.status_code == 200:
-                    raw = resp.text
-                    print(f'portal SVG: loaded from public URL, size={len(raw)}')
-                else:
-                    print(f'portal SVG: public URL returned {resp.status_code}')
-        except Exception as e:
-            print(f'portal SVG: public URL failed: {e}')
+        except Exception:
+            pass
     if raw is None:
         for svg_rel_path in paths_to_try:
             full_svg = os.path.join(str(settings.MEDIA_ROOT), svg_rel_path)
             if os.path.exists(full_svg):
                 with open(full_svg, 'r', encoding='utf-8') as f:
                     raw = f.read()
-                print(f'portal SVG: loaded from local file={full_svg}')
                 break
-    if raw is None:
-        print('portal SVG: all paths failed')
     if raw:
         try:
             vb = re.search(r'viewBox="([^"]+)"', raw)
@@ -216,19 +237,20 @@ def erp_floor_plan(request, event_id):
             raw = re.sub(r'width="[^"]*"', f'width="{fp_w}"', raw)
             raw = re.sub(r'height="[^"]*"', f'height="{fp_h}"', raw)
             svg_content = raw
-            print(f'portal SVG: processed OK, svg_content len={len(svg_content)}')
-        except Exception as e:
-            print(f'portal SVG: processing FAILED: {e}')
+        except Exception:
+            pass
 
     return render(request, 'portal/floor_plan.html', {
         'event': event, 'floor_plan': floor_plan,
         'zones': json.dumps(zones), 'stalls_data': json.dumps(stalls_data),
-        'walkways_data': json.dumps(walkways_data),
-        'exits_data': json.dumps(exits_data),
+        'walkways_data': json.dumps(walkways_raw),
+        'exits_data': json.dumps(exits_raw),
         'svg_content': svg_content,
         'svg_w': fp_w,
         'svg_h': fp_h,
-        'scale': SCALE,
+        'scale': 1,
+        'sections': [],
+        'active_section': None,
     })
 
 

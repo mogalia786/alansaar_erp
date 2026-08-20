@@ -131,6 +131,7 @@ class Stall(models.Model):
         ('blocked', 'Blocked'),
     ]
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='stalls')
+    section = models.ForeignKey('FloorPlanSection', on_delete=models.SET_NULL, null=True, blank=True, related_name='stalls')
     zone = models.ForeignKey(Zone, on_delete=models.SET_NULL, null=True, blank=True, related_name='stalls')
     name = models.CharField(max_length=50)
     stall_prefix = models.CharField(max_length=10, default='Stand', help_text="Prefix for numbering (Stand, Food, Kiddies)")
@@ -153,11 +154,12 @@ class Stall(models.Model):
     num_chairs = models.PositiveIntegerField(default=2, help_text="Chairs included with this stall")
     electrical_instructions = models.TextField(blank=True, help_text="Electrician instructions for this stall position")
     build_instructions = models.TextField(blank=True, help_text="Stand builder instructions for this stall position")
+    rotation = models.IntegerField(default=0, help_text="Rotation in degrees (0, 90, 180, 270)")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['name']
-        unique_together = ['event', 'name']
+        unique_together = ['section', 'name']
 
     def __str__(self):
         return f"{self.name} ({self.event.name})"
@@ -165,6 +167,43 @@ class Stall(models.Model):
     @property
     def total_price(self):
         return self.base_price + self.corner_premium + self.entrance_premium
+
+
+class FloorPlanSection(models.Model):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='floor_plan_sections')
+    name = models.CharField(max_length=100)
+    section_image = models.ImageField(upload_to='floor_plan_sections/')
+    original_pdf = models.FileField(upload_to='floor_plan_pdfs/', blank=True, null=True)
+    display_order = models.PositiveIntegerField(default=0)
+    original_width = models.IntegerField(default=1600, help_text="Image width in pixels")
+    original_height = models.IntegerField(default=900, help_text="Image height in pixels")
+    hall_width_meters = models.DecimalField(max_digits=6, decimal_places=2, default=50.00)
+    hall_height_meters = models.DecimalField(max_digits=6, decimal_places=2, default=30.00)
+    scale_factor = models.FloatField(default=40.0, help_text="Pixels per meter")
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['display_order', 'name']
+        verbose_name = 'Floor Plan Section'
+        verbose_name_plural = 'Floor Plan Sections'
+
+    def __str__(self):
+        return f"{self.name} - {self.event.name}"
+
+    @property
+    def pixels_per_meter(self):
+        if self.hall_width_meters and self.original_width:
+            return float(self.original_width) / float(self.hall_width_meters)
+        return self.scale_factor
+
+    def meters_to_pixels(self, meters):
+        return int(float(meters) * self.pixels_per_meter)
+
+    def pixels_to_meters(self, pixels):
+        if self.pixels_per_meter:
+            return pixels / self.pixels_per_meter
+        return 0
 
 
 class AccessoryType(models.Model):

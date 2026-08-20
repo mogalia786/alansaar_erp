@@ -7,5 +7,8 @@ urlpatterns = [
     path('events/', views.event_list, name='event_list'),
     path('events/<int:event_id>/', views.event_detail, name='event_detail'),
     path('events/<int:event_id>/floor-plan/', views.floor_plan_view, name='floor_plan_view'),
+    path('events/<int:event_id>/floor-plan/<int:section_id>/', views.floor_plan_view, name='floor_plan_section_view'),
     path('floor-plan.svg', serve_floor_plan, name='serve_floor_plan'),
+    path('events/<int:event_id>/stall/<int:stall_id>/update/', views.stall_update, name='stall_update'),
+    path('events/<int:event_id>/stall/create/', views.stall_create, name='stall_create'),
 ]
