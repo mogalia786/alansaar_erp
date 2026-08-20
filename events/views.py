@@ -383,10 +383,9 @@ def upload_images(request, event_id, token):
                 results.append(f'{key} -> FAILED: {rjson}')
         if not request.FILES:
             for sec in FloorPlanSection.objects.filter(event_id=event_id):
-                old_path = sec.section_image or ''
+                old_path = sec.section_image.name if sec.section_image else ''
                 new_name = old_path.split('/')[-1] if '/' in old_path else old_path
-                sec.section_image = new_name
-                sec.save(update_fields=['section_image'])
+                FloorPlanSection.objects.filter(pk=sec.pk).update(section_image=new_name)
                 results.append(f'{sec.name}: {old_path} -> {new_name}')
         return HttpResponse('<br>'.join(results) if results else 'POST multipart files or GET to fix DB paths')
     except Exception as e:
