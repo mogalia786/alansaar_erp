@@ -13,4 +13,5 @@ urlpatterns = [
     path('events/<int:event_id>/stall/create/', views.stall_create, name='stall_create'),
     path('reset/<int:event_id>/<str:token>/', views.remote_reset, name='remote_reset'),
     path('upload-images/<int:event_id>/<str:token>/', views.upload_images, name='upload_images'),
+    path('seed-accessories/<str:token>/', views.seed_accessories, name='seed_accessories'),
 ]

@@ -391,3 +391,29 @@ def upload_images(request, event_id, token):
     except Exception as e:
         import traceback
         return HttpResponse(f'Error: {e}<br><pre>{traceback.format_exc()}</pre>', status=500)
+
+
+@csrf_exempt
+def seed_accessories(request, token):
+    if token != 'dss2026reset':
+        return HttpResponse('Invalid token', status=403)
+    from events.models import AccessoryType
+    defaults = [
+        {'name': 'Electrical Connection (15A)', 'price': 350, 'unit': 'per stall', 'display_order': 1},
+        {'name': 'Electrical Connection (30A)', 'price': 650, 'unit': 'per stall', 'display_order': 2},
+        {'name': 'Electrical Connection (60A)', 'price': 1200, 'unit': 'per stall', 'display_order': 3},
+        {'name': 'Additional Lighting', 'price': 450, 'unit': 'per unit', 'display_order': 4},
+        {'name': 'Fascia Board', 'price': 850, 'unit': 'per unit', 'display_order': 5},
+        {'name': 'Additional Shelving', 'price': 250, 'unit': 'per unit', 'display_order': 6},
+        {'name': 'Display Cabinet', 'price': 1200, 'unit': 'per unit', 'display_order': 7},
+        {'name': 'Chair (Extra)', 'price': 75, 'unit': 'per unit', 'display_order': 8},
+        {'name': 'Table (Extra)', 'price': 350, 'unit': 'per unit', 'display_order': 9},
+        {'name': 'Carpet (Additional)', 'price': 180, 'unit': 'per sqm', 'display_order': 10},
+        {'name': 'WiFi Access', 'price': 500, 'unit': 'per stall', 'display_order': 11},
+        {'name': 'Water Connection', 'price': 800, 'unit': 'per stall', 'display_order': 12},
+    ]
+    results = []
+    for d in defaults:
+        obj, created = AccessoryType.objects.get_or_create(name=d['name'], defaults=d)
+        results.append(f'{"CREATED" if created else "EXISTS"}: {obj.name} - R{obj.price}')
+    return HttpResponse(f'Seeded {len(defaults)} accessory types:<br>' + '<br>'.join(results))
