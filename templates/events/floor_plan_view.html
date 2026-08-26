@@ -458,17 +458,22 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
         stallDrag.el.classList.remove('dragging');
         if (stallDrag.newX !== undefined) {
             var id = stallDrag.el.dataset.id;
-            var cssZ = getCssZoom();
-            var scale = VW / ({{ active_section.scale_factor }} * 0.001);
+            var finalX = stallDrag.newX;
+            var finalY = stallDrag.newY;
             fetch('/events/{{ event.id }}/stall/' + id + '/update/', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
                 body: JSON.stringify({
-                    position_x: Math.round(stallDrag.newX * 1000 / cssZ / cssZ),
-                    position_y: Math.round(stallDrag.newY * 1000 / cssZ / cssZ),
+                    position_x: Math.round(finalX),
+                    position_y: Math.round(finalY),
                 })
             }).then(function(r){return r.json();}).then(function(d){
-                if (!d.ok) alert('Error: ' + d.error);
+                if (d.ok) {
+                    var si = stalls.findIndex(function(s){ return s.id == id; });
+                    if (si !== -1) { stalls[si].x = d.x; stalls[si].y = d.y; }
+                } else {
+                    alert('Error: ' + d.error);
+                }
             });
         }
         stallDrag = null;

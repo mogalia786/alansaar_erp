@@ -161,6 +161,7 @@ def erp_floor_plan(request, event_id):
             'price': float(s.total_price), 'is_corner': s.is_corner,
             'has_water': s.has_water, 'zone': s.zone_id,
             'size_sqm': float(s.size_sqm),
+            'rotation': s.rotation,
         } for s in stalls]
         sections_data = [{
             'id': s.id, 'name': s.name,
