@@ -257,6 +257,22 @@ def send_welcome_email(user):
     )
 
 
+def send_account_activated(user):
+    subject = 'Account Activated \u2013 Al Ansaar Foundation'
+    context = {
+        'user': user,
+        'site_name': settings.SITE_NAME,
+        'site_url': settings.SITE_URL,
+    }
+    send_html_email(subject, 'emails/account_activated.html', context, [user.email])
+    create_notification(
+        user, 'account',
+        'Your Account Has Been Approved',
+        'Your exhibitor account has been verified. You can now log in and book stalls.',
+        '/login/'
+    )
+
+
 def send_invoice_email(invoice, trigger='created'):
     if trigger == 'created':
         subject = f'Invoice {invoice.invoice_number} - Al Ansaar Foundation'

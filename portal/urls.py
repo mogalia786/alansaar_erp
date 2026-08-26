@@ -70,4 +70,6 @@ urlpatterns = [
     path('login/', views.erp_login, name='login'),
     path('logout/', views.erp_logout, name='logout'),
     path('api/search-exhibitors/', views.api_search_exhibitors, name='api_search_exhibitors'),
+    path('verify-registrations/', views.verify_registrations, name='verify_registrations'),
+    path('verify-registrations/<int:pk>/action/', views.verify_exhibitor, name='verify_exhibitor'),
 ]

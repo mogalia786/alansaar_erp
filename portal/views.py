@@ -1651,3 +1651,40 @@ def erp_quotation_approve_after_meeting(request, pk):
         f'{provider.company_name} now has a liability balance.'
     )
     return redirect('erp:quotation_detail', pk=pk)
+
+
+@erp_login_required
+def verify_registrations(request):
+    from accounts.models import User as UserModel
+    status_filter = request.GET.get('status', 'pending')
+    users = UserModel.objects.filter(user_type='exhibitor').order_by('-date_joined')
+    if status_filter == 'pending':
+        users = users.filter(is_verified=False)
+    elif status_filter == 'verified':
+        users = users.filter(is_verified=True)
+    return render(request, 'portal/verify_registrations.html', {
+        'users': users,
+        'status_filter': status_filter,
+        'pending_count': UserModel.objects.filter(user_type='exhibitor', is_verified=False).count(),
+    })
+
+
+@erp_login_required
+def verify_exhibitor(request, pk):
+    from accounts.models import User as UserModel
+    from django.utils import timezone
+    user_obj = get_object_or_404(UserModel, pk=pk, user_type='exhibitor')
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'approve':
+            user_obj.is_verified = True
+            user_obj.verified_at = timezone.now()
+            user_obj.save()
+            from notifications.utils import send_account_activated
+            send_account_activated(user_obj)
+            messages.success(request, f'{user_obj.company_name or user_obj.username} has been verified and activated.')
+        elif action == 'reject':
+            user_obj.is_active = False
+            user_obj.save()
+            messages.warning(request, f'{user_obj.company_name or user_obj.username} registration has been rejected.')
+    return redirect('erp:verify_registrations')

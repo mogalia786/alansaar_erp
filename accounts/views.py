@@ -10,15 +10,22 @@ def exhibitor_register(request):
     if request.user.is_authenticated:
         return redirect('accounts:dashboard')
     if request.method == 'POST':
-        form = ExhibitorRegistrationForm(request.POST)
+        form = ExhibitorRegistrationForm(request.POST, request.FILES)
         if form.is_valid():
             user = form.save(commit=False)
             user.user_type = 'exhibitor'
+            user.is_verified = False
             user.save()
-            send_welcome_email(user)
-            login(request, user)
-            messages.success(request, 'Registration successful! Welcome.')
-            return redirect('accounts:dashboard')
+            from notifications.utils import send_html_email
+            from django.conf import settings
+            send_html_email(
+                'Registration Received - Al Ansaar Foundation',
+                'emails/registration_pending.html',
+                {'user': user, 'site_name': settings.SITE_NAME, 'site_url': settings.SITE_URL},
+                [user.email],
+            )
+            messages.success(request, 'Registration submitted! Your account is pending verification. You will receive an email once approved.')
+            return redirect('accounts:login')
     else:
         form = ExhibitorRegistrationForm()
     return render(request, 'accounts/register.html', {'form': form})
@@ -32,6 +39,9 @@ def exhibitor_login(request):
         if form.is_valid():
             user = form.get_user()
             if user.user_type == 'exhibitor':
+                if not user.is_verified:
+                    messages.error(request, 'Your account is pending verification. Please wait for admin approval before logging in.')
+                    return render(request, 'accounts/login.html', {'form': form})
                 login(request, user)
                 return redirect('accounts:dashboard')
             else:

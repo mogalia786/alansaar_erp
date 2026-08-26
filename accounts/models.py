@@ -15,7 +15,10 @@ class User(AbstractUser):
     user_type = models.CharField(max_length=20, choices=USER_TYPES, default='exhibitor')
     phone = models.CharField(max_length=20, blank=True)
     company_name = models.CharField(max_length=200, blank=True, help_text="For exhibitors")
+    address = models.TextField(blank=True, help_text="Physical address")
+    proof_of_address = models.FileField(upload_to='proof_of_address/', blank=True, help_text="Proof of address (PDF, JPG, PNG)")
     is_verified = models.BooleanField(default=False)
+    verified_at = models.DateTimeField(null=True, blank=True)
     role = models.ForeignKey('Role', null=True, blank=True, on_delete=models.SET_NULL, related_name='users')
 
     class Meta:

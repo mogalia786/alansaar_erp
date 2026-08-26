@@ -55,6 +55,9 @@
                 {% if request.user|has_perm:'invoices' %}<a href="{% url 'erp:invoice_list' %}" class="nav-link"><i class="bi bi-file-text"></i> Invoices</a>{% endif %}
                 {% if request.user|has_perm:'payments' %}<a href="{% url 'erp:payment_list' %}" class="nav-link"><i class="bi bi-credit-card"></i> Payments</a>{% endif %}
                 <div class="nav-section">People</div>
+                {% if request.user|has_perm:'users' %}
+                <a href="{% url 'erp:verify_registrations' %}" class="nav-link"><i class="bi bi-person-check"></i> Verify Registrations {% if pending_count %}<span class="badge bg-danger ms-1">{{ pending_count }}</span>{% endif %}</a>
+                {% endif %}
                 {% if request.user|has_perm:'exhibitors' %}<a href="{% url 'erp:exhibitor_list' %}" class="nav-link"><i class="bi bi-people"></i> Exhibitors</a>{% endif %}
                 {% if request.user|has_perm:'users' %}<a href="{% url 'erp:user_list' %}" class="nav-link"><i class="bi bi-person-badge"></i> Users</a>{% endif %}
                 {% if request.user|has_perm:'users' %}

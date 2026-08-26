@@ -3,23 +3,33 @@
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-md-7">
             <div class="card">
                 <div class="card-header bg-purple text-white text-center">
                     <h4 class="mb-0"><i class="bi bi-person-plus"></i> Exhibitor Registration</h4>
+                    <p class="mb-0 mt-1" style="font-size:12px;opacity:0.8;">Register for the Durban Summer Souk 2026</p>
                 </div>
                 <div class="card-body p-4">
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         {% for field in form %}
                         <div class="mb-3">
-                            <label class="form-label">{{ field.label }}</label>
+                            <label class="form-label fw-bold">{{ field.label }}</label>
+                            {% if field.name == 'proof_of_address' %}
+                            <input type="file" class="form-control" name="{{ field.name }}" accept=".pdf,.jpg,.jpeg,.png" required>
+                            {% elif field.name == 'address' %}
+                            <textarea class="form-control" name="{{ field.name }}" rows="3" required>{{ field.value|default:'' }}</textarea>
+                            {% else %}
                             {{ field }}
+                            {% endif %}
                             {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
                             {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
                         </div>
                         {% endfor %}
-                        <button type="submit" class="btn btn-purple w-100">Register</button>
+                        <div class="alert alert-info py-2 mb-3" style="font-size:13px;">
+                            <i class="bi bi-info-circle"></i> Your registration will be reviewed by our admin team. You will receive an email once your account is approved.
+                        </div>
+                        <button type="submit" class="btn btn-purple w-100">Submit Registration</button>
                     </form>
                     <p class="text-center mt-3 mb-0">
                         Already registered? <a href="{% url 'accounts:login' %}">Login here</a>
@@ -31,5 +41,5 @@
 </div>
 {% endblock %}
 {% block extra_scripts %}
-<script>document.querySelectorAll('input').forEach(i => i.classList.add('form-control'));</script>
+<script>document.querySelectorAll('input[type="text"],input[type="email"],input[type="password"]').forEach(function(i){i.classList.add('form-control')});</script>
 {% endblock %}
