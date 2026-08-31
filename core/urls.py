@@ -4,6 +4,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from providers import rfq_views
+from core.diag import diag
 import os
 
 def health_check(request):
@@ -20,6 +21,7 @@ def serve_media(request, path):
 
 urlpatterns = [
     path('healthz/', health_check),
+    path('diag/', diag),
     path('media/<path:path>', serve_media, name='serve_media'),
     path('admin/', admin.site.urls),
     path('erp/', include('portal.urls')),
