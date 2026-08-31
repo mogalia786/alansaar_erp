@@ -103,6 +103,7 @@ if (BASE_DIR / 'static').is_dir():
 
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
 AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default='')
+CLOUDFLARE_API_TOKEN = config('CLOUDFLARE_API_TOKEN', default=AWS_ACCESS_KEY_ID)
 AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default='')
 AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL', default='')
 AWS_S3_CUSTOM_DOMAIN = config('AWS_S3_CUSTOM_DOMAIN', default='pub-0fe312ed16c545ef951e9e5824c3583f.r2.dev')

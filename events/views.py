@@ -361,7 +361,7 @@ def upload_images(request, event_id, token):
         return HttpResponse('Invalid token', status=403)
     try:
         import requests as http_requests
-        api_token = settings.AWS_ACCESS_KEY_ID
+        api_token = settings.CLOUDFLARE_API_TOKEN
         account_id = settings.AWS_S3_ENDPOINT_URL.split('//')[1].split('.')[0]
         bucket = settings.AWS_STORAGE_BUCKET_NAME
         results = []
