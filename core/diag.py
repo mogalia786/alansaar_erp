@@ -1,4 +1,5 @@
 import io
+import os
 from django.http import HttpResponse
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
@@ -7,6 +8,13 @@ from django.views.decorators.csrf import csrf_exempt
 @csrf_exempt
 def diag(request):
     lines = []
+    lines.append("=== os.environ (relevant) ===")
+    for k in sorted(os.environ):
+        uk = k.upper()
+        if any(t in uk for t in ("AWS", "STORAGE", "CLOUD", "DEBUG", "ALLOWED", "S3", "R2", "DATABASE")):
+            v = os.environ[k]
+            lines.append("%s = %s" % (k, v[:6] + "...(len %d)" % len(v) if len(v) > 6 else v))
+    lines.append("=== settings ===")
     lines.append("DEBUG=%r" % settings.DEBUG)
     lines.append("ALLOWED_HOSTS=%r" % settings.ALLOWED_HOSTS)
     lines.append("USE_S3_STORAGE=%r" % getattr(settings, "USE_S3_STORAGE", None))
