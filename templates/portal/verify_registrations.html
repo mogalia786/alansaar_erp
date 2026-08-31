@@ -24,6 +24,7 @@
                     <th>Phone</th>
                     <th>Address</th>
                     <th>Proof</th>
+                    <th>Photo</th>
                     <th>Registered</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -33,7 +34,11 @@
                 {% for u in users %}
                 <tr>
                     <td class="fw-bold">{{ u.get_full_name|default:u.username }}</td>
-                    <td>{{ u.company_name|default:"-" }}</td>
+                    <td>{{ u.company_name|default:"-" }}
+                        {% if u.company_reg_number or u.vat_number %}
+                        <small class="d-block text-muted">Reg: {{ u.company_reg_number|default:"-" }} | VAT: {{ u.vat_number|default:"-" }}</small>
+                        {% endif %}
+                    </td>
                     <td><a href="mailto:{{ u.email }}">{{ u.email }}</a></td>
                     <td>{{ u.phone|default:"-" }}</td>
                     <td style="max-width:200px;">{{ u.address|default:"-"|truncatechars:50 }}</td>
@@ -44,6 +49,16 @@
                         </a>
                         {% else %}
                         <span class="text-muted">None</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.photo %}
+                        <img src="{{ u.photo.url }}" alt="Exhibitor photo" class="rounded"
+                             style="width:48px;height:48px;object-fit:cover;cursor:pointer;border:1px solid #dee2e6;"
+                             data-bs-toggle="modal" data-bs-target="#photoModal" data-photo="{{ u.photo.url }}"
+                             data-name="{{ u.get_full_name|default:u.username }}">
+                        {% else %}
+                        <span class="text-muted small">None</span>
                         {% endif %}
                     </td>
                     <td>{{ u.date_joined|date:"d M Y H:i" }}</td>
@@ -89,4 +104,27 @@
     <p class="text-muted">{% if status_filter == 'pending' %}No pending registrations to review.{% else %}No exhibitor registrations found.{% endif %}</p>
 </div>
 {% endif %}
+
+<div class="modal fade" id="photoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="photoModalTitle">Exhibitor Photo</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center bg-dark">
+                <img id="photoModalImg" src="" alt="Exhibitor photo" class="img-fluid" style="max-height:70vh;">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+    document.getElementById('photoModal').addEventListener('show.bs.modal', function (e) {
+        var btn = e.relatedTarget;
+        document.getElementById('photoModalImg').src = btn.getAttribute('data-photo');
+        document.getElementById('photoModalTitle').textContent = 'Exhibitor Photo — ' + btn.getAttribute('data-name');
+    });
+</script>
 {% endblock %}

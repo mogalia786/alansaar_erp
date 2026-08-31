@@ -69,6 +69,10 @@ def auto_post_invoice(invoice, created_by=None):
     if not all([acc_receivables, acc_income, acc_vat]):
         return
 
+    ref = invoice.booking.booking_reference if invoice.booking else (
+        invoice.invoice_lines.first().booking.booking_reference if invoice.invoice_lines.exists() else invoice.invoice_number
+    )
+
     last_num = JournalEntry.objects.count()
     entry_number = f"INV-{timezone.now().strftime('%Y%m')}-{last_num + 1:04d}"
 
@@ -82,7 +86,7 @@ def auto_post_invoice(invoice, created_by=None):
 
     JournalLine.objects.create(
         journal_entry=je, account=acc_receivables,
-        description=f"Stall rental - {invoice.booking.booking_reference}",
+        description=f"Stall rental - {ref}",
         debit=invoice.amount_incl, credit=Decimal('0'),
     )
 
@@ -192,3 +196,40 @@ def auto_post_payment(payment, created_by=None):
         description=f"Settle invoice {inv.invoice_number}",
         debit=Decimal('0'), credit=payment.amount,
     )
+
+
+def auto_post_gate_taking(gate_taking, created_by=None):
+    """Auto-create a balanced journal entry for cash collected at the gates.
+
+    Debit the bank account for the full amount collected.
+    Credit the 'Daily Gate Takings' income account (no VAT split).
+    """
+    acc_bank = Account.objects.filter(code='1000').first()
+    acc_income = Account.objects.filter(code='4300').first()
+    if not all([acc_bank, acc_income]):
+        return
+
+    last_num = JournalEntry.objects.count()
+    entry_number = f"GATE-{timezone.now().strftime('%Y%m')}-{last_num + 1:04d}"
+    je = JournalEntry.objects.create(
+        entry_number=entry_number,
+        date=gate_taking.date,
+        description=f"Daily Gate Takings - {gate_taking.date}",
+        is_posted=True,
+        created_by=created_by,
+    )
+
+    JournalLine.objects.create(
+        journal_entry=je, account=acc_bank,
+        description=f"Gate cash/card deposit - {gate_taking.date}",
+        debit=gate_taking.total, credit=Decimal('0'),
+    )
+
+    JournalLine.objects.create(
+        journal_entry=je, account=acc_income,
+        description=f"Gate takings income - {gate_taking.date}",
+        debit=Decimal('0'), credit=gate_taking.total,
+    )
+
+    gate_taking.journal_entry = je
+    gate_taking.save(update_fields=['journal_entry'])

@@ -13,12 +13,13 @@
 <p>A new invoice has been issued for your stall booking.</p>
 <table width="100%" cellpadding="8" cellspacing="0" style="background:#f8f4fc;border-radius:6px;margin:15px 0;">
 <tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Invoice No:</strong></td><td>{{ invoice.invoice_number }}</td></tr>
-<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Booking:</strong></td><td>{{ invoice.booking.booking_reference }}</td></tr>
-<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Stall:</strong></td><td>{{ invoice.booking.stall.name }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Booking(s):</strong></td><td>{% if invoice.invoice_lines.exists %}{% for l in invoice.invoice_lines.all %}{{ l.booking.booking_reference }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}{{ invoice.display_booking.booking_reference|default:invoice.booking.booking_reference }}{% endif %}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Stalls:</strong></td><td>{% if invoice.invoice_lines.exists %}{% for l in invoice.invoice_lines.all %}{{ l.booking.stall.name }} (R{{ l.amount_incl|floatformat:2 }}){% if not forloop.last %}<br>{% endif %}{% endfor %}{% else %}{{ invoice.display_booking.stall.name|default:invoice.booking.stall.name|default:"-" }}{% endif %}</td></tr>
 <tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Total:</strong></td><td><strong>R{{ invoice.amount_incl|floatformat:2 }}</strong></td></tr>
-<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>VAT (15%):</strong></td><td>R{{ invoice.vat_amount|floatformat:2 }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>VAT (included):</strong></td><td>R{{ invoice.vat_amount|floatformat:2 }}</td></tr>
 <tr><td><strong>Due Date:</strong></td><td>{{ invoice.due_date|date:"d F Y" }}</td></tr>
 </table>
+<p>All prices shown are inclusive of 15% VAT.</p>
 <p>Please make payment before the due date to avoid any late payment surcharges.</p>
 <p><a href="{{ site_url }}/invoices/{{ invoice.id }}/" style="display:inline-block;background:#5B2C6F;color:#ffffff;padding:12px 30px;border-radius:6px;text-decoration:none;font-weight:bold;">View Invoice</a></p>
 </td></tr>

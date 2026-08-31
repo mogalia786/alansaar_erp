@@ -8,7 +8,7 @@ from django.db.models import Sum, Count, Q
 from events.models import Event, FloorPlan, FloorPlanSection, Zone, Stall, AccessoryType
 import re, json, os
 from bookings.models import Booking, DiscountRequest
-from invoices.models import Invoice, Payment, Receipt, LedgerEntry
+from invoices.models import Invoice, Payment, Receipt, LedgerEntry, DebtDeclaration, DebtPaymentSchedule, DebtDeclarationApproval
 from accounts.models import User, Role, RolePermission
 from providers.models import ServiceProvider, ServiceLog, Expense, RFQ, RFQCategory, Quotation, QuotationDocument, QuotationApproval
 from django.utils import timezone
@@ -105,13 +105,17 @@ def erp_logout(request):
 
 @erp_login_required
 def erp_dashboard(request):
+    from accounting.models import GateTaking
+    gt_agg = GateTaking.objects.aggregate(c=Sum('cash_amount'), card=Sum('card_amount'))
+    gate_takings_total = (gt_agg['c'] or Decimal('0')) + (gt_agg['card'] or Decimal('0'))
     ctx = {
         'active_events': Event.objects.filter(status__in=['published', 'ongoing']).count(),
         'total_bookings': Booking.objects.count(),
         'pending_bookings': Booking.objects.filter(status='pending').count(),
         'pending_payments': Payment.objects.filter(status='pending').count(),
         'unverified_exhibitors': User.objects.filter(user_type='exhibitor', is_verified=False).count(),
-        'total_revenue': Invoice.objects.aggregate(s=Sum('amount_paid'))['s'] or 0,
+        'total_revenue': (Decimal(Invoice.objects.aggregate(s=Sum('amount_paid'))['s'] or 0) + gate_takings_total),
+        'gate_takings_total': gate_takings_total,
         'recent_bookings': Booking.objects.select_related('exhibitor', 'event', 'stall').order_by('-booking_date')[:10],
     }
     return render(request, 'portal/dashboard.html', ctx)
@@ -453,8 +457,10 @@ def erp_booking_list(request):
 @erp_section_required('bookings')
 def erp_booking_detail(request, pk):
     booking = get_object_or_404(Booking.objects.select_related('exhibitor', 'event', 'stall', 'stall__zone'), pk=pk)
-    invoices = booking.invoices.all()
-    payments = booking.payments.all()
+    line = getattr(booking, 'invoice_line', None)
+    invoices = [line.invoice] if line is not None else list(booking.invoices.all())
+    inv = invoices[0] if invoices else None
+    payments = inv.payments.all() if inv else booking.payments.all()
     discount_requests = booking.discount_requests.all()
     return render(request, 'portal/booking_detail.html', {
         'booking': booking, 'invoices': invoices,
@@ -471,7 +477,23 @@ def approve_booking(request, pk):
         booking.save()
         booking.stall.status = 'reserved'
         booking.stall.save()
-        messages.success(request, f'Booking {booking.booking_reference} approved.')
+        from invoices.views import ensure_booking_invoice
+        inv, created = ensure_booking_invoice(booking)
+        from invoices.models import LedgerEntry
+        if not LedgerEntry.objects.filter(booking=booking, entry_type='invoice').exists():
+            line = inv.invoice_lines.filter(booking=booking).first()
+            amount = line.amount_incl if line is not None else booking.total_amount
+            LedgerEntry.objects.create(
+                exhibitor=booking.exhibitor, booking=booking,
+                entry_type='invoice', description=f'Stall booking - {booking.stall.name}',
+                reference=inv.invoice_number,
+                debit=amount, credit=0, balance=inv.balance_due,
+                entry_date=inv.issue_date,
+            )
+        if created:
+            auto_post_invoice(inv, created_by=request.user)
+        send_invoice_email(inv, 'created')
+        messages.success(request, f'Booking {booking.booking_reference} approved. Invoice {inv.invoice_number} issued.')
     return redirect('erp:booking_detail', pk=pk)
 
 
@@ -505,27 +527,37 @@ def confirm_booking(request, pk):
 @erp_section_required('invoices')
 def erp_invoice_list(request):
     q = request.GET.get('q', '').strip()
-    invoices = Invoice.objects.all().select_related('exhibitor', 'booking', 'booking__stall')
+    invoices = Invoice.objects.all().select_related('exhibitor', 'event', 'booking', 'booking__stall')
     if q:
         invoices = invoices.filter(
             Q(exhibitor__company_name__icontains=q) |
-            Q(booking__fascia_name__icontains=q) |
             Q(invoice_number__icontains=q) |
             Q(booking__booking_reference__icontains=q) |
-            Q(booking__stall__name__icontains=q)
-        )
+            Q(booking__fascia_name__icontains=q) |
+            Q(invoice_lines__booking__stall__name__icontains=q) |
+            Q(invoice_lines__booking__booking_reference__icontains=q)
+        ).distinct()
     return render(request, 'portal/invoice_list.html', {'invoices': invoices, 'q': q})
 
 
 @erp_section_required('invoices')
 def erp_invoice_detail(request, pk):
-    invoice = get_object_or_404(Invoice.objects.select_related('exhibitor', 'booking', 'booking__stall', 'booking__event'), pk=pk)
-    booking = invoice.booking
-    payments = Payment.objects.filter(booking=booking).select_related('invoice').order_by('payment_date')
+    invoice = get_object_or_404(
+        Invoice.objects.select_related('exhibitor', 'event').prefetch_related(
+            'invoice_lines__booking__stall', 'invoice_lines__booking__event'
+        ),
+        pk=pk,
+    )
+    from invoices.views import refresh_invoice
+    refresh_invoice(invoice)
+    invoice.refresh_from_db()
+    booking = invoice.display_booking
+    payments = invoice.payments.all().select_related('invoice').order_by('payment_date')
+    lines = invoice.invoice_lines.all()
     verified_total = payments.filter(status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
     return render(request, 'portal/invoice_detail.html', {
         'invoice': invoice, 'booking': booking,
-        'payments': payments, 'verified_total': verified_total,
+        'payments': payments, 'verified_total': verified_total, 'lines': lines,
     })
 
 
@@ -533,42 +565,37 @@ def erp_invoice_detail(request, pk):
 def create_invoice(request, booking_id):
     booking = get_object_or_404(Booking, pk=booking_id)
     if request.method == 'POST':
-        inv = Invoice.objects.create(
-            invoice_number=f"INV-{uuid.uuid4().hex[:8].upper()}",
-            booking=booking,
-            exhibitor=booking.exhibitor,
-            amount_excl=booking.subtotal,
-            vat_amount=booking.vat_amount,
-            amount_incl=booking.total_amount,
-            balance_due=booking.total_amount,
-            status='sent',
-            issue_date=timezone.now().date(),
-            due_date=timezone.now().date() + timezone.timedelta(days=30),
-        )
-        LedgerEntry.objects.create(
-            exhibitor=booking.exhibitor, booking=booking,
-            entry_type='invoice', description=f'Stall booking - {booking.stall.name}',
-            reference=inv.invoice_number,
-            debit=inv.amount_incl, credit=0, balance=inv.amount_incl,
-            entry_date=inv.issue_date,
-        )
-        messages.success(request, f'Invoice {inv.invoice_number} created.')
-        auto_post_invoice(inv, created_by=request.user)
+        from invoices.views import ensure_booking_invoice
+        inv, created = ensure_booking_invoice(booking)
+        from invoices.models import LedgerEntry
+        if not LedgerEntry.objects.filter(booking=booking, entry_type='invoice').exists():
+            line = inv.invoice_lines.filter(booking=booking).first()
+            amount = line.amount_incl if line is not None else booking.total_amount
+            LedgerEntry.objects.create(
+                exhibitor=booking.exhibitor, booking=booking,
+                entry_type='invoice', description=f'Stall booking - {booking.stall.name}',
+                reference=inv.invoice_number,
+                debit=amount, credit=0, balance=inv.balance_due,
+                entry_date=inv.issue_date,
+            )
+        if created:
+            auto_post_invoice(inv, created_by=request.user)
         send_invoice_email(inv, 'created')
+        messages.success(request, f'Invoice {inv.invoice_number} updated.')
         return redirect('erp:booking_detail', pk=booking_id)
     return redirect('erp:booking_detail', pk=booking_id)
 
 
 @erp_section_required('payments')
 def erp_payment_list(request):
-    payments = Payment.objects.all().select_related('invoice', 'booking__exhibitor', 'booking__stall')
+    payments = Payment.objects.all().select_related('invoice', 'invoice__exhibitor', 'booking')
     status = request.GET.get('status')
     q = request.GET.get('q', '').strip()
     if status:
         payments = payments.filter(status=status)
     if q:
         payments = payments.filter(
-            Q(booking__exhibitor__company_name__icontains=q) |
+            Q(invoice__exhibitor__company_name__icontains=q) |
             Q(booking__fascia_name__icontains=q) |
             Q(invoice__invoice_number__icontains=q) |
             Q(reference_number__icontains=q) |
@@ -589,38 +616,30 @@ def verify_payment(request, pk):
             payment.receipt_number = f"RCT-{uuid.uuid4().hex[:8].upper()}"
             payment.save()
             inv = payment.invoice
-            from invoices.views import update_invoice_from_booking
-            inv = update_invoice_from_booking(inv.booking)
-            booking = inv.booking
-            booking.amount_paid = inv.amount_paid
-            booking.balance_due = inv.balance_due
-            if inv.balance_due <= 0:
-                booking.payment_status = 'paid'
-                if booking.status in ('pending', 'approved'):
-                    booking.status = 'confirmed'
-                    booking.confirmed_date = timezone.now()
-                    booking.stall.status = 'confirmed'
-                    booking.stall.save()
-            booking.save()
+            from invoices.views import refresh_invoice
+            refresh_invoice(inv)
+            exhibitor = payment.invoice.exhibitor or (payment.booking.exhibitor if payment.booking else None)
+            booking = inv.display_booking
             receipt = Receipt.objects.create(
                 receipt_number=payment.receipt_number,
                 payment=payment,
-                exhibitor=payment.booking.exhibitor,
+                exhibitor=exhibitor,
                 amount=payment.amount,
                 payment_method=payment.payment_method,
                 reference_number=payment.reference_number,
                 issue_date=timezone.now().date(),
             )
-            LedgerEntry.objects.create(
-                exhibitor=payment.booking.exhibitor,
-                booking=payment.booking,
-                entry_type='payment',
-                description=f'Payment received - {inv.invoice_number}',
-                reference=receipt.receipt_number,
-                debit=0, credit=payment.amount,
-                balance=inv.balance_due,
-                entry_date=timezone.now().date(),
-            )
+            if booking is not None:
+                LedgerEntry.objects.create(
+                    exhibitor=exhibitor,
+                    booking=booking,
+                    entry_type='payment',
+                    description=f'Payment received - {inv.invoice_number}',
+                    reference=receipt.receipt_number,
+                    debit=0, credit=payment.amount,
+                    balance=inv.balance_due,
+                    entry_date=timezone.now().date(),
+                )
             auto_post_payment(payment, created_by=request.user)
             from notifications.utils import send_payment_verified
             send_payment_verified(payment, receipt)
@@ -635,7 +654,8 @@ def verify_payment(request, pk):
 @erp_section_required('payments')
 def collect_cash(request, booking_id):
     booking = get_object_or_404(Booking, pk=booking_id)
-    invoice = booking.invoices.first()
+    line = getattr(booking, 'invoice_line', None)
+    invoice = line.invoice if line is not None else booking.invoices.first()
     if not invoice:
         messages.error(request, 'No invoice found for this booking.')
         return redirect('erp:booking_detail', pk=booking_id)
@@ -646,6 +666,9 @@ def collect_cash(request, booking_id):
         if amount <= 0:
             messages.error(request, 'Amount must be greater than zero.')
             return redirect('erp:collect_cash', booking_id=booking_id)
+        from invoices.models import InvoiceLine
+        line = InvoiceLine.objects.filter(booking=booking).first()
+        inv = line.invoice if line else booking.invoices.first()
         payment = Payment.objects.create(
             invoice=invoice,
             booking=booking,
@@ -659,51 +682,43 @@ def collect_cash(request, booking_id):
         )
         payment.receipt_number = f"RCT-{uuid.uuid4().hex[:8].upper()}"
         payment.save()
-        from invoices.views import update_invoice_from_booking
-        inv = update_invoice_from_booking(booking)
-        booking.amount_paid = inv.amount_paid
-        booking.balance_due = inv.balance_due
-        if inv.balance_due <= 0:
-            booking.payment_status = 'paid'
-            if booking.status in ('pending', 'approved'):
-                booking.status = 'confirmed'
-                booking.confirmed_date = timezone.now()
-                booking.stall.status = 'confirmed'
-                booking.stall.save()
-        elif inv.amount_paid > 0:
-            booking.payment_status = 'partial'
-        booking.save()
+        from invoices.views import refresh_invoice
+        refresh_invoice(inv)
         receipt = Receipt.objects.create(
             receipt_number=payment.receipt_number,
             payment=payment,
-            exhibitor=booking.exhibitor,
+            exhibitor=inv.exhibitor,
             amount=payment.amount,
             payment_method='cash',
             reference_number=ref,
             issue_date=timezone.now().date(),
             notes=notes,
         )
-        LedgerEntry.objects.create(
-            exhibitor=booking.exhibitor,
-            booking=booking,
-            entry_type='payment',
-            description=f'Cash payment - {invoice.invoice_number}',
-            reference=receipt.receipt_number,
-            debit=0, credit=payment.amount,
-            balance=inv.balance_due,
-            entry_date=timezone.now().date(),
-        )
+        auth_booking = inv.display_booking
+        if auth_booking is not None:
+            LedgerEntry.objects.create(
+                exhibitor=inv.exhibitor,
+                booking=auth_booking,
+                entry_type='payment',
+                description=f'Cash payment - {invoice.invoice_number}',
+                reference=receipt.receipt_number,
+                debit=0, credit=payment.amount,
+                balance=inv.balance_due,
+                entry_date=timezone.now().date(),
+            )
         auto_post_payment(payment, created_by=request.user)
         send_payment_verified_email(payment, receipt)
         messages.success(request, f'Cash payment of R{amount:.2f} recorded. Receipt: {receipt.receipt_number}')
         return redirect('erp:booking_detail', pk=booking_id)
-    from decimal import Decimal as D
-    verified_total = invoice.payments.filter(status='verified').aggregate(s=Sum('amount'))['s'] or D('0')
+    from invoices.views import refresh_invoice as _rf
+    _rf(invoice)
+    invoice.refresh_from_db()
+    verified_total = invoice.payments.filter(status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
     context = {
         'booking': booking,
         'invoice': invoice,
-        'balance_due': invoice.amount_incl - verified_total,
-        'verified_total': verified_total,
+        'balance_due': invoice.balance_due,
+        'verified_total': invoice.amount_paid,
     }
     return render(request, 'portal/collect_cash.html', context)
 
@@ -711,10 +726,11 @@ def collect_cash(request, booking_id):
 @erp_section_required('payments')
 def print_payments_receipt(request, booking_id):
     booking = get_object_or_404(Booking, pk=booking_id)
-    invoice = booking.invoices.first()
+    line = getattr(booking, 'invoice_line', None)
+    invoice = line.invoice if line is not None else booking.invoices.first()
     payments = Payment.objects.filter(
-        booking=booking, status='verified'
-    ).select_related('invoice').order_by('payment_date')
+        invoice=invoice, status='verified'
+    ).select_related('invoice').order_by('payment_date') if invoice else Payment.objects.none()
     receipt = None
     if payments.exists():
         last_payment = payments.first()
@@ -790,23 +806,18 @@ def approve_discount(request, pk):
         dr.approved_by_second = request.user
         dr.status = 'approved'
         dr.booking.subtotal -= dr.discount_amount
-        dr.booking.vat_amount = dr.booking.subtotal * Decimal('0.15')
-        dr.booking.total_amount = dr.booking.subtotal + dr.booking.vat_amount
+        from bookings.pricing import embedded_vat
+        rate = float(dr.booking.event.vat_rate) / 100
+        dr.booking.vat_amount = embedded_vat(dr.booking.subtotal - dr.booking.electricity_deposit, rate=rate)
+        dr.booking.total_amount = dr.booking.subtotal
         dr.booking.balance_due = dr.booking.total_amount - dr.booking.amount_paid
         dr.booking.save()
         dr.save()
-        # Update the booking's invoice
-        inv = dr.booking.invoices.first()
-        if inv:
-            inv.amount_excl = dr.booking.subtotal
-            inv.vat_amount = dr.booking.vat_amount
-            inv.amount_incl = dr.booking.total_amount
-            inv.balance_due = inv.amount_incl - inv.amount_paid
-            if inv.balance_due <= 0:
-                inv.status = 'paid'
-            elif inv.amount_paid > 0:
-                inv.status = 'partial'
-            inv.save()
+        # Update the booking's consolidated invoice line
+        line = getattr(dr.booking, 'invoice_line', None)
+        if line is not None:
+            from invoices.views import update_invoice_from_booking
+            update_invoice_from_booking(dr.booking)
             # Create credit note ledger entry for the discount
             from invoices.models import LedgerEntry
             LedgerEntry.objects.create(
@@ -904,31 +915,42 @@ def print_accessories(request, event_id):
 def erp_statement(request, exhibitor_id):
     exhibitor = get_object_or_404(User, pk=exhibitor_id, user_type='exhibitor')
     entries = LedgerEntry.objects.filter(exhibitor=exhibitor).select_related('booking', 'booking__stall').order_by('entry_date', 'created_at')
-    bookings = Booking.objects.filter(exhibitor=exhibitor).select_related('stall', 'event').prefetch_related('invoices', 'payments')
+    from invoices.views import refresh_invoice
+    invoices = Invoice.objects.filter(exhibitor=exhibitor).order_by('issue_date')
+    rows = []
     stand_balances = []
-    for bk in bookings:
-        inv = bk.invoices.first()
-        paid = bk.payments.filter(status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
-        total = inv.amount_incl if inv and inv.amount_incl else bk.total_amount
-        balance = total - paid
-        stand_balances.append({
-            'booking': bk,
-            'stall_name': bk.stall.name if bk.stall else '-',
-            'fascia_name': bk.fascia_name or '-',
-            'event_name': bk.event.name if bk.event else '-',
-            'total': total,
-            'paid': paid,
-            'balance': balance,
+    total_invoiced = Decimal('0')
+    total_paid = Decimal('0')
+    for inv in invoices:
+        refresh_invoice(inv)
+        inv.refresh_from_db()
+        lines = list(inv.invoice_lines.select_related('booking__stall', 'booking__event'))
+        total_invoiced += inv.amount_incl
+        total_paid += inv.amount_paid
+        rows.append({
+            'invoice': inv,
+            'lines': lines,
+            'total': inv.amount_incl,
+            'paid': inv.amount_paid,
+            'balance': inv.balance_due,
         })
-    total_invoiced = sum(sb['total'] for sb in stand_balances)
-    total_paid = Payment.objects.filter(booking__exhibitor=exhibitor, status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
+        for l in lines:
+            b = l.booking
+            stand_balances.append({
+                'booking': b,
+                'stall_name': b.stall.name if b.stall else '-',
+                'fascia_name': b.fascia_name or '-',
+                'event_name': b.event.name if b.event else '-',
+                'total': l.amount_incl,
+                'paid': b.amount_paid,
+                'balance': b.balance_due,
+            })
     outstanding = total_invoiced - total_paid
     total_debits = entries.aggregate(s=Sum('debit'))['s'] or Decimal('0')
     total_credits = entries.aggregate(s=Sum('credit'))['s'] or Decimal('0')
-    closing_balance = total_debits - total_credits
-    today = timezone.now().date()
+    today = timezone.localdate()
     aging_current = aging_30 = aging_60 = aging_90 = Decimal('0')
-    for inv in Invoice.objects.filter(Q(exhibitor=exhibitor) | Q(booking__exhibitor=exhibitor), status__in=['sent', 'partial', 'overdue']):
+    for inv in Invoice.objects.filter(exhibitor=exhibitor, status__in=['sent', 'partial', 'overdue']):
         bal = inv.balance_due
         if bal > 0:
             days = (today - inv.due_date).days
@@ -940,7 +962,7 @@ def erp_statement(request, exhibitor_id):
     total_credits = total_paid
     closing_balance = total_debits - total_credits
     return render(request, 'printouts/statement.html', {
-        'exhibitor': exhibitor, 'ledger': entries,
+        'exhibitor': exhibitor, 'ledger': entries, 'invoice_rows': rows,
         'total_invoiced': total_invoiced, 'total_paid': total_paid,
         'outstanding': outstanding, 'overdue': aging_30 + aging_60 + aging_90,
         'total_debits': total_debits, 'total_credits': total_credits,
@@ -969,6 +991,166 @@ def erp_reports(request):
             'outstanding': total_rev - paid_rev,
         })
     return render(request, 'portal/reports.html', {'report_data': report_data})
+
+
+def build_section_summary(event):
+    """Per-floor-plan-section summary for the consolidated bookings report."""
+    from django.db.models import F, Prefetch
+    if not event:
+        return []
+    sections = list(event.floor_plan_sections.all().order_by('display_order', 'name'))
+    sold_statuses = ['pending', 'approved', 'confirmed', 'completed']
+    summary = []
+    for sec in sections:
+        total_stalls = event.stalls.filter(section=sec).count()
+        sold_qs = Booking.objects.filter(event=event, stall__section=sec, status__in=sold_statuses)
+        stalls_sold = sold_qs.count()
+        sales_amount = sold_qs.aggregate(s=Sum('stall_price'))['s'] or Decimal('0')
+        revenue = sold_qs.aggregate(s=Sum('total_amount'))['s'] or Decimal('0')
+        discounts = Decimal('0')
+        for bk in sold_qs.prefetch_related('discount_requests'):
+            for d in bk.discount_requests.filter(status='approved'):
+                discounts += d.discount_amount
+        avail_qs = event.stalls.filter(section=sec, status='available')
+        stalls_available = avail_qs.count()
+        unsold_row = avail_qs.annotate(
+            v=F('base_price') + F('corner_premium') + F('entrance_premium')
+        ).aggregate(s=Sum('v'))['s'] or Decimal('0')
+        summary.append({
+            'section': sec,
+            'total_stalls': total_stalls,
+            'stalls_sold': stalls_sold,
+            'stalls_available': stalls_available,
+            'stalls_held': total_stalls - stalls_sold - stalls_available,
+            'sales_amount': sales_amount,
+            'unsold_amount': unsold_row,
+            'discounts': discounts,
+            'revenue': revenue,
+            'outstanding': sold_qs.aggregate(s=Sum('balance_due'))['s'] or Decimal('0'),
+            'received': sold_qs.aggregate(s=Sum('amount_paid'))['s'] or Decimal('0'),
+        })
+    grand = {
+        'total_stalls': sum(r['total_stalls'] for r in summary),
+        'stalls_sold': sum(r['stalls_sold'] for r in summary),
+        'stalls_available': sum(r['stalls_available'] for r in summary),
+        'stalls_held': sum(r['stalls_held'] for r in summary),
+        'sales_amount': sum(r['sales_amount'] for r in summary),
+        'unsold_amount': sum(r['unsold_amount'] for r in summary),
+        'discounts': sum(r['discounts'] for r in summary),
+        'revenue': sum(r['revenue'] for r in summary),
+        'outstanding': sum(r['outstanding'] for r in summary),
+        'received': sum(r['received'] for r in summary),
+    }
+    return {'sections': summary, 'grand': grand}
+
+
+@erp_section_required('booking_reports')
+def erp_consolidated_bookings_report(request):
+    from django.db.models import Prefetch
+    from django.core.exceptions import ObjectDoesNotExist
+
+    events = Event.objects.order_by('start_date')
+    active_event = events.first()
+    event_id = request.GET.get('event_id')
+    section_id = request.GET.get('section_id', '')
+    if event_id:
+        active_event = events.filter(pk=event_id).first() or active_event
+    if not active_event:
+        return render(request, 'portal/consolidated_bookings_report.html', {
+            'events': [], 'sections': [], 'active_event': None,
+            'active_section': None, 'all_sections': True, 'rows': [],
+            'totals': None,
+        })
+
+    sections = list(active_event.floor_plan_sections.all().order_by('display_order', 'name'))
+    active_section = None
+    all_sections = section_id == '' or section_id == 'all'
+    if not all_sections:
+        try:
+            active_section = next((s for s in sections if str(s.pk) == str(section_id)), None)
+        except (ObjectDoesNotExist, ValueError):
+            active_section = None
+        if active_section is None:
+            all_sections = True
+
+    base_qs = Booking.objects.filter(event=active_event)
+    if not all_sections:
+        base_qs = base_qs.filter(stall__section=active_section)
+
+    base_qs = base_qs.select_related('exhibitor', 'stall', 'stall__zone').prefetch_related(
+        'discount_requests',
+        Prefetch('payments', queryset=Payment.objects.filter(status='verified').order_by('payment_date'), to_attr='verified_payments'),
+    )
+
+    rows = []
+    totals = {
+        'count': 0,
+        'stall_price': Decimal('0'),
+        'extras': Decimal('0'),
+        'elec': Decimal('0'),
+        'discount': Decimal('0'),
+        'due': Decimal('0'),
+        'paid1': Decimal('0'),
+        'paid2': Decimal('0'),
+        'paid': Decimal('0'),
+        'balance': Decimal('0'),
+    }
+    for bk in base_qs:
+        stall = bk.stall
+        pay1 = pay2 = Decimal('0')
+        pay_type = '-'
+        pays = getattr(bk, 'verified_payments', [])
+        if pays:
+            pay1 = pays[0].amount
+            pay_type = pays[0].get_payment_method_display()
+        if len(pays) >= 2:
+            pay2 = pays[1].amount
+        discount = sum((d.discount_amount for d in bk.discount_requests.filter(status='approved')), Decimal('0'))
+        size = f"{(Decimal(stall.width or 0) / 1000).quantize(Decimal('0.1'))}x{(Decimal(stall.height or 0) / 1000).quantize(Decimal('0.1'))}" if stall else ''
+        due = bk.total_amount
+        pct = (bk.balance_due / due * 100).quantize(Decimal('0.01')) if due else Decimal('0')
+        rows.append({
+            'booking': bk,
+            'exhibitor': bk.exhibitor.company_name or bk.exhibitor.get_full_name() or bk.exhibitor.username,
+            'stall_name': stall.name if stall else '-',
+            'section_name': (stall.section.name if stall and stall.section else '-'),
+            'size': size,
+            'description': (stall.zone.name if stall and stall.zone else '-'),
+            'stall_price': bk.stall_price,
+            'extras': bk.accessories_total,
+            'elec': bk.electricity_deposit,
+            'discount': discount,
+            'due': due,
+            'pay_type': pay_type,
+            'pay1': pay1,
+            'pay2': pay2,
+            'paid': bk.amount_paid,
+            'balance': bk.balance_due,
+            'pct': pct,
+            'status': bk.get_payment_status_display(),
+        })
+        totals['count'] += 1
+        totals['stall_price'] += bk.stall_price
+        totals['extras'] += bk.accessories_total
+        totals['elec'] += bk.electricity_deposit
+        totals['discount'] += discount
+        totals['due'] += due
+        totals['paid1'] += pay1
+        totals['paid2'] += pay2
+        totals['paid'] += bk.amount_paid
+        totals['balance'] += bk.balance_due
+    totals['pct'] = (totals['balance'] / totals['due'] * 100).quantize(Decimal('0.01')) if totals['due'] else Decimal('0')
+
+    return render(request, 'portal/consolidated_bookings_report.html', {
+        'events': events,
+        'sections': sections,
+        'active_event': active_event,
+        'active_section': active_section if not all_sections else None,
+        'all_sections': all_sections,
+        'rows': rows,
+        'totals': totals,
+        'section_summary': build_section_summary(active_event),
+    })
 
 
 @erp_section_required('expenses')
@@ -1681,10 +1863,370 @@ def verify_exhibitor(request, pk):
             user_obj.verified_at = timezone.now()
             user_obj.save()
             from notifications.utils import send_account_activated
-            send_account_activated(user_obj)
-            messages.success(request, f'{user_obj.company_name or user_obj.username} has been verified and activated.')
+            try:
+                send_account_activated(user_obj)
+                messages.success(request, f'{user_obj.company_name or user_obj.username} has been verified and activated. Notification email sent.')
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).exception(f'Approval email failed for {user_obj.email}: {e}')
+                messages.warning(request, f'{user_obj.company_name or user_obj.username} has been verified, but the notification email could not be sent (error logged).')
         elif action == 'reject':
             user_obj.is_active = False
             user_obj.save()
             messages.warning(request, f'{user_obj.company_name or user_obj.username} registration has been rejected.')
     return redirect('erp:verify_registrations')
+
+
+@erp_section_required('gate_takings')
+def erp_gate_takings(request):
+    from accounting.models import GateTaking
+    from accounting.auto_post import auto_post_gate_taking
+
+    if request.method == 'POST':
+        date_str = request.POST.get('date', '').strip()
+        cash_str = request.POST.get('cash_amount', '0').strip() or '0'
+        card_str = request.POST.get('card_amount', '0').strip() or '0'
+        notes = request.POST.get('notes', '').strip()
+        cash_amount = Decimal(cash_str)
+        card_amount = Decimal(card_str)
+        if not date_str:
+            messages.error(request, 'Please provide a date for the gate takings.')
+            return redirect('erp:gate_takings')
+        try:
+            from datetime import date as date_cls
+            gt_date = date_cls.fromisoformat(date_str)
+        except ValueError:
+            messages.error(request, 'Invalid date format.')
+            return redirect('erp:gate_takings')
+        if cash_amount < 0 or card_amount < 0:
+            messages.error(request, 'Amounts cannot be negative.')
+            return redirect('erp:gate_takings')
+        if cash_amount == 0 and card_amount == 0:
+            messages.error(request, 'Total amount must be greater than zero.')
+            return redirect('erp:gate_takings')
+        gate_taking = GateTaking.objects.create(
+            date=gt_date,
+            cash_amount=cash_amount,
+            card_amount=card_amount,
+            notes=notes,
+            recorded_by=request.user,
+        )
+        try:
+            auto_post_gate_taking(gate_taking, created_by=request.user)
+            if gate_taking.journal_entry:
+                messages.success(request, f'Gate takings for {gt_date} recorded and posted (JE {gate_taking.journal_entry.entry_number}).')
+            else:
+                messages.warning(request, 'Gate takings saved, but accounting accounts are missing so no journal entry was posted.')
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(f'auto_post_gate_taking failed for GateTaking {gate_taking.pk}')
+            messages.warning(request, 'Gate takings saved, but the journal entry could not be posted (error logged).')
+        return redirect('erp:gate_takings')
+
+    entries = GateTaking.objects.select_related('recorded_by', 'journal_entry').all()
+    total_cash = entries.aggregate(t=Sum('cash_amount'))['t'] or Decimal('0')
+    total_card = entries.aggregate(t=Sum('card_amount'))['t'] or Decimal('0')
+    total_all = total_cash + total_card
+    return render(request, 'portal/gate_takings.html', {
+        'entries': entries,
+        'total_cash': total_cash,
+        'total_card': total_card,
+        'total_all': total_all,
+    })
+
+
+@erp_section_required('gate_takings')
+def gate_takings_report(request):
+    from accounting.models import GateTaking
+
+    date_from = request.GET.get('from', '').strip()
+    date_to = request.GET.get('to', '').strip()
+    entries = GateTaking.objects.select_related('recorded_by').all()
+    if date_from:
+        entries = entries.filter(date__gte=date_from)
+    if date_to:
+        entries = entries.filter(date__lte=date_to)
+    entries = entries.order_by('date', 'created_at')
+    total_cash = entries.aggregate(t=Sum('cash_amount'))['t'] or Decimal('0')
+    total_card = entries.aggregate(t=Sum('card_amount'))['t'] or Decimal('0')
+    total_all = total_cash + total_card
+
+    daily = []
+    for entry in entries:
+        row = next((d for d in daily if d['date'] == entry.date), None)
+        if row is None:
+            row = {'date': entry.date, 'cash': Decimal('0'), 'card': Decimal('0')}
+            daily.append(row)
+        row['cash'] += entry.cash_amount
+        row['card'] += entry.card_amount
+    for row in daily:
+        row['total'] = row['cash'] + row['card']
+
+    return render(request, 'portal/gate_takings_report.html', {
+        'entries': entries,
+        'daily': daily,
+        'total_cash': total_cash,
+        'total_card': total_card,
+        'total_all': total_all,
+        'date_from': date_from,
+        'date_to': date_to,
+    })
+
+
+@erp_section_required('debt_declarations')
+def erp_debt_declarations(request):
+    from invoices.debt import get_exhibitor_outstanding, maybe_default_declaration
+    from notifications.utils import send_debt_declaration_approval_request
+
+    if request.method == 'POST':
+        exhibitor_id = request.POST.get('exhibitor_id', '').strip()
+        total_debt_str = request.POST.get('total_debt', '').strip()
+        reason = request.POST.get('reason', '').strip()
+        exhibitor = get_object_or_404(User, pk=exhibitor_id, user_type='exhibitor')
+        try:
+            total_debt = Decimal(total_debt_str)
+        except (ValueError, TypeError):
+            total_debt = Decimal('0')
+
+        schedules = []
+        for i in range(3):
+            due = request.POST.get(f'date_{i}', '').strip()
+            amt = request.POST.get(f'amount_{i}', '').strip()
+            if not due:
+                continue
+            try:
+                d = timezone.datetime.strptime(due, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                messages.error(request, f'Invalid date on schedule line {i + 1}.')
+                return redirect('erp:debt_declarations')
+            try:
+                a = Decimal(amt)
+            except (ValueError, TypeError):
+                a = Decimal('0')
+            schedules.append((d, a))
+
+        if total_debt <= 0:
+            messages.error(request, 'Total acknowledged debt must be greater than zero.')
+            return redirect('erp:debt_declarations')
+        if not schedules:
+            messages.error(request, 'Add at least one agreed payment date.')
+            return redirect('erp:debt_declarations')
+        if any(a <= 0 for _, a in schedules):
+            messages.error(request, 'Each scheduled payment amount must be greater than zero.')
+            return redirect('erp:debt_declarations')
+
+        outstanding = get_exhibitor_outstanding(exhibitor)
+        count = DebtDeclaration.objects.count() + 1
+        declaration_number = f"ACD-{timezone.now().strftime('%Y%m%d')}-{count:03d}"
+        while DebtDeclaration.objects.filter(declaration_number=declaration_number).exists():
+            count += 1
+            declaration_number = f"ACD-{timezone.now().strftime('%Y%m%d')}-{count:03d}"
+
+        declaration = DebtDeclaration.objects.create(
+            declaration_number=declaration_number,
+            exhibitor=exhibitor,
+            total_debt=total_debt,
+            outstanding_at_creation=outstanding,
+            reason=reason,
+            status='pending',
+            initiated_by=request.user,
+        )
+        for due, amt in schedules:
+            DebtPaymentSchedule.objects.create(
+                declaration=declaration, due_date=due, amount=amt, status='pending',
+            )
+        try:
+            send_debt_declaration_approval_request(declaration)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(f'Approval request email failed for {declaration_number}')
+        messages.success(
+            request,
+            f'Declaration {declaration_number} created and sent to all directors for authorisation '
+            f'(2 approvals required). Outstanding debt: R{outstanding}.'
+        )
+        return redirect('erp:debt_declaration_detail', pk=declaration.pk)
+
+    status_filter = request.GET.get('status', '')
+    declarations = DebtDeclaration.objects.select_related('exhibitor', 'initiated_by').prefetch_related('payment_schedules')
+    if status_filter:
+        declarations = declarations.filter(status=status_filter)
+
+    for decl in declarations:
+        try:
+            maybe_default_declaration(decl)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(f'default check failed for {decl.declaration_number}')
+
+    exhibitors = User.objects.filter(user_type='exhibitor').order_by('company_name')
+    return render(request, 'portal/debt_declarations.html', {
+        'declarations': declarations,
+        'status_filter': status_filter,
+        'statuses': DebtDeclaration.STATUS_CHOICES,
+        'exhibitors': exhibitors,
+    })
+
+
+@erp_section_required('debt_declarations')
+def erp_debt_declaration_detail(request, pk):
+    from invoices.debt import maybe_default_declaration, refresh_schedule_status
+    declaration = get_object_or_404(
+        DebtDeclaration.objects.select_related('exhibitor', 'initiated_by').prefetch_related('payment_schedules', 'approvals', 'approvals__user'),
+        pk=pk,
+    )
+    refresh_schedule_status(declaration)
+    maybe_default_declaration(declaration)
+    declaration.refresh_from_db()
+
+    approvals = {a.user_id: a for a in declaration.approvals.all()}
+    directors = list(declaration.directors)
+    director_rows = []
+    for d in directors:
+        row = {'user': d, 'approval': approvals.get(d.pk)}
+        director_rows.append(row)
+    schedules = list(DebtPaymentSchedule.objects.filter(declaration=declaration).order_by('due_date'))
+    return render(request, 'portal/debt_declaration_detail.html', {
+        'declaration': declaration,
+        'director_rows': director_rows,
+        'schedules': schedules,
+        'user_acted': request.user.id in approvals,
+        'is_director_viewer': _is_director(request.user),
+    })
+
+
+def _is_director(user):
+    return user.is_authenticated and user.user_type in ('director', 'admin', 'superadmin')
+
+
+@erp_section_required('debt_declarations')
+def erp_debt_declaration_approve(request, pk):
+    from notifications.utils import send_debt_declaration_approved, send_debt_declaration_approval_request
+    declaration = get_object_or_404(DebtDeclaration, pk=pk)
+    if not _is_director(request.user):
+        messages.error(request, 'Only directors may authorise debt declarations.')
+        return redirect('erp:debt_declaration_detail', pk=pk)
+
+    existing = DebtDeclarationApproval.objects.filter(declaration=declaration, user=request.user).first()
+    if existing:
+        if existing.action == 'approve':
+            messages.info(request, 'You have already authorised this declaration.')
+        else:
+            messages.warning(request, 'You previously rejected this declaration.')
+    else:
+        DebtDeclarationApproval.objects.create(
+            declaration=declaration, user=request.user, action='approve',
+        )
+        messages.success(request, f'{request.user.get_full_name() or request.user.username} has authorised the declaration.')
+
+    if declaration.status == 'pending' and declaration.approval_count >= 2:
+        declaration.status = 'active'
+        declaration.approved_at = timezone.now()
+        declaration.save(update_fields=['status', 'approved_at'])
+        try:
+            send_debt_declaration_approved(declaration)
+            messages.success(request, f'Payment plan {declaration.declaration_number} AUTHORISED (2 directors). Exhibitor notified.')
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception('Approved email failed')
+
+    try:
+        send_debt_declaration_approval_request(declaration)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception('Director update email failed')
+    return redirect('erp:debt_declaration_detail', pk=pk)
+
+
+@erp_section_required('debt_declarations')
+def erp_debt_declaration_reject(request, pk):
+    from notifications.utils import send_debt_declaration_approval_request
+    declaration = get_object_or_404(DebtDeclaration, pk=pk)
+    if not _is_director(request.user):
+        messages.error(request, 'Only directors may reject debt declarations.')
+        return redirect('erp:debt_declaration_detail', pk=pk)
+
+    existing = DebtDeclarationApproval.objects.filter(declaration=declaration, user=request.user).first()
+    if existing:
+        messages.info(request, 'Your decision on this declaration is already recorded.')
+    else:
+        DebtDeclarationApproval.objects.create(
+            declaration=declaration, user=request.user, action='reject',
+        )
+        messages.success(request, f'{request.user.get_full_name() or request.user.username} has rejected the declaration.')
+
+    try:
+        send_debt_declaration_approval_request(declaration)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception('Director update email failed')
+    return redirect('erp:debt_declaration_detail', pk=pk)
+
+
+@erp_section_required('debt_declarations')
+def erp_debt_declaration_schedule(request, pk, schedule_id):
+    from invoices.debt import apply_declaration_payment, maybe_default_declaration
+    declaration = get_object_or_404(DebtDeclaration, pk=pk)
+    schedule = get_object_or_404(DebtPaymentSchedule, pk=schedule_id, declaration=declaration)
+    if request.method != 'POST':
+        return redirect('erp:debt_declaration_detail', pk=pk)
+
+    action = request.POST.get('action', '')
+    remark = request.POST.get('remark', '').strip()
+
+    if action == 'paid':
+        payment_method = request.POST.get('payment_method', 'cash')
+        if payment_method not in ('cash', 'eft'):
+            payment_method = 'cash'
+        if schedule.status == 'paid':
+            messages.info(request, 'This scheduled date is already marked as paid.')
+        else:
+            payments = apply_declaration_payment(schedule, payment_method, remark, request.user)
+            if not payments:
+                messages.error(
+                    request,
+                    'No open invoice with an outstanding balance was found - payment was NOT applied.'
+                )
+            else:
+                total = sum(p.amount for p in payments)
+                messages.success(
+                    request,
+                    f'Schedule {schedule.due_date} marked PAID. R{total} applied to '
+                    f'invoice(s) and posted to accounting ({len(payments)} payment(s)).',
+                )
+    elif action == 'missed':
+        if schedule.status == 'paid':
+            messages.error(request, 'Cannot mark an already-paid date as missed.')
+        else:
+            schedule.status = 'missed'
+            schedule.marked_by = request.user
+            schedule.remark = remark or 'Missed agreed payment date'
+            schedule.save(update_fields=['status', 'marked_by', 'remark'])
+            defaulted = maybe_default_declaration(declaration)
+            if defaulted:
+                messages.warning(
+                    request,
+                    f'Schedule marked MISSED. All agreed dates have passed unpaid - declaration has DEFAULTED '
+                    f'and directors, finance and the exhibitor have been notified.',
+                )
+            else:
+                messages.warning(request, f'Schedule {schedule.due_date} marked MISSED.')
+    else:
+        messages.error(request, 'Unknown action.')
+
+    return redirect('erp:debt_declaration_detail', pk=pk)
+
+
+@erp_section_required('debt_declarations')
+def erp_debt_declaration_letter(request, pk):
+    from django.conf import settings as dj_settings
+    declaration = get_object_or_404(
+        DebtDeclaration.objects.select_related('exhibitor', 'initiated_by').prefetch_related('payment_schedules'),
+        pk=pk,
+    )
+    return render(request, 'printouts/acknowledgement_of_debt.html', {
+        'declaration': declaration,
+        'schedules': declaration.payment_schedules.all(),
+        'site_name': dj_settings.SITE_NAME,
+        'site_url': dj_settings.SITE_URL,
+    })

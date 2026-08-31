@@ -1,0 +1,181 @@
+{% extends 'portal/base.html' %}
+{% block title %}Consolidated Bookings Report - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <h3 class="fw-bold mb-0"><i class="bi bi-file-earmark-bar-graph"></i> Consolidated Bookings Report</h3>
+    <div>
+        <button onclick="window.print()" class="btn btn-purple btn-sm"><i class="bi bi-printer"></i> Print</button>
+    </div>
+</div>
+
+<div class="card mb-4 no-print">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label small mb-1">Event</label>
+                <select name="event_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    {% for ev in events %}
+                    <option value="{{ ev.pk }}" {% if active_event and ev.pk == active_event.pk %}selected{% endif %}>{{ ev.name }} ({{ ev.start_date|date:"Y" }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-1">Section</label>
+                <select name="section_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="all">All Sections</option>
+                    {% for s in sections %}
+                    <option value="{{ s.pk }}" {% if active_section and s.pk == active_section.pk %}selected{% endif %}>{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'erp:consolidated_bookings_report' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if not active_event %}
+<div class="alert alert-info">No events found.</div>
+{% else %}
+<div class="d-flex align-items-center gap-2 mb-3 no-print">
+    <h5 class="mb-0 text-purple fw-bold">
+        {% if active_section %}{{ active_section.name }}{% else %}All Sections{% endif %}
+        <span class="text-muted fw-normal">- {{ active_event.name }}</span>
+    </h5>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-purple text-white"><h6 class="mb-0"><i class="bi bi-clipboard-data"></i> Summary - {{ active_event.name }}</h6></div>
+    <div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-bordered mb-0 align-middle" style="font-size:12px;">
+        <thead class="table-purple">
+            <tr>
+                <th>Section</th>
+                <th class="text-center">Total Stalls</th>
+                <th class="text-center">Stalls Sold</th>
+                <th class="text-center">Stalls Available</th>
+                <th class="text-center">Stalls Held</th>
+                <th class="text-end">Stall Sales Amount</th>
+                <th class="text-end">Stalls Not Sold Value</th>
+                <th class="text-end">Total Discounts</th>
+                <th class="text-end">Total Revenue</th>
+                <th class="text-end">Received</th>
+                <th class="text-end">Outstanding</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for r in section_summary.sections %}
+        <tr>
+            <td><strong>{{ r.section.name }}</strong></td>
+            <td class="text-center">{{ r.total_stalls }}</td>
+            <td class="text-center">{{ r.stalls_sold }}</td>
+            <td class="text-center">{{ r.stalls_available }}</td>
+            <td class="text-center">{{ r.stalls_held }}</td>
+            <td class="text-end">R{{ r.sales_amount|floatformat:2 }}</td>
+            <td class="text-end">R{{ r.unsold_amount|floatformat:2 }}</td>
+            <td class="text-end">R{{ r.discounts|floatformat:2 }}</td>
+            <td class="text-end fw-bold">R{{ r.revenue|floatformat:2 }}</td>
+            <td class="text-end">R{{ r.received|floatformat:2 }}</td>
+            <td class="text-end text-danger">R{{ r.outstanding|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot class="fw-bold table-light">
+            <tr>
+                <td>Total</td>
+                <td class="text-center">{{ section_summary.grand.total_stalls }}</td>
+                <td class="text-center">{{ section_summary.grand.stalls_sold }}</td>
+                <td class="text-center">{{ section_summary.grand.stalls_available }}</td>
+                <td class="text-center">{{ section_summary.grand.stalls_held }}</td>
+                <td class="text-end">R{{ section_summary.grand.sales_amount|floatformat:2 }}</td>
+                <td class="text-end">R{{ section_summary.grand.unsold_amount|floatformat:2 }}</td>
+                <td class="text-end">R{{ section_summary.grand.discounts|floatformat:2 }}</td>
+                <td class="text-end">R{{ section_summary.grand.revenue|floatformat:2 }}</td>
+                <td class="text-end">R{{ section_summary.grand.received|floatformat:2 }}</td>
+                <td class="text-end text-danger">R{{ section_summary.grand.outstanding|floatformat:2 }}</td>
+            </tr>
+        </tfoot>
+    </table></div></div>
+</div>
+
+<div class="row g-3 mb-4 no-print">
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-primary"><div class="stat-value h4 mb-0">{{ totals.count }}</div><div class="text-muted small">Stalls Booked</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-dark"><div class="stat-value h4 mb-0">R{{ totals.due|floatformat:2 }}</div><div class="text-muted small">Total Amount Due</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-success"><div class="stat-value h4 mb-0">R{{ totals.paid|floatformat:2 }}</div><div class="text-muted small">Payments Received</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-danger"><div class="stat-value h4 mb-0">R{{ totals.balance|floatformat:2 }}</div><div class="text-muted small">Balance Outstanding</div></div></div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered mb-0 align-middle" style="font-size:12px;">
+            <thead class="table-purple">
+                <tr>
+                    <th style="width:35px;" class="text-center">No</th>
+                    {% if all_sections %}<th>Section</th>{% endif %}
+                    <th>Exhibitor</th>
+                    <th>Stall No</th>
+                    <th class="text-center">Size</th>
+                    <th>Description</th>
+                    <th class="text-end">Stall Price</th>
+                    <th class="text-end">Extras</th>
+                    <th class="text-end">Elec Deposit</th>
+                    <th class="text-end">Discount</th>
+                    <th class="text-end">Total Amount Due</th>
+                    <th class="text-center">Pay Type</th>
+                    <th class="text-end">Paid 1st</th>
+                    <th class="text-end">Paid 2nd</th>
+                    <th class="text-end">Balance</th>
+                    <th class="text-center">% Owing</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for r in rows %}
+            <tr>
+                <td class="text-center">{{ forloop.counter }}</td>
+                {% if all_sections %}<td>{{ r.section_name }}</td>{% endif %}
+                <td>{{ r.exhibitor }}{% if r.booking.fascia_name %}<div class="text-muted" style="font-size:10px;">{{ r.booking.fascia_name }}</div>{% endif %}</td>
+                <td><strong>{{ r.stall_name }}</strong></td>
+                <td class="text-center text-nowrap">{{ r.size }}</td>
+                <td>{{ r.description }}</td>
+                <td class="text-end">R{{ r.stall_price|floatformat:2 }}</td>
+                <td class="text-end">R{{ r.extras|floatformat:2 }}</td>
+                <td class="text-end">R{{ r.elec|floatformat:2 }}</td>
+                <td class="text-end">{% if r.discount %}-R{{ r.discount|floatformat:2 }}{% else %}-{% endif %}</td>
+                <td class="text-end fw-bold">R{{ r.due|floatformat:2 }}</td>
+                <td class="text-center">{{ r.pay_type }}</td>
+                <td class="text-end">{% if r.pay1 %}R{{ r.pay1|floatformat:2 }}{% else %}-{% endif %}</td>
+                <td class="text-end">{% if r.pay2 %}R{{ r.pay2|floatformat:2 }}{% else %}-{% endif %}</td>
+                <td class="text-end {% if r.balance > 0 %}text-danger fw-bold{% endif %}">R{{ r.balance|floatformat:2 }}</td>
+                <td class="text-center">
+                    {% if r.pct <= 0 %}<span class="badge bg-success">0%</span>
+                    {% elif r.pct < 100 %}<span class="badge bg-warning text-dark">{{ r.pct }}%</span>
+                    {% else %}<span class="badge bg-danger">{{ r.pct }}%</span>{% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="{% if all_sections %}16{% else %}15{% endif %}" class="text-center text-muted py-4">No bookings found for this event/section.</td></tr>
+            {% endfor %}
+            </tbody>
+            <tfoot class="fw-bold table-light">
+                <tr>
+                    <td class="text-center">{{ totals.count }}</td>
+                    {% if all_sections %}<td></td>{% endif %}
+                    <td colspan="3" class="text-end">Totals</td>
+                    <td class="text-end">R{{ totals.stall_price|floatformat:2 }}</td>
+                    <td class="text-end">R{{ totals.extras|floatformat:2 }}</td>
+                    <td class="text-end">R{{ totals.elec|floatformat:2 }}</td>
+                    <td class="text-end">R{{ totals.discount|floatformat:2 }}</td>
+                    <td class="text-end">R{{ totals.due|floatformat:2 }}</td>
+                    <td></td>
+                    <td class="text-end">R{{ totals.paid1|floatformat:2 }}</td>
+                    <td class="text-end">R{{ totals.paid2|floatformat:2 }}</td>
+                    <td class="text-end text-danger">R{{ totals.balance|floatformat:2 }}</td>
+                    <td class="text-center">{{ totals.pct }}%</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div></div>
+</div>
+{% endif %}
+{% endblock %}

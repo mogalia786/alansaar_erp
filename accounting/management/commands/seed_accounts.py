@@ -20,6 +20,7 @@ class Command(BaseCommand):
             ('4000', 'Stall Rental Income', 'income'),
             ('4100', 'Accessory Sales', 'income'),
             ('4200', 'Service Fees', 'income'),
+            ('4300', 'Daily Gate Takings', 'income'),
             ('5000', 'Venue Hire', 'expense'),
             ('5100', 'Marketing & Advertising', 'expense'),
             ('5200', 'Staff Salaries', 'expense'),

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Declaration of Debt - Authorisation Required</title></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:30px 10px;">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+<tr><td style="background:#5B2C6F;padding:25px 30px;text-align:center;">
+<h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:2px;">AL ANSAAR FOUNDATION</h1>
+<p style="color:#D4AF37;margin:5px 0 0;font-size:13px;letter-spacing:1px;">DECLARATION OF DEBT &mdash; DIRECTOR AUTHORISATION</p>
+</td></tr>
+<tr><td style="padding:30px;">
+<h2 style="color:#5B2C6F;margin:0 0 15px;">Action Required: {{ declaration.declaration_number }}</h2>
+<p>A stall holder has signed a Declaration of Debt at the Finance office and requires authorisation by at least <strong>two directors</strong> before the payment arrangement is confirmed.</p>
+<table width="100%" cellpadding="8" cellspacing="0" style="background:#f8f4fc;border-radius:6px;margin:15px 0;">
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Exhibitor:</strong></td><td>{{ exhibitor.company_name|default:exhibitor.username }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Debt Acknowledged:</strong></td><td>R{{ declaration.total_debt|floatformat:2 }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Reason:</strong></td><td>{{ declaration.reason|default:'-' }}</td></tr>
+<tr><td><strong>Agreed Dates:</strong></td><td>
+    {% for s in schedules %}{{ s.due_date|date:"d M Y" }} (R{{ s.amount|floatformat:2 }}){% if not forloop.last %}; {% endif %}{% endfor %}
+</td></tr>
+</table>
+
+<div class="section-title" style="color:#5B2C6F;font-weight:bold;margin-top:20px;">Director decisions so far ({{ declaration.approval_count }}/2 authorised)</div>
+<table width="100%" cellpadding="8" cellspacing="0" style="background:#f8f4fc;border-radius:6px;margin:10px 0;">
+{% for a in approvals %}
+<tr><td><strong>{{ a.user.get_full_name|default:a.user.username }}</strong></td><td>{% if a.action == 'approve' %}<span style="color:#155724;font-weight:bold;">&#10004; AUTHORISED</span>{% else %}<span style="color:#721c24;font-weight:bold;">&#10008; REJECTED</span>{% endif %}</td><td>{{ a.comment|default:'' }}</td></tr>
+{% empty %}
+<tr><td colspan="2" style="color:#888;">No director has acted yet.</td></tr>
+{% endfor %}
+</table>
+
+<p><a href="{{ site_url }}/erp/debt-declarations/{{ declaration.pk }}/" style="display:inline-block;background:#5B2C6F;color:#ffffff;padding:12px 30px;border-radius:6px;text-decoration:none;font-weight:bold;">Review &amp; Authorise</a></p>
+<p style="font-size:12px;color:#888;margin-top:15px;">As soon as two directors have authorised the plan, the exhibitor will be notified.</p>
+</td></tr>
+<tr><td style="background:#f8f4fc;padding:20px 30px;text-align:center;border-top:2px solid #5B2C6F;font-size:12px;color:#888;">
+<p style="margin:0;">Al Ansaar Foundation &bull; {{ site_url }}</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>

@@ -66,10 +66,13 @@
         <div class="card mb-3"><div class="card-header bg-purple text-white"><h6 class="mb-0">Financial Summary</h6></div>
         <div class="card-body">
             <table class="table table-sm mb-0">
-                <tr><td>Stall Price</td><td class="text-end">R{{ booking.stall_price|floatformat:2 }}</td></tr>
+                <tr><td>Stall Price (VAT incl)</td><td class="text-end">R{{ booking.stall_price|floatformat:2 }}</td></tr>
                 <tr><td>Accessories</td><td class="text-end">R{{ booking.accessories_total|floatformat:2 }}</td></tr>
-                <tr><td>Subtotal</td><td class="text-end">R{{ booking.subtotal|floatformat:2 }}</td></tr>
-                <tr><td>VAT (15%)</td><td class="text-end">R{{ booking.vat_amount|floatformat:2 }}</td></tr>
+                {% if booking.electricity_deposit > 0 %}
+                <tr><td>Electricity Deposit</td><td class="text-end">R{{ booking.electricity_deposit|floatformat:2 }}</td></tr>
+                {% endif %}
+                <tr><td>Subtotal (VAT incl)</td><td class="text-end">R{{ booking.subtotal|floatformat:2 }}</td></tr>
+                <tr><td>VAT (included)</td><td class="text-end">R{{ booking.vat_amount|floatformat:2 }}</td></tr>
                 <tr class="fw-bold"><td>Total</td><td class="text-end">R{{ booking.total_amount|floatformat:2 }}</td></tr>
                 <tr><td>Paid</td><td class="text-end text-success">R{{ booking.amount_paid|floatformat:2 }}</td></tr>
                 <tr class="fw-bold"><td>Balance</td><td class="text-end text-danger">R{{ booking.balance_due|floatformat:2 }}</td></tr>

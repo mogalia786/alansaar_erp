@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Agreement of Acknowledgment of Debt - {{ declaration.declaration_number }}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    @page { size: A4; margin: 15mm; }
+    body { font-family: 'Segoe UI',Arial,sans-serif; font-size: 12px; color: #333; line-height: 1.55; }
+    .header { border-bottom: 3px solid #5B2C6F; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
+    .header img { height: 50px; width: auto; }
+    .header-text h1 { color: #5B2C6F; font-size: 21px; margin: 0; line-height: 1.2; }
+    .header-text .sub { color: #D4AF37; font-size: 14px; font-weight: 600; }
+    .ref-box { margin-left:auto; text-align:right; font-size: 11px; }
+    .ref-box div { margin-bottom: 2px; }
+    h2 { color: #5B2C6F; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #D4AF37; padding-bottom: 3px; margin: 18px 0 8px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    td, th { padding: 6px 8px; border: 1px solid #ddd; }
+    th { background: #f5f5f5; font-weight: 600; }
+    .party { margin-bottom: 6px; }
+    .clause { margin-bottom: 8px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; }
+    .badge-paid { background: #d4edda; color: #155724; }
+    .badge-missed { background: #f8d7da; color: #721c24; }
+    .badge-pending { background: #fff3cd; color: #856404; }
+    .sig-line { margin-top: 60px; border-top: 1px solid #333; width: 250px; }
+    .footer { margin-top: 30px; border-top: 2px solid #5B2C6F; padding-top: 10px; font-size: 10px; color: #888; text-align: center; }
+    @media print { .no-print { display: none; } }
+</style>
+</head>
+<body>
+    <div class="header">
+        <img src="{{ MEDIA_URL }}logo/al_ansaar_logo.png" alt="Al Ansaar Logo" onerror="this.style.display='none'">
+        <div class="header-text">
+            <h1>AGREEMENT OF ACKNOWLEDGEMENT OF DEBT</h1>
+            <div class="sub">Al Ansaar Foundation &bull; Durban Summer Souk</div>
+        </div>
+        <div class="ref-box">
+            <div><strong>Reference:</strong> {{ declaration.declaration_number }}</div>
+            <div><strong>Prepared:</strong> {{ declaration.created_at|date:"d M Y" }}</div>
+            <div><strong>Approved:</strong> {{ declaration.approved_at|date:"d M Y" }}</div>
+        </div>
+    </div>
+
+    <p style="margin-top:0;"><em>This Agreement records the terms on which the Debtor acknowledges an outstanding debt to the Foundation and undertakes to settle it. Read carefully before signing.</em></p>
+
+    <h2>1. Parties</h2>
+    <p class="party"><strong>The Foundation (the "Creditor"):</strong> Al Ansaar Foundation, a registered non-profit organisation, 207 West Road, Overport, Durban 4091, South Africa (the "Foundation"), whose Finance Office issues this Agreement.</p>
+    <p class="party"><strong>The Exhibitor (the "Debtor"):</strong></p>
+    <table style="width:70%;">
+        <tr><th style="width:35%;">Name</th><td>{{ declaration.exhibitor.get_full_name|default:declaration.exhibitor.username }}</td></tr>
+        {% if declaration.exhibitor.company_name %}<tr><th>Trading as</th><td>{{ declaration.exhibitor.company_name }}</td></tr>{% endif %}
+        <tr><th>Email</th><td>{{ declaration.exhibitor.email }}</td></tr>
+        {% if declaration.exhibitor.phone %}<tr><th>Telephone</th><td>{{ declaration.exhibitor.phone }}</td></tr>{% endif %}
+    </table>
+
+    <h2>2. Recitals</h2>
+    <div class="clause">WHEREAS the Debtor is an exhibitor at the Durban Summer Souk and is indebted to the Foundation for stall rental and related charges:</div>
+    <div class="clause">&nbsp;&nbsp;A. The Debtor has requested that the Foundation grant repayment terms in respect of this debt; and</div>
+    <div class="clause">&nbsp;&nbsp;B. The Foundation has agreed to the repayment terms set out below, on condition that the Debtor signs this Agreement.</div>
+
+    <h2>3. Acknowledgement of Debt</h2>
+    <div class="clause">The Debtor irrevocably acknowledges that he/she is lawfully and truly indebted to the Foundation in the amount of <strong>R{{ declaration.total_debt|floatformat:2 }}</strong> (the "Debt"), representing outstanding stall rental and related charges. The Debtor&#39;s total outstanding balance when this arrangement was made was <strong>R{{ declaration.outstanding_at_creation|floatformat:2 }}</strong>.</div>
+    {% if declaration.reason %}<div class="clause"><strong>Reason for payment terms:</strong> {{ declaration.reason }}</div>{% endif %}
+
+    <h2>4. Repayment Plan</h2>
+    <div class="clause">The Debtor shall settle the Debt by means of the instalments set out below, payable without demand by the due date stated:</div>
+    <table>
+        <thead><tr><th style="width:8%;">#</th><th>Due Date</th><th style="text-align:right;">Amount</th><th style="width:16%; text-align:center;">Status</th></tr></thead>
+        <tbody>
+        {% for s in schedules %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ s.due_date|date:"d F Y" }}</td>
+            <td style="text-align:right;">R{{ s.amount|floatformat:2 }}</td>
+            <td style="text-align:center;">
+                {% if s.status == 'paid' %}<span class="badge badge-paid">Paid{% if s.paid_at %} {{ s.paid_at|date:"d M Y" }}{% endif %}</span>
+                {% elif s.status == 'missed' %}<span class="badge badge-missed">Missed</span>
+                {% else %}<span class="badge badge-pending">Pending</span>{% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot><tr><th colspan="2">Total Acknowledged</th><th style="text-align:right;">R{{ declaration.total_debt|floatformat:2 }}</th><th></th></tr></tfoot>
+    </table>
+
+    <h2>5. Payment Terms</h2>
+    <div class="clause">&nbsp;&nbsp;5.1. Payment may be made by cash or electronic transfer (EFT) at the Foundation&#39;s Finance Office, 207 West Road, Overport, Durban, and a receipt reflecting the allocation to the Debtor&#39;s account will be issued upon settlement of each instalment.</div>
+    <div class="clause">&nbsp;&nbsp;5.2. Each payment will be applied to the Debtor&#39;s outstanding invoices in the order in which those debts were incurred, and recorded in the Foundation&#39;s debtors records / ledger.</div>
+    <div class="clause">&nbsp;&nbsp;5.3. Time is of the essence of this Agreement.</div>
+
+    <h2>6. Default</h2>
+    <div class="clause">&nbsp;&nbsp;6.1. Should the Debtor fail to pay any instalment on or before its due date, the Debtor shall be in breach of this Agreement and, at the Foundation&#39;s election (which may be made without notice), the Debt shall be in default (<em>ipso facto</em>).</div>
+    <div class="clause">&nbsp;&nbsp;6.2. Upon default the full outstanding balance of the Debt shall immediately become due and payable, and interest may be charged on the overdue amount at the prescribed rate of interest as per the National Credit Act / prescribed rate of interest in South Africa.</div>
+    <div class="clause">&nbsp;&nbsp;6.3. The Foundation may enforce the Debt through its legal advisers, and the Debtor shall be liable for all legal costs (on the attorney-and-own-client scale), collection charges and any other costs incurred by the Foundation in recovering the Debt.</div>
+    <div class="clause">&nbsp;&nbsp;6.4. The Debtor&#39;s participation in future exhibitions and events administered by the Foundation may be withheld until the Debt is settled.</div>
+
+    <h2>7. General</h2>
+    <div class="clause">&nbsp;&nbsp;7.1. No relaxation or indulgence granted by the Foundation shall constitute a waiver of its rights under this Agreement.</div>
+    <div class="clause">&nbsp;&nbsp;7.2. This Agreement constitutes the entire agreement between the parties in respect of the Debt and no amendment shall be binding unless in writing and signed by both parties.</div>
+    <div class="clause">&nbsp;&nbsp;7.3. This Agreement shall be governed by the laws of the Republic of South Africa, and any dispute shall be subject to the jurisdiction of the competent South African courts.</div>
+
+    <h2>8. Signatures</h2>
+    <div class="clause">The parties sign this Agreement on the date indicated below in acknowledgement of the terms set out above. Both parties are encouraged to retain a signed copy for their records.</div>
+
+    <table style="width:100%; border:none;"><tr>
+        <td style="border:none; width:33%;">
+            <div class="sig-line"></div>
+            <div><strong>Signed (Debtor / Exhibitor)</strong></div>
+            <div>Name: {{ declaration.exhibitor.get_full_name|default:declaration.exhibitor.username }}</div>
+            <div>Date: __________</div>
+        </td>
+        <td style="border:none; width:33%;">
+            <div class="sig-line"></div>
+            <div><strong>Signed (Authorised Finance Officer)</strong></div>
+            <div>Name: {{ declaration.initiated_by.get_full_name|default:declaration.initiated_by.username|default:'_' }}</div>
+            <div>Date: __________</div>
+        </td>
+        <td style="border:none; width:33%;">
+            <div class="sig-line"></div>
+            <div><strong>Witness</strong></div>
+            <div>Name: __________</div>
+            <div>Date: __________</div>
+        </td>
+    </tr></table>
+
+    <div class="no-print" style="margin-top:20px; text-align:right;">
+        <button onclick="window.print()" class="btn btn-purple btn-sm">Print</button>
+    </div>
+
+    <div class="footer">
+        <p style="margin:0;">Al Ansaar Foundation &bull; 207 West Road, Overport, Durban 4091 &bull; www.alansaar.org.za &bull; 031 208 1601</p>
+        <p style="margin:2px 0 0;">Reference: {{ declaration.declaration_number }}</p>
+    </div>
+</body>
+</html>

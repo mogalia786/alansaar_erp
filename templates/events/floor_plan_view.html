@@ -175,10 +175,15 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
                     <tr><td class="text-muted">Price:</td><td class="fw-bold text-success" id="modal-price">-</td></tr>
                     <tr><td class="text-muted">Status:</td><td><span class="badge bg-success" id="modal-status">Available</span></td></tr>
                 </table>
+                <p class="small text-muted mb-0">All prices are inclusive of 15% VAT.</p>
                 <hr class="my-2">
                 {% if not user.is_authenticated %}
                 <div class="alert alert-warning py-2 mb-0" style="font-size:13px;">
                     <i class="bi bi-exclamation-triangle"></i> Please <a href="{% url 'accounts:login' %}?next={% url 'floor_plan_view' event.id %}" class="alert-link">login</a> or <a href="{% url 'accounts:register' %}" class="alert-link">register</a> to book.
+                </div>
+                {% elif not user.is_verified %}
+                <div class="alert alert-warning py-2 mb-0" style="font-size:13px;">
+                    <i class="bi bi-hourglass-split"></i> Your account is <strong>pending approval</strong>. You will be able to make a booking once the admin team authorises your registration.
                 </div>
                 {% else %}
                 <p class="small fw-bold text-muted mb-2"><i class="bi bi-gear"></i> Additional Requirements</p>

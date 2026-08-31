@@ -285,8 +285,8 @@ def remote_reset(request, event_id, token):
         from bookings.models import Booking
         from invoices.models import Invoice, Payment
         event = get_object_or_404(Event, pk=event_id)
-        payments = Payment.objects.filter(invoice__booking__event=event)
-        invoices = Invoice.objects.filter(booking__event=event)
+        payments = Payment.objects.filter(invoice__event=event)
+        invoices = Invoice.objects.filter(event=event)
         bookings = Booking.objects.filter(event=event)
         stalls = Stall.objects.filter(event=event)
         p_count = payments.count()

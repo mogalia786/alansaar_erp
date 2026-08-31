@@ -60,7 +60,7 @@
         <img src="{{ MEDIA_URL }}logo/al_ansaar_logo.png" alt="Al Ansaar Logo" onerror="this.style.display='none'">
         <div>
             <div class="brand-text"><h1>Al Ansaar Foundation</h1></div>
-            <div class="sub">{{ invoice.booking.event.name }}</div>
+            <div class="sub">{% if invoice.event %}{{ invoice.event.name }}{% else %}{{ invoice.display_booking.event.name|default:invoice.booking.event.name }}{% endif %}</div>
             <div class="details">
                 Durban Exhibition Centre<br>
                 11 Walnut Road, Durban<br>
@@ -93,9 +93,13 @@
                     <div class="value">{{ invoice.issue_date|date:"d F Y" }}</div>
                 </div>
             </td>
-            <td style="width:25%;">
-                <div class="label">Booking Ref</div>
-                <div class="value">{{ invoice.booking.booking_reference }}</div>
+            <td style="width:50%;">
+                <div class="label">Booking Ref(s)</div>
+                {% if invoice.invoice_lines.exists %}
+                    <div class="value">{% for l in invoice.invoice_lines.all %}{{ l.booking.booking_reference }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+                {% else %}
+                    <div class="value">{{ invoice.display_booking.booking_reference|default:invoice.booking.booking_reference }}</div>
+                {% endif %}
                 <div style="font-size:10px;color:#666;margin-top:8px;">
                     <div class="label">Due Date</div>
                     <div class="value" style="{% if invoice.status == 'overdue' %}color:#e74c3c;{% endif %}">{{ invoice.due_date|date:"d F Y" }}</div>
@@ -109,41 +113,45 @@
             <th style="width:5%;">#</th>
             <th style="width:40%;">Description</th>
             <th style="width:10%;text-align:center;">Qty</th>
-            <th style="width:18%;text-align:right;">Unit Price (excl. VAT)</th>
-            <th style="width:12%;text-align:right;">VAT</th>
+            <th style="width:18%;text-align:right;">Unit Price (incl. VAT)</th>
+            <th style="width:12%;text-align:right;">VAT (included)</th>
             <th style="width:15%;text-align:right;">Total</th>
         </tr></thead>
         <tbody>
+            {% for l in invoice.invoice_lines.all %}
+            <tr>
+                <td style="text-align:center;">{{ forloop.counter }}</td>
+                <td>
+                    <div class="item-desc">Stall {{ l.booking.stall.name }}</div>
+                    <div class="item-sub">{{ l.booking.event.name|default:invoice.event.name }} &bull; {{ l.description|default:"" }} &bull; Booking {{ l.booking.booking_reference }}
+                        {% for a in l.booking.accessories.all %}<br>{{ a.accessory.name }} x{{ a.quantity }} &ndash; R{{ a.price|floatformat:2 }}{% endfor %}
+                        {% if l.booking.requires_power %}<br>Electricity deposit: R{{ l.booking.electricity_deposit|floatformat:2 }}{% endif %}
+                    </div>
+                </td>
+                <td style="text-align:center;">1</td>
+                <td style="text-align:right;">R{{ l.amount_incl|floatformat:2 }}</td>
+                <td style="text-align:right;">R{{ l.vat_amount|floatformat:2 }}</td>
+                <td style="text-align:right;font-weight:600;">R{{ l.amount_incl|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
             <tr>
                 <td style="text-align:center;">1</td>
                 <td>
-                    <div class="item-desc">Stall Booking - {{ invoice.booking.stall.name }}</div>
-                    <div class="item-sub">{{ invoice.booking.event.name }} &bull; {{ invoice.booking.stall.size_sqm }}m&sup2; &bull; Zone: {{ invoice.booking.stall.zone.name|default:"Main Exhibition" }}</div>
+                    <div class="item-desc">Stall Booking</div>
+                    <div class="item-sub">{{ invoice.display_booking.event.name|default:invoice.booking.event.name }}</div>
                 </td>
                 <td style="text-align:center;">1</td>
-                <td style="text-align:right;">R{{ invoice.booking.subtotal|floatformat:2 }}</td>
+                <td style="text-align:right;">R{{ invoice.amount_incl|floatformat:2 }}</td>
                 <td style="text-align:right;">R{{ invoice.vat_amount|floatformat:2 }}</td>
                 <td style="text-align:right;font-weight:600;">R{{ invoice.amount_incl|floatformat:2 }}</td>
             </tr>
-            {% if invoice.booking.accessories_total > 0 %}
-            <tr>
-                <td style="text-align:center;">2</td>
-                <td>
-                    <div class="item-desc">Accessories &amp; Additional Services</div>
-                    <div class="item-sub">{% for a in invoice.booking.accessories.all %}{{ a.accessory.name }} x{{ a.quantity }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
-                </td>
-                <td style="text-align:center;">1</td>
-                <td style="text-align:right;">R{{ invoice.booking.accessories_total|floatformat:2 }}</td>
-                <td style="text-align:right;">R0.00</td>
-                <td style="text-align:right;font-weight:600;">R{{ invoice.booking.accessories_total|floatformat:2 }}</td>
-            </tr>
-            {% endif %}
+            {% endfor %}
         </tbody>
     </table>
 
     <table class="totals">
         <tr><td class="label">Subtotal (excl. VAT)</td><td class="amount">R{{ invoice.amount_excl|floatformat:2 }}</td></tr>
-        <tr><td class="label">VAT @ 15%</td><td class="amount">R{{ invoice.vat_amount|floatformat:2 }}</td></tr>
+        <tr><td class="label">VAT (included)</td><td class="amount">R{{ invoice.vat_amount|floatformat:2 }}</td></tr>
         <tr class="total-row"><td class="label">Total Incl. VAT</td><td class="amount">R{{ invoice.amount_incl|floatformat:2 }}</td></tr>
     </table>
 
@@ -157,7 +165,7 @@
         </div>
     </div>
 
-    {% if invoice.booking.payments.exists %}
+    {% if invoice.payments.exists %}
     <div style="margin-top:15px;">
         <h6 style="font-size:11px;color:#5B2C6F;margin-bottom:5px;">PAYMENT HISTORY</h6>
         <table class="payment-history">
@@ -192,8 +200,9 @@
         2. Late payments may incur a 20% surcharge on the outstanding amount.<br>
         3. All stall fees are non-refundable after the event commencement date.<br>
         4. Please quote the invoice number as payment reference for reconciliation purposes.<br>
-        5. This document serves as a valid tax invoice for VAT purposes in South Africa.<br>
-        6. Al Ansaar Foundation reserves the right to cancel bookings for non-payment.
+        5. All prices are inclusive of 15% VAT; the VAT amount included is shown for your records.<br>
+        6. This document serves as a valid tax invoice for VAT purposes in South Africa.<br>
+        7. Al Ansaar Foundation reserves the right to cancel bookings for non-payment.
     </div>
 
     <div class="footer">

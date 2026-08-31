@@ -4,6 +4,7 @@ from django.contrib import messages
 from .models import Booking
 from events.models import Stall, Event
 from events.views import _load_svg_content
+from .pricing import booking_totals
 import json
 
 
@@ -70,15 +71,16 @@ def booking_detail(request, pk):
     accessories = AccessoryType.objects.filter(is_active=True)
     paid_amount = booking.amount_paid
     balance_due = booking.balance_due
-    invoice = booking.invoices.first()
-    if invoice:
-        paid_amount = invoice.amount_paid
-        balance_due = invoice.balance_due
+    line = getattr(booking, 'invoice_line', None)
+    if line is not None:
+        paid_amount = line.invoice.amount_paid
+        balance_due = line.invoice.balance_due
     return render(request, 'bookings/detail.html', {
         'booking': booking,
         'accessories': accessories,
         'paid_amount': paid_amount,
         'balance_due': balance_due,
+        'invoice': line.invoice if line is not None else None,
     })
 
 
@@ -86,19 +88,20 @@ def booking_detail(request, pk):
 def book_stall(request, event_id, stall_id):
     event = get_object_or_404(Event, pk=event_id)
     stall = get_object_or_404(Stall, pk=stall_id, event=event)
+    if not request.user.is_verified:
+        messages.error(request, 'Your registration is still pending approval. You will be able to make a booking once the admin team authorises your account.')
+        return redirect('floor_plan_view', event_id=event_id)
     if stall.status != 'available':
         messages.error(request, 'This stall is no longer available.')
         return redirect('floor_plan_view', event_id=event_id)
     if request.method == 'POST':
         import uuid
         from decimal import Decimal
-        from invoices.models import Invoice
         ref = f"BK-{uuid.uuid4().hex[:8].upper()}"
         requires_power = request.POST.get('requires_power') == 'on'
-        elec_dep = Decimal('500.00') if requires_power else Decimal('0')
-        subtotal = stall.total_price + elec_dep
-        vat = subtotal * Decimal('0.15')
-        total = subtotal + vat
+        elec_dep = event.electricity_deposit if requires_power else Decimal('0')
+        subtotal, vat = booking_totals(stall.total_price, elec_dep, Decimal('0'), float(event.vat_rate) / 100)
+        total = subtotal
         booking = Booking.objects.create(
             booking_reference=ref,
             event=event,
@@ -125,13 +128,6 @@ def book_stall(request, event_id, stall_id):
         )
         stall.status = 'reserved'
         stall.save()
-        from datetime import date
-        Invoice.objects.create(
-            booking=booking, exhibitor=request.user, invoice_number=f"INV-{ref}",
-            amount_excl=subtotal, vat_amount=vat, amount_incl=total,
-            amount_paid=Decimal('0'), balance_due=total,
-            status='draft', issue_date=date.today(), due_date=date.today(),
-        )
         from notifications.utils import send_booking_received
         try:
             send_booking_received(booking)
@@ -160,13 +156,14 @@ def update_booking(request, pk):
         booking.require_extra_lights = request.POST.get('require_extra_lights') == 'on'
         booking.special_requirements = request.POST.get('special_requirements', '')
         booking.side_wall_removal = request.POST.get('side_wall_removal', 'none')
-        elec_dep = Decimal('500.00') if booking.requires_power else Decimal('0')
+        elec_dep = booking.event.electricity_deposit if booking.requires_power else Decimal('0')
         booking.electricity_deposit = elec_dep
-        booking.subtotal = booking.stall_price + elec_dep + booking.accessories_total
-        booking.vat_amount = booking.subtotal * Decimal('0.15')
-        booking.total_amount = booking.subtotal + booking.vat_amount
+        booking.subtotal, booking.vat_amount = booking_totals(booking.stall_price, elec_dep, booking.accessories_total, float(booking.event.vat_rate) / 100)
+        booking.total_amount = booking.subtotal
         booking.balance_due = booking.total_amount - booking.amount_paid
         booking.save()
+        from invoices.views import update_invoice_from_booking
+        update_invoice_from_booking(booking)
         messages.success(request, 'Booking updated.')
     return redirect('booking_detail', pk=pk)
 
@@ -182,9 +179,8 @@ def add_accessory(request, pk):
         from .models import BookingAccessory
         BookingAccessory.objects.create(booking=booking, accessory=accessory, quantity=qty, price=accessory.price)
         booking.accessories_total = sum(a.price * a.quantity for a in booking.accessories.all())
-        booking.subtotal = booking.stall_price + booking.electricity_deposit + booking.accessories_total
-        booking.vat_amount = booking.subtotal * Decimal('0.15')
-        booking.total_amount = booking.subtotal + booking.vat_amount
+        booking.subtotal, booking.vat_amount = booking_totals(booking.stall_price, booking.electricity_deposit, booking.accessories_total, float(booking.event.vat_rate) / 100)
+        booking.total_amount = booking.subtotal
         booking.balance_due = booking.total_amount - booking.amount_paid
         booking.save()
         from invoices.views import update_invoice_from_booking

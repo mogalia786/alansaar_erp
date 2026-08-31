@@ -74,3 +74,30 @@ class JournalLine(models.Model):
 
     def __str__(self):
         return f"{self.account.code} D{self.debit} C{self.credit}"
+
+
+class GateTaking(models.Model):
+    date = models.DateField(help_text="Date the gate money was collected")
+    cash_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    card_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    notes = models.TextField(blank=True, help_text="Optional notes (e.g. gate locations)")
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='gate_takings',
+    )
+    journal_entry = models.OneToOneField(
+        JournalEntry, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='gate_taking',
+        help_text="Auto-posted double-entry journal entry",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+
+    def __str__(self):
+        return f"Gate takings {self.date} - R{self.total}"
+
+    @property
+    def total(self):
+        return Decimal(self.cash_amount or 0) + Decimal(self.card_amount or 0)

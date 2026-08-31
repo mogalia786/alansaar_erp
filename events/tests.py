@@ -111,15 +111,20 @@ class E2ETest(TestCase):
         # ── STEP 4: Select stall & create booking ──
         # Simulate choosing stall A1 with requirements
         from events.models import Stall
+        from bookings.pricing import booking_totals
         stall = Stall.objects.get(name='A1')
+        elec_dep = Decimal('500.00')
+        subtotal, vat = self.stall.total_price, Decimal('0.00')
+        subtotal, vat = booking_totals(self.stall.total_price, elec_dep, Decimal('0'), 0.15)
         booking = Booking.objects.create(
             booking_reference='E2E-001',
             event=self.event, exhibitor=self.exhibitor, stall=self.stall,
             stall_price=self.stall.total_price,
-            subtotal=self.stall.total_price,
-            vat_amount=Decimal('0.00'),
-            total_amount=self.stall.total_price,
-            balance_due=self.stall.total_price,
+            subtotal=subtotal,
+            vat_amount=vat,
+            total_amount=subtotal,
+            balance_due=subtotal,
+            electricity_deposit=elec_dep,
             status='pending', payment_status='unpaid',
             fascia_name='Test Exhibitor Co',
             terms_accepted=True,
@@ -167,14 +172,18 @@ class E2ETest(TestCase):
             )
             self.record('Invoice Created', True, f'Manual: {invoice.invoice_number}')
 
-        # Create ledger entry for invoice
-        LedgerEntry.objects.create(
+        # Create ledger entry for invoice (if not already created by approve_booking)
+        if not LedgerEntry.objects.filter(
             exhibitor=self.exhibitor, booking=booking,
-            entry_type='invoice', description=f'Invoice {invoice.invoice_number}',
-            reference=invoice.invoice_number,
-            debit=invoice.amount_incl, credit=0, balance=invoice.amount_incl,
-            entry_date=invoice.issue_date,
-        )
+            entry_type='invoice', reference=invoice.invoice_number,
+        ).exists():
+            LedgerEntry.objects.create(
+                exhibitor=self.exhibitor, booking=booking,
+                entry_type='invoice', description=f'Invoice {invoice.invoice_number}',
+                reference=invoice.invoice_number,
+                debit=invoice.amount_incl, credit=0, balance=invoice.amount_incl,
+                entry_date=invoice.issue_date,
+            )
 
         # ── STEP 7: Exhibitor submits payment ──
         # Log in as exhibitor and submit payment

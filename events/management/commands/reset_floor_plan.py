@@ -33,8 +33,8 @@ class Command(BaseCommand):
 
         # 1. Count what will be deleted
         bookings = Booking.objects.filter(event=event)
-        invoices = Invoice.objects.filter(booking__event=event)
-        payments = Payment.objects.filter(invoice__booking__event=event)
+        invoices = Invoice.objects.filter(event=event)
+        payments = Payment.objects.filter(invoice__event=event)
         stalls = Stall.objects.filter(event=event)
 
         self.stdout.write(f'  Bookings to delete: {bookings.count()}')

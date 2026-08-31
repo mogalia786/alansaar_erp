@@ -23,6 +23,18 @@ def get_director_emails():
     )
 
 
+def get_finance_emails():
+    global User
+    if User is None:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+    return list(
+        User.objects.filter(user_type__in=['finance', 'admin', 'superadmin'], is_active=True)
+        .values_list('email', flat=True)
+        .distinct()
+    )
+
+
 def send_html_email(subject, template_name, context, to_emails, from_email=None):
     if not to_emails:
         return
@@ -41,7 +53,9 @@ def send_html_email(subject, template_name, context, to_emails, from_email=None)
         print(f"\n{'='*60}\nEMAIL TO: {to_emails}\nSUBJECT: {subject}\n{'='*60}\n{text}\n{'='*60}\n")
     try:
         msg.send(fail_silently=False)
+        logger.info('Email sent to %s | subject: %s', to_emails, subject)
     except Exception as e:
+        logger.error('Email send failed for %s | subject: %s | error: %s', to_emails, subject, e)
         print(f"Email send failed: {e}")
 
 
@@ -241,6 +255,105 @@ def send_discount_decision(dr):
     create_notification(exhibitor, 'discount', ntitle, nmsg, f'/bookings/{dr.booking.pk}/')
 
 
+def send_debt_declaration_approval_request(declaration):
+    """Email every director asking them to authorise, showing who approved/rejected so far."""
+    recipients = get_director_emails()
+    if not recipients:
+        return
+    approvals = list(declaration.approvals.all())
+    context = {
+        'declaration': declaration,
+        'exhibitor': declaration.exhibitor,
+        'schedules': declaration.payment_schedules.all(),
+        'approvals': approvals,
+        'required_count': 2,
+        'site_name': settings.SITE_NAME,
+        'site_url': settings.SITE_URL,
+    }
+    send_html_email(
+        f'[ACTION REQUIRED] Acknowledge Declaration of Debt - {declaration.declaration_number}',
+        'emails/debt_declaration_approval.html', context, recipients,
+    )
+    _notify_debt_users(declaration, 'debt_declaration',
+                       f'Declaration {declaration.declaration_number} awaiting director authorisation',
+                       f'/erp/debt-declarations/{declaration.pk}/')
+
+
+def send_debt_declaration_approved(declaration):
+    """Email the exhibitor that their payment plan has been authorised (2 directors)."""
+    if not declaration.exhibitor.email:
+        return
+    context = {
+        'declaration': declaration,
+        'exhibitor': declaration.exhibitor,
+        'schedules': declaration.payment_schedules.all(),
+        'site_name': settings.SITE_NAME,
+        'site_url': settings.SITE_URL,
+    }
+    send_html_email(
+        f'Payment Plan Authorised - {declaration.declaration_number}',
+        'emails/debt_declaration_approved.html', context, [declaration.exhibitor.email],
+    )
+    create_notification(
+        declaration.exhibitor, 'debt_declaration',
+        f'Payment plan authorised - {declaration.declaration_number}',
+        f'Your payment arrangement for R{declaration.total_debt} has been authorised.',
+        f'/erp/debt-declarations/{declaration.pk}/'
+    )
+
+
+def send_debt_declaration_defaulted(declaration):
+    """Email directors and the finance office that a declaration has defaulted."""
+    recipients = list(set(get_director_emails() + get_finance_emails()))
+    if not recipients:
+        return
+    context = {
+        'declaration': declaration,
+        'exhibitor': declaration.exhibitor,
+        'schedules': declaration.payment_schedules.all(),
+        'site_name': settings.SITE_NAME,
+        'site_url': settings.SITE_URL,
+    }
+    send_html_email(
+        f'WARNING: Declaration DEFAULTED - {declaration.declaration_number}',
+        'emails/debt_declaration_defaulted_finance.html', context, recipients,
+    )
+    _notify_debt_users(declaration, 'debt_defaulted',
+                       f'Exhibitor DEFAULTED on {declaration.declaration_number}',
+                       f'/erp/debt-declarations/{declaration.pk}/')
+
+
+def send_debt_declaration_defaulted_exhibitor(declaration):
+    """Separate email to the exhibitor notifying them they have defaulted."""
+    if not declaration.exhibitor.email:
+        return
+    context = {
+        'declaration': declaration,
+        'exhibitor': declaration.exhibitor,
+        'schedules': declaration.payment_schedules.all(),
+        'site_name': settings.SITE_NAME,
+        'site_url': settings.SITE_URL,
+    }
+    send_html_email(
+        f'Notice of Default - {declaration.declaration_number}',
+        'emails/debt_declaration_defaulted.html', context, [declaration.exhibitor.email],
+    )
+
+
+def _notify_debt_users(declaration, ntype, title, link):
+    """Create in-app notifications for directors and finance staff."""
+    global User
+    if User is None:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+    recipients = User.objects.filter(
+        user_type__in=['director', 'finance', 'admin', 'superadmin'],
+        is_active=True,
+    )
+    for u in recipients:
+        create_notification(u, ntype, title, f'{declaration.exhibitor.company_name or declaration.exhibitor.username} - {declaration.declaration_number}', link)
+
+
 def send_welcome_email(user):
     subject = 'Welcome to Al Ansaar Foundation \u2013 Registration Successful'
     context = {
@@ -258,7 +371,7 @@ def send_welcome_email(user):
 
 
 def send_account_activated(user):
-    subject = 'Account Activated \u2013 Al Ansaar Foundation'
+    subject = 'Registration Approved \u2013 You Can Now Log In (Al Ansaar Foundation)'
     context = {
         'user': user,
         'site_name': settings.SITE_NAME,
@@ -267,9 +380,9 @@ def send_account_activated(user):
     send_html_email(subject, 'emails/account_activated.html', context, [user.email])
     create_notification(
         user, 'account',
-        'Your Account Has Been Approved',
-        'Your exhibitor account has been verified. You can now log in and book stalls.',
-        '/login/'
+        'Your Registration Has Been Approved',
+        'You are authorised to log in and make your stall booking.',
+        '/dashboard/'
     )
 
 

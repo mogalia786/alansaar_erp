@@ -9,7 +9,10 @@
     <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-primary"><div class="stat-value h3 mb-0">{{ active_events }}</div><div class="text-muted small">Active Events</div><i class="icon bi bi-calendar-event text-primary"></i></div></div>
     <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-warning"><div class="stat-value h3 mb-0">{{ pending_bookings }}</div><div class="text-muted small">Pending Bookings</div><i class="icon bi bi-clock text-warning"></i></div></div>
     <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-danger"><div class="stat-value h3 mb-0">{{ pending_payments }}</div><div class="text-muted small">Pending Payments</div><i class="icon bi bi-credit-card text-danger"></i></div></div>
-    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-success"><div class="stat-value h3 mb-0">R{{ total_revenue|floatformat:0 }}</div><div class="text-muted small">Revenue Collected</div><i class="icon bi bi-cash text-success"></i></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-success"><div class="stat-value h3 mb-0">R{{ total_revenue|floatformat:0 }}</div><div class="text-muted small">Revenue Collected (incl. Gate Takings)</div><i class="icon bi bi-cash text-success"></i></div></div>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-md-6"><div class="card stat-card p-3 border-start border-4 border-info"><div class="stat-value h3 mb-0">R{{ gate_takings_total|floatformat:2 }}</div><div class="text-muted small">Gate Takings Income (Cash + Card)</div><i class="icon bi bi-cash-coin text-info"></i></div></div>
 </div>
 <div class="row g-3 mb-4">
     <div class="col-md-6">

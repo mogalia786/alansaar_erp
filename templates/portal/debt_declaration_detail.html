@@ -1,0 +1,116 @@
+{% extends 'portal/base.html' %}
+{% block title %}Declaration {{ declaration.declaration_number }} - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0"><i class="bi bi-file-earmark-check"></i> {{ declaration.declaration_number }}</h3>
+    <div>
+        <a href="{% url 'erp:debt_declarations' %}" class="btn btn-outline-purple btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+        <a href="{% url 'erp:debt_declaration_letter' declaration.pk %}" target="_blank" class="btn btn-purple btn-sm"><i class="bi bi-file-earmark-text"></i> Acknowledgement of Debt</a>
+    </div>
+</div>
+
+{% if declaration.status == 'pending' %}
+<div class="alert alert-warning d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-hourglass-split"></i> Awaiting authorisation by at least <strong>2 directors</strong> (currently {{ declaration.approval_count }}/2).</span>
+    <span class="d-flex gap-1">
+        {% if is_director_viewer and not user_acted %}
+        <a href="{% url 'erp:debt_declaration_approve' declaration.pk %}" class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> Authorise</a>
+        <a href="{% url 'erp:debt_declaration_reject' declaration.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i> Reject</a>
+        {% endif %}
+    </span>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-warning"><div class="stat-value h4 mb-0">R{{ declaration.total_debt|floatformat:2 }}</div><div class="text-muted small">Total Debt Acknowledged</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-success"><div class="stat-value h4 mb-0">R{{ declaration.total_paid|floatformat:2 }}</div><div class="text-muted small">Paid to Date</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-danger"><div class="stat-value h4 mb-0">R{{ declaration.total_missed|floatformat:2 }}</div><div class="text-muted small">Missed to Date</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-secondary"><div class="stat-value h4 mb-0">R{{ declaration.outstanding_at_creation|floatformat:0 }}</div><div class="text-muted small">Outstanding at Creation</div></div></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card mb-3">
+            <div class="card-header bg-purple text-white"><h6 class="mb-0"><i class="bi bi-person"></i> Exhibitor</h6></div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><td class="text-muted">Name</td><td>{{ declaration.exhibitor.get_full_name|default:declaration.exhibitor.username }}</td></tr>
+                    <tr><td class="text-muted">Company</td><td>{{ declaration.exhibitor.company_name|default:'-' }}</td></tr>
+                    <tr><td class="text-muted">Email</td><td>{{ declaration.exhibitor.email }}</td></tr>
+                    <tr><td class="text-muted">Reason</td><td>{{ declaration.reason|default:'-' }}</td></tr>
+                    <tr><td class="text-muted">Initiated By</td><td>{{ declaration.initiated_by.get_full_name|default:declaration.initiated_by.username }}</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-purple text-white"><h6 class="mb-0"><i class="bi bi-calendar3"></i> Agreed Payment Schedule ({{ schedules|length }}/3)</h6></div>
+            <div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0 align-middle">
+                <thead><tr><th>#</th><th>Due Date</th><th class="text-end">Amount</th><th>Status</th><th>Paid At</th><th>Remark</th><th></th></tr></thead>
+                <tbody>
+                {% for s in schedules %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ s.due_date|date:"d M Y" }}</td>
+                    <td class="text-end">R{{ s.amount|floatformat:2 }}</td>
+                    <td>
+                        {% if s.status == 'paid' %}<span class="badge bg-success">Paid</span>
+                        {% elif s.status == 'missed' %}<span class="badge bg-danger">Missed</span>
+                        {% else %}<span class="badge bg-secondary">Pending</span>{% endif %}
+                    </td>
+                    <td>{{ s.paid_at|date:"d M Y H:i"|default:'-' }}</td>
+                    <td>{{ s.remark|default:'-' }}</td>
+                    <td class="text-end">
+                        {% if s.status != 'paid' %}
+                        <form method="post" action="{% url 'erp:debt_declaration_schedule' declaration.pk s.pk %}" class="d-inline-flex gap-1 align-items-center">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="paid">
+                            <select name="payment_method" class="form-select form-select-sm" style="width:auto;">
+                                <option value="cash">Cash</option>
+                                <option value="eft">EFT</option>
+                            </select>
+                            <input type="text" name="remark" class="form-control form-control-sm" style="width:110px;" placeholder="Remark">
+                            <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i></button>
+                        </form>
+                        <form method="post" action="{% url 'erp:debt_declaration_schedule' declaration.pk s.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="missed">
+                            <button type="submit" class="btn btn-sm btn-outline-danger ms-1" onclick="return confirm('Mark this agreed date as MISSED?')"><i class="bi bi-x-lg"></i></button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-3">No agreed dates captured.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table></div></div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header bg-purple text-white"><h6 class="mb-0"><i class="bi bi-shield-check"></i> Director Authorisations ({{ declaration.approval_count }}/2 required)</h6></div>
+            <div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0 align-middle">
+                <thead><tr><th>Director</th><th>Status</th><th>Comment</th></tr></thead>
+                <tbody>
+                {% for row in director_rows %}
+                <tr>
+                    <td>{{ row.user.get_full_name|default:row.user.username }}</td>
+                    <td>
+                        {% if row.approval %}
+                            {% if row.approval.action == 'approve' %}<span class="badge bg-success">Authorised</span>
+                            {% else %}<span class="badge bg-danger">Rejected</span>{% endif %}
+                        {% else %}<span class="badge bg-secondary">Pending</span>{% endif %}
+                    </td>
+                    <td>{{ row.approval.comment|default:'-' }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="text-center text-muted py-3">No directors configured.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table></div></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

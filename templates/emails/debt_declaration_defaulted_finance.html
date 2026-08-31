@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Declaration Defaulted - Action Required</title></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:30px 10px;">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+<tr><td style="background:#a71d2a;padding:25px 30px;text-align:center;">
+<h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:2px;">AL ANSAAR FOUNDATION</h1>
+<p style="color:#ffd7d7;margin:5px 0 0;font-size:13px;letter-spacing:1px;">WARNING &mdash; DECLARATION OF DEBT DEFAULTED</p>
+</td></tr>
+<tr><td style="padding:30px;">
+<h2 style="color:#a71d2a;margin:0 0 15px;">Notice of Default: {{ declaration.declaration_number }}</h2>
+<p>The following exhibitor has <strong>defaulted</strong> on their payment arrangement. All agreed payment dates have passed without any payment being received.</p>
+<table width="100%" cellpadding="8" cellspacing="0" style="background:#fdf1f1;border:1px solid #f5c6cb;border-radius:6px;margin:15px 0;">
+<tr><td style="border-bottom:1px solid #f5c6cb;"><strong>Exhibitor:</strong></td><td>{{ exhibitor.company_name|default:exhibitor.username }}</td></tr>
+<tr><td style="border-bottom:1px solid #f5c6cb;"><strong>Contact:</strong></td><td>{{ exhibitor.email }} / {{ exhibitor.phone|default:'-' }}</td></tr>
+<tr><td style="border-bottom:1px solid #f5c6cb;"><strong>Total Debt Acknowledged:</strong></td><td>R{{ declaration.total_debt|floatformat:2 }}</td></tr>
+<tr><td><strong>Declared Defaulted On:</strong></td><td>{{ declaration.defaulted_at|date:"d M Y H:i" }}</td></tr>
+</table>
+<div style="color:#5B2C6F;font-weight:bold;">Agreed dates (all unpaid):</div>
+<table width="100%" cellpadding="8" cellspacing="0" style="background:#f8f4fc;border-radius:6px;margin:10px 0;">
+{% for s in schedules %}
+<tr><td><strong>{{ s.due_date|date:"d M Y" }}</strong></td><td style="text-align:right;">R{{ s.amount|floatformat:2 }}</td><td><span style="color:#721c24;font-weight:bold;">MISSED</span></td></tr>
+{% endfor %}
+</table>
+<p><a href="{{ site_url }}/erp/debt-declarations/{{ declaration.pk }}/" style="display:inline-block;background:#a71d2a;color:#ffffff;padding:12px 30px;border-radius:6px;text-decoration:none;font-weight:bold;">Open Declaration</a></p>
+<p style="font-size:12px;color:#888;margin-top:15px;">Please review and determine the next steps for recovery of this debt.</p>
+</td></tr>
+<tr><td style="background:#f8f4fc;padding:20px 30px;text-align:center;border-top:2px solid #5B2C6F;font-size:12px;color:#888;">
+<p style="margin:0;">Al Ansaar Foundation &bull; {{ site_url }}</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>

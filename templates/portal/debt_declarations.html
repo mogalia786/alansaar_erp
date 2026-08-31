@@ -1,0 +1,87 @@
+{% extends 'portal/base.html' %}
+{% block title %}Debt Declarations - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0"><i class="bi bi-file-earmark-check"></i> Debt Declarations</h3>
+    <small class="text-muted">Payment terms signed by stall holders at the Finance office</small>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-purple text-white"><h6 class="mb-0"><i class="bi bi-plus-circle"></i> New Declaration of Debt</h6></div>
+            <div class="card-body">
+                <form method="post" id="declaration-form">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Exhibitor</label>
+                        <select name="exhibitor_id" class="form-select" required>
+                            <option value="">Select exhibitor...</option>
+                            {% for ex in exhibitors %}
+                            <option value="{{ ex.id }}">{{ ex.company_name|default:ex.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Total Debt Acknowledged (ZAR)</label>
+                        <input type="number" name="total_debt" class="form-control" step="0.01" min="0.01" placeholder="e.g. 25000.00" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reason for Payment Terms</label>
+                        <textarea name="reason" class="form-control" rows="2" placeholder="e.g. Cash flow during exhibition"></textarea>
+                    </div>
+                    <h6 class="text-purple"><i class="bi bi-calendar3"></i> Agreed Payment Dates (max 3)</h6>
+                    {% for i in "012" %}
+                    <div class="row g-2 mb-2 align-items-center">
+                        <div class="col-6">
+                            <input type="date" name="date_{{ i }}" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-6">
+                            <input type="number" name="amount_{{ i }}" class="form-control form-control-sm" step="0.01" min="0" placeholder="Amount (R)">
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-gold w-100 mt-2"><i class="bi bi-send"></i> Create &amp; Email Directors</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-list-ul"></i> Declarations</h6>
+                <div>
+                    <a href="{% url 'erp:debt_declarations' %}" class="btn btn-sm btn-outline-light {% if not status_filter %}{% endif %}">All</a>
+                    {% for s, label in statuses %}
+                    <a href="{% url 'erp:debt_declarations' %}?status={{ s }}" class="btn btn-sm btn-outline-light {% if status_filter == s %}active{% endif %}">{{ label }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0 align-middle">
+                <thead><tr><th>Ref</th><th>Exhibitor</th><th>Total Debt</th><th>Paid</th><th>Missed</th><th>Dates</th><th>Status</th></tr></thead>
+                <tbody>
+                {% for d in declarations %}
+                <tr>
+                    <td><a href="{% url 'erp:debt_declaration_detail' d.pk %}">{{ d.declaration_number }}</a></td>
+                    <td>{{ d.exhibitor.company_name|default:d.exhibitor.username }}</td>
+                    <td>R{{ d.total_debt|floatformat:2 }}</td>
+                    <td class="text-success fw-bold">R{{ d.total_paid|floatformat:2 }}</td>
+                    <td class="text-danger fw-bold">R{{ d.total_missed|floatformat:2 }}</td>
+                    <td>{{ d.payment_schedules.count }}/3</td>
+                    <td>
+                        {% if d.status == 'pending' %}<span class="badge bg-warning">Pending {{ d.approval_count }}/2</span>
+                        {% elif d.status == 'active' %}<span class="badge bg-info">{{ d.approval_count }}/2</span>
+                        {% elif d.status == 'completed' %}<span class="badge bg-success">Completed</span>
+                        {% elif d.status == 'defaulted' %}<span class="badge bg-danger">Defaulted</span>
+                        {% else %}<span class="badge bg-secondary">{{ d.get_status_display }}</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-3">No declarations yet.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table></div></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -17,6 +17,18 @@
                             <label class="form-label fw-bold">{{ field.label }}</label>
                             {% if field.name == 'proof_of_address' %}
                             <input type="file" class="form-control" name="{{ field.name }}" accept=".pdf,.jpg,.jpeg,.png" required>
+                            {% elif field.name == 'photo' %}
+                            <input type="file" class="form-control" name="{{ field.name }}" accept="image/*" required>
+                            <div class="alert alert-warning py-2 mt-2" style="font-size:13px;">
+                                <i class="bi bi-person-badge"></i> <strong>Photo requirements (passport style):</strong>
+                                <ul class="mb-0 ps-3" style="font-size:12px;">
+                                    <li>Plain white or light background</li>
+                                    <li>Face fully visible, centred and looking straight at the camera</li>
+                                    <li>Eyes open, no sunglasses, hat or covering over the face</li>
+                                    <li>No filters or editing</li>
+                                    <li>High resolution, JPG or PNG (max 5MB)</li>
+                                </ul>
+                            </div>
                             {% elif field.name == 'address' %}
                             <textarea class="form-control" name="{{ field.name }}" rows="3" required>{{ field.value|default:'' }}</textarea>
                             {% else %}

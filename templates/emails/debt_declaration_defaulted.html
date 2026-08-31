@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Notice of Default</title></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:30px 10px;">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+<tr><td style="background:#a71d2a;padding:25px 30px;text-align:center;">
+<h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:2px;">AL ANSAAR FOUNDATION</h1>
+<p style="color:#ffd7d7;margin:5px 0 0;font-size:13px;letter-spacing:1px;">NOTICE OF DEFAULT</p>
+</td></tr>
+<tr><td style="padding:30px;">
+<h2 style="color:#a71d2a;margin:0 0 15px;">Notice of Default: {{ declaration.declaration_number }}</h2>
+<p>Dear {{ exhibitor.get_full_name|default:exhibitor.username }},</p>
+<p>We refer to your Declaration of Debt (Ref: <strong>{{ declaration.declaration_number }}</strong>) acknowledging a debt of <strong>R{{ declaration.total_debt|floatformat:2 }}</strong> to <strong>{{ site_name }}</strong>.</p>
+<p>As you did not honour the agreed payment arrangement on the dates below, your declaration has been classified as being <strong>in default</strong>.</p>
+<table width="100%" cellpadding="8" cellspacing="0" style="background:#fdf1f1;border:1px solid #f5c6cb;border-radius:6px;margin:15px 0;">
+{% for s in schedules %}
+<tr><td><strong>{{ s.due_date|date:"d M Y" }}</strong></td><td style="text-align:right;">R{{ s.amount|floatformat:2 }}</td><td><span style="color:#721c24;font-weight:bold;">MISSED</span></td></tr>
+{% endfor %}
+</table>
+<p>Please contact the Finance Office immediately to make alternative arrangements. Continued default may result in further action being taken by <strong>{{ site_name }}</strong> to recover the outstanding amount.</p>
+<p style="margin-top:25px;">Yours sincerely,<br><strong>{{ site_name }} &mdash; Finance Office</strong></p>
+</td></tr>
+<tr><td style="background:#f8f4fc;padding:20px 30px;text-align:center;border-top:2px solid #5B2C6F;font-size:12px;color:#888;">
+<p style="margin:0;">Al Ansaar Foundation &bull; {{ site_url }}</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>

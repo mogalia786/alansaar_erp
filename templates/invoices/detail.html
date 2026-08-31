@@ -33,13 +33,14 @@
                     <table class="table table-bordered">
                         <thead class="table-light"><tr><th>Description</th><th class="text-end">Amount</th></tr></thead>
                         <tbody>
-                            <tr><td>Stall {{ invoice.booking.stall.name }}</td><td class="text-end">R{{ invoice.booking.stall_price|floatformat:2 }}</td></tr>
-                            {% if invoice.booking.accessories_total > 0 %}
-                            <tr><td>Accessories</td><td class="text-end">R{{ invoice.booking.accessories_total|floatformat:2 }}</td></tr>
-                            {% endif %}
-                            {% if invoice.booking.requires_power %}
-                            <tr><td>Electricity Deposit</td><td class="text-end">R{{ invoice.booking.electricity_deposit|floatformat:2 }}</td></tr>
-                            {% endif %}
+                            {% for line in invoice.invoice_lines.all %}
+                            <tr>
+                                <td>{{ line.description|default:line.booking.stall.name }}{% if line.booking %}<br><span class="text-muted small">Booking {{ line.booking.booking_reference }}</span>{% endif %}</td>
+                                <td class="text-end">R{{ line.amount_incl|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td>Stall booking</td><td class="text-end">R{{ invoice.amount_incl|floatformat:2 }}</td></tr>
+                            {% endfor %}
                         </tbody>
                         <tfoot>
                             <tr><td>Subtotal (excl. VAT)</td><td class="text-end">R{{ invoice.amount_excl|floatformat:2 }}</td></tr>
@@ -113,9 +114,11 @@
                         <i class="bi bi-file-pdf"></i> Paid Invoice
                     </a>
                     {% endif %}
-                    <a href="{% url 'booking_detail' invoice.booking.id %}" class="btn btn-outline-purple w-100">
+                    {% if invoice.display_booking %}
+                    <a href="{% url 'booking_detail' invoice.display_booking.id %}" class="btn btn-outline-purple w-100">
                         View Booking
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

@@ -37,13 +37,16 @@
                     </div>
                     <h5 class="text-purple">Financial Summary</h5>
                     <table class="table table-bordered">
-                        <tr><td>Stall Price</td><td class="text-end">R{{ booking.stall_price|floatformat:2 }}</td></tr>
+                        <tr><td>Stall Price (VAT incl)</td><td class="text-end">R{{ booking.stall_price|floatformat:2 }}</td></tr>
                         {% if booking.accessories_total > 0 %}
                         <tr><td>Accessories</td><td class="text-end">R{{ booking.accessories_total|floatformat:2 }}</td></tr>
                         {% endif %}
-                        <tr><td>Subtotal (excl. VAT)</td><td class="text-end">R{{ booking.subtotal|floatformat:2 }}</td></tr>
+                        {% if booking.electricity_deposit > 0 %}
+                        <tr><td>Electricity Deposit (refundable)</td><td class="text-end">R{{ booking.electricity_deposit|floatformat:2 }}</td></tr>
+                        {% endif %}
+                        <tr><td>Subtotal (VAT incl)</td><td class="text-end">R{{ booking.subtotal|floatformat:2 }}</td></tr>
                         {% if booking.vat_amount > 0 %}
-                        <tr><td>VAT (15%)</td><td class="text-end">R{{ booking.vat_amount|floatformat:2 }}</td></tr>
+                        <tr><td>VAT (included)</td><td class="text-end">R{{ booking.vat_amount|floatformat:2 }}</td></tr>
                         {% endif %}
                         <tr class="fw-bold"><td>Total</td><td class="text-end">R{{ booking.total_amount|floatformat:2 }}</td></tr>
                         <tr><td>Amount Paid</td><td class="text-end text-success">R{{ paid_amount|floatformat:2 }}</td></tr>
@@ -174,8 +177,7 @@
                     <a href="{% url 'stand_3d_view' booking.id %}" class="btn btn-gold text-dark fw-bold w-100 mb-2" target="_blank">
                         <i class="bi bi-box"></i> 3D Stand View
                     </a>
-                    {% if booking.invoices.exists %}
-                    {% with invoice=booking.invoices.first %}
+                    {% if invoice %}
                     <a href="{% url 'invoice_detail' invoice.id %}" class="btn btn-purple w-100 mb-2">
                         <i class="bi bi-file-text"></i> View Invoice
                     </a>
@@ -184,7 +186,6 @@
                         <i class="bi bi-credit-card"></i> Make Payment
                     </a>
                     {% endif %}
-                    {% endwith %}
                     {% endif %}
                     {% if booking.status == 'pending' or booking.status == 'approved' %}
                     <a href="{% url 'cancel_booking' booking.id %}" class="btn btn-outline-danger w-100" onclick="return confirm('Are you sure?')">

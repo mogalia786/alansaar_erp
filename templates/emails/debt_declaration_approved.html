@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Payment Plan Authorised</title></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:30px 10px;">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+<tr><td style="background:#5B2C6F;padding:25px 30px;text-align:center;">
+<h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:2px;">AL ANSAAR FOUNDATION</h1>
+<p style="color:#D4AF37;margin:5px 0 0;font-size:13px;letter-spacing:1px;">PAYMENT PLAN AUTHORISED</p>
+</td></tr>
+<tr><td style="padding:30px;">
+<h2 style="color:#5B2C6F;margin:0 0 15px;">Your Payment Arrangement Is Confirmed</h2>
+<p>Dear {{ exhibitor.get_full_name|default:exhibitor.username }},</p>
+<p>Your Declaration of Debt (Ref: <strong>{{ declaration.declaration_number }}</strong>) has been authorised by the directors. Please note the agreed payment dates below and ensure payments are made on time at the Finance office.</p>
+<table width="100%" cellpadding="8" cellspacing="0" style="background:#f8f4fc;border-radius:6px;margin:15px 0;">
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Total Debt Acknowledged:</strong></td><td>R{{ declaration.total_debt|floatformat:2 }}</td></tr>
+{% for s in schedules %}
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Payment {{ forloop.counter }} due {{ s.due_date|date:"d M Y" }}:</strong></td><td>R{{ s.amount|floatformat:2 }}</td></tr>
+{% endfor %}
+</table>
+<p style="font-size:12px;color:#888;">Payments can be made in cash or via EFT at the Finance office. Kindly retain your proof of payment.</p>
+<p style="margin-top:25px;">Yours sincerely,<br><strong>{{ site_name }} &mdash; Finance Office</strong></p>
+</td></tr>
+<tr><td style="background:#f8f4fc;padding:20px 30px;text-align:center;border-top:2px solid #5B2C6F;font-size:12px;color:#888;">
+<p style="margin:0;">Al Ansaar Foundation &bull; {{ site_url }}</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>

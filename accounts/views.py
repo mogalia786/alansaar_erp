@@ -18,12 +18,17 @@ def exhibitor_register(request):
             user.save()
             from notifications.utils import send_html_email
             from django.conf import settings
-            send_html_email(
-                'Registration Received - Al Ansaar Foundation',
-                'emails/registration_pending.html',
-                {'user': user, 'site_name': settings.SITE_NAME, 'site_url': settings.SITE_URL},
-                [user.email],
-            )
+            import logging
+            try:
+                send_html_email(
+                    'Registration Received - Al Ansaar Foundation',
+                    'emails/registration_pending.html',
+                    {'user': user, 'site_name': settings.SITE_NAME, 'site_url': settings.SITE_URL},
+                    [user.email],
+                )
+            except Exception as e:
+                logging.getLogger(__name__).exception(f'Failed to send registration email to {user.email}: {e}')
+                messages.warning(request, 'Your registration was saved but the confirmation email could not be sent. We will contact you once approved.')
             messages.success(request, 'Registration submitted! Your account is pending verification. You will receive an email once approved.')
             return redirect('accounts:login')
     else:

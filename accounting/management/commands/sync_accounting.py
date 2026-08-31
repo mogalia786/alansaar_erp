@@ -76,8 +76,9 @@ class Command(BaseCommand):
                 entry_number = f"SYNC-{date.strftime('%Y%m')}-{counter:04d}"
 
                 if tx_type == 'invoice':
+                    ref = obj.booking.booking_reference if obj.booking else (obj.invoice_lines.first().booking.booking_reference if obj.invoice_lines.exists() else obj.invoice_number)
                     je = self._create_je(entry_number, date, f"Invoice {obj.invoice_number} - {obj.exhibitor.company_name}")
-                    self._line(je, acc_ar, f"Stall rental - {obj.booking.booking_reference}", obj.amount_incl, 0)
+                    self._line(je, acc_ar, f"Stall rental - {ref}", obj.amount_incl, 0)
                     self._line(je, acc_income, f"Stall rental income", 0, obj.amount_excl)
                     if obj.vat_amount > 0:
                         self._line(je, acc_vat, f"VAT on {obj.invoice_number}", 0, obj.vat_amount)

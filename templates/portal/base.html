@@ -66,6 +66,8 @@
                 {% if request.user|has_perm:'providers' %}<a href="{% url 'erp:provider_list' %}" class="nav-link"><i class="bi bi-truck"></i> Service Providers</a>{% endif %}
                 <div class="nav-section">Finance</div>
                 {% if request.user|has_perm:'expenses' %}<a href="{% url 'erp:expense_list' %}" class="nav-link"><i class="bi bi-cash-stack"></i> Expenses</a>{% endif %}
+                {% if request.user|has_perm:'gate_takings' %}<a href="{% url 'erp:gate_takings' %}" class="nav-link"><i class="bi bi-cash-coin"></i> Daily Gate Takings</a>{% endif %}
+                {% if request.user|has_perm:'debt_declarations' %}<a href="{% url 'erp:debt_declarations' %}" class="nav-link"><i class="bi bi-file-earmark-check"></i> Debt Declarations</a>{% endif %}
                 {% if request.user|has_perm:'rfq' %}<a href="{% url 'erp:rfq_list' %}" class="nav-link"><i class="bi bi-file-earmark-text"></i> RFQ / Procurement</a>{% endif %}
                 <a href="{% url 'fnb:dashboard' %}" class="nav-link"><i class="bi bi-bank"></i> Banking</a>
                 <div class="nav-section">Configuration</div>
@@ -82,6 +84,7 @@
                 {% endif %}
                 <div class="nav-section">Reports</div>
                 {% if request.user|has_perm:'reports' %}<a href="{% url 'erp:reports' %}" class="nav-link"><i class="bi bi-graph-up"></i> Reports</a>{% endif %}
+                {% if request.user|has_perm:'booking_reports' %}<a href="{% url 'erp:consolidated_bookings_report' %}" class="nav-link"><i class="bi bi-table"></i> Consolidated Bookings Reports</a>{% endif %}
                 <hr class="border-secondary mx-3">
                 <a href="{% url 'erp:logout' %}" class="nav-link"><i class="bi bi-box-arrow-right"></i> Logout</a>
             </div>
@@ -110,6 +113,8 @@
                             {% endif %}
                             {% if request.user|has_perm:'providers' %}<a href="{% url 'erp:provider_list' %}" class="d-block py-1">Service Providers</a>{% endif %}
                             {% if request.user|has_perm:'expenses' %}<a href="{% url 'erp:expense_list' %}" class="d-block py-1">Expenses</a>{% endif %}
+                            {% if request.user|has_perm:'gate_takings' %}<a href="{% url 'erp:gate_takings' %}" class="d-block py-1">Daily Gate Takings</a>{% endif %}
+                            {% if request.user|has_perm:'debt_declarations' %}<a href="{% url 'erp:debt_declarations' %}" class="d-block py-1">Debt Declarations</a>{% endif %}
                             {% if request.user|has_perm:'rfq' %}<a href="{% url 'erp:rfq_list' %}" class="d-block py-1">RFQ / Procurement</a>{% endif %}
                             <a href="{% url 'fnb:dashboard' %}" class="d-block py-1">Banking</a>
                             <a href="{% url 'erp:discount_list' %}" class="d-block py-1">Discounts</a>
@@ -124,6 +129,7 @@
                             <a href="{% url 'accounting:balance_sheet' %}" class="d-block py-1">Balance Sheet</a>
                             {% endif %}
                             {% if request.user|has_perm:'reports' %}<a href="{% url 'erp:reports' %}" class="d-block py-1">Reports</a>{% endif %}
+                            {% if request.user|has_perm:'booking_reports' %}<a href="{% url 'erp:consolidated_bookings_report' %}" class="d-block py-1">Consolidated Bookings Reports</a>{% endif %}
                             <a href="{% url 'erp:logout' %}" class="d-block py-1">Logout</a>
                         </div>
                     </div>
