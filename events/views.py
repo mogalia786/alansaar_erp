@@ -364,18 +364,42 @@ def soft_reset(request, event_id, token):
         return HttpResponse('Add ?confirm=yes to run')
     try:
         from bookings.models import Booking
-        from invoices.models import Invoice, Payment
+        from invoices.models import (Invoice, Payment, LedgerEntry, Receipt,
+                                     DebtDeclaration, DebtPaymentSchedule, DebtDeclarationApproval,
+                                     PaymentReminder)
+        from accounting.models import GateTaking, JournalEntry, JournalLine
+        from fnb_integration.models import FNBTransaction, FNBPaymentRecord
         event = get_object_or_404(Event, pk=event_id)
         payments = Payment.objects.filter(invoice__event=event)
         invoices = Invoice.objects.filter(event=event)
         bookings = Booking.objects.filter(event=event)
         stalls = Stall.objects.filter(event=event)
+        ledger = LedgerEntry.objects.filter(booking__event=event)
+        receipts = Receipt.objects.filter(payment__invoice__event=event)
+        reminders = PaymentReminder.objects.filter(booking__event=event)
+        debt_decl = DebtDeclaration.objects.filter(exhibitor__bookings__event=event).distinct()
+        gt = GateTaking.objects.all()
+        jt = JournalEntry.objects.filter(gatetaking__in=gt)
+        fnb_txn = FNBTransaction.objects.all()
+        fnb_pay = FNBPaymentRecord.objects.all()
         p_count = payments.count()
         i_count = invoices.count()
         b_count = bookings.count()
+        l_count = ledger.count()
+        r_count = receipts.count()
+        gt_count = jt.count()
         payments.delete()
         invoices.delete()
         bookings.delete()
+        ledger.delete()
+        receipts.delete()
+        reminders.delete()
+        debt_decl.delete()
+        JournalLine.objects.filter(journal_entry__in=jt).delete()
+        jt.delete()
+        gt.delete()
+        fnb_txn.delete()
+        fnb_pay.delete()
         updated = stalls.update(status='available')
         event.start_date = date(2026, 12, 24)
         event.end_date = date(2027, 1, 3)
@@ -384,6 +408,8 @@ def soft_reset(request, event_id, token):
         return HttpResponse(
             f'Soft reset complete for {event.name}:<br>'
             f'Deleted: {b_count} bookings, {i_count} invoices, {p_count} payments<br>'
+            f'Deleted: {l_count} ledger entries, {r_count} receipts, {gt_count} journal entries<br>'
+            f'Deleted: all FNB transactions, FNB payment records, gate takings, debt declarations<br>'
             f'Stalls reset to available: {updated}<br>'
             f'Dates: {event.start_date} to {event.end_date}<br>'
             f'Sections: {sections_info}'
