@@ -5,6 +5,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 import os, re, json
 from decimal import Decimal
+from datetime import date
 from django.conf import settings
 
 
@@ -348,6 +349,43 @@ def remote_reset(request, event_id, token):
             f'Deleted: {b_count} bookings, {i_count} invoices, {p_count} payments, {s_count} stalls<br>'
             f'Imported: {created} stalls<br>'
             f'Skipped: {len(skipped)}<br>'
+            f'Sections: {sections_info}'
+        )
+    except Exception as e:
+        import traceback
+        return HttpResponse(f'<pre>{traceback.format_exc()}</pre>', status=500)
+
+
+@csrf_exempt
+def soft_reset(request, event_id, token):
+    if token != 'dss2026reset':
+        return HttpResponse('Invalid token', status=403)
+    if request.GET.get('confirm') != 'yes':
+        return HttpResponse('Add ?confirm=yes to run')
+    try:
+        from bookings.models import Booking
+        from invoices.models import Invoice, Payment
+        event = get_object_or_404(Event, pk=event_id)
+        payments = Payment.objects.filter(invoice__event=event)
+        invoices = Invoice.objects.filter(event=event)
+        bookings = Booking.objects.filter(event=event)
+        stalls = Stall.objects.filter(event=event)
+        p_count = payments.count()
+        i_count = invoices.count()
+        b_count = bookings.count()
+        payments.delete()
+        invoices.delete()
+        bookings.delete()
+        updated = stalls.update(status='available')
+        event.start_date = date(2026, 12, 24)
+        event.end_date = date(2027, 1, 3)
+        event.save()
+        sections_info = ', '.join(f'{s.name}: {s.stalls.count()}' for s in FloorPlanSection.objects.filter(event=event))
+        return HttpResponse(
+            f'Soft reset complete for {event.name}:<br>'
+            f'Deleted: {b_count} bookings, {i_count} invoices, {p_count} payments<br>'
+            f'Stalls reset to available: {updated}<br>'
+            f'Dates: {event.start_date} to {event.end_date}<br>'
             f'Sections: {sections_info}'
         )
     except Exception as e:
