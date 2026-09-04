@@ -379,7 +379,7 @@ def soft_reset(request, event_id, token):
         reminders = PaymentReminder.objects.filter(booking__event=event)
         debt_decl = DebtDeclaration.objects.filter(exhibitor__bookings__event=event).distinct()
         gt = GateTaking.objects.all()
-        jt = JournalEntry.objects.filter(gatetaking__in=gt)
+        jt = JournalEntry.objects.filter(gate_taking__in=gt)
         fnb_txn = FNBTransaction.objects.all()
         fnb_pay = FNBPaymentRecord.objects.all()
         p_count = payments.count()
