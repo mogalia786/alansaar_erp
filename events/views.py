@@ -414,6 +414,15 @@ def soft_reset(request, event_id, token):
         _del(DiscountRequest.objects.all(), 'discount_requests')
         bookings_qs.delete()
 
+        # Exhibitors: delete all exhibitor users (CASCADE cleans up notifications, etc.)
+        from accounts.models import User
+        from notifications.models import Notification
+        exhibitors = User.objects.filter(user_type='exhibitor')
+        _del(Notification.objects.filter(user__in=exhibitors), 'notifications')
+        exhibitor_count = exhibitors.count()
+        exhibitors.delete()
+        counts['exhibitors'] = exhibitor_count
+
         # Stalls: reset to available
         stalls = Stall.objects.filter(event=event)
         updated = stalls.update(status='available')
