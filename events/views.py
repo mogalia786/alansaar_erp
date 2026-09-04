@@ -363,54 +363,71 @@ def soft_reset(request, event_id, token):
     if request.GET.get('confirm') != 'yes':
         return HttpResponse('Add ?confirm=yes to run')
     try:
-        from bookings.models import Booking
-        from invoices.models import (Invoice, Payment, LedgerEntry, Receipt,
+        from bookings.models import Booking, DiscountRequest
+        from invoices.models import (Invoice, InvoiceLine, Payment, LedgerEntry, Receipt,
                                      DebtDeclaration, DebtPaymentSchedule, DebtDeclarationApproval,
                                      PaymentReminder)
-        from accounting.models import GateTaking, JournalEntry, JournalLine
-        from fnb_integration.models import FNBTransaction, FNBPaymentRecord
+        from accounting.models import Account, JournalEntry, JournalLine, GateTaking
+        from providers.models import Expense
+        from fnb_integration.models import FNBTransaction, FNBPaymentRecord, FNBAccount, FNBAccessToken
         event = get_object_or_404(Event, pk=event_id)
-        payments = Payment.objects.filter(invoice__event=event)
-        invoices = Invoice.objects.filter(event=event)
-        bookings = Booking.objects.filter(event=event)
+
+        counts = {}
+        def _del(qs, name):
+            c = qs.count()
+            if c: qs.delete()
+            counts[name] = c
+
+        # Accounting: journal entries + lines
+        jls = JournalLine.objects.all()
+        _del(jls, 'journal_lines')
+        jes = JournalEntry.objects.all()
+        _del(jes, 'journal_entries')
+        gts = GateTaking.objects.all()
+        _del(gts, 'gate_takings')
+        _del(Account.objects.all(), 'accounts')
+
+        # Invoices: payment reminders, receipts, payments, invoice lines, invoices, ledger, debt
+        _del(PaymentReminder.objects.all(), 'payment_reminders')
+        _del(Receipt.objects.all(), 'receipts')
+        _del(Payment.objects.all(), 'payments')
+        _del(InvoiceLine.objects.all(), 'invoice_lines')
+        _del(Invoice.objects.all(), 'invoices')
+        _del(LedgerEntry.objects.all(), 'ledger_entries')
+        _del(DebtDeclarationApproval.objects.all(), 'debt_approvals')
+        _del(DebtPaymentSchedule.objects.all(), 'debt_schedules')
+        _del(DebtDeclaration.objects.all(), 'debt_declarations')
+
+        # Providers: expenses
+        _del(Expense.objects.all(), 'expenses')
+
+        # FNB: transactions, payments, accounts, tokens
+        _del(FNBPaymentRecord.objects.all(), 'fnb_payments')
+        _del(FNBTransaction.objects.all(), 'fnb_transactions')
+        _del(FNBAccount.objects.all(), 'fnb_accounts')
+        _del(FNBAccessToken.objects.all(), 'fnb_tokens')
+
+        # Bookings
+        bookings_qs = Booking.objects.filter(event=event)
+        b_count = bookings_qs.count()
+        counts['bookings'] = b_count
+        _del(DiscountRequest.objects.all(), 'discount_requests')
+        bookings_qs.delete()
+
+        # Stalls: reset to available
         stalls = Stall.objects.filter(event=event)
-        ledger = LedgerEntry.objects.filter(booking__event=event)
-        receipts = Receipt.objects.filter(payment__invoice__event=event)
-        reminders = PaymentReminder.objects.filter(booking__event=event)
-        debt_decl_ids = DebtDeclaration.objects.filter(exhibitor__bookings__event=event).values_list('id', flat=True).distinct()
-        debt_decl = DebtDeclaration.objects.filter(id__in=debt_decl_ids)
-        gt = GateTaking.objects.all()
-        jt = JournalEntry.objects.filter(gate_taking__in=gt)
-        fnb_txn = FNBTransaction.objects.all()
-        fnb_pay = FNBPaymentRecord.objects.all()
-        p_count = payments.count()
-        i_count = invoices.count()
-        b_count = bookings.count()
-        l_count = ledger.count()
-        r_count = receipts.count()
-        gt_count = jt.count()
-        payments.delete()
-        invoices.delete()
-        bookings.delete()
-        ledger.delete()
-        receipts.delete()
-        reminders.delete()
-        debt_decl.delete()
-        JournalLine.objects.filter(journal_entry__in=jt).delete()
-        jt.delete()
-        gt.delete()
-        fnb_txn.delete()
-        fnb_pay.delete()
         updated = stalls.update(status='available')
+
+        # Event dates
         event.start_date = date(2026, 12, 24)
         event.end_date = date(2027, 1, 3)
         event.save()
+
         sections_info = ', '.join(f'{s.name}: {s.stalls.count()}' for s in FloorPlanSection.objects.filter(event=event))
+        summary = '<br>'.join(f'  {k}: {v}' for k, v in counts.items() if v)
         return HttpResponse(
-            f'Soft reset complete for {event.name}:<br>'
-            f'Deleted: {b_count} bookings, {i_count} invoices, {p_count} payments<br>'
-            f'Deleted: {l_count} ledger entries, {r_count} receipts, {gt_count} journal entries<br>'
-            f'Deleted: all FNB transactions, FNB payment records, gate takings, debt declarations<br>'
+            f'<b>Full wipe complete for {event.name}</b><br><br>'
+            f'<b>Deleted:</b><br>{summary}<br><br>'
             f'Stalls reset to available: {updated}<br>'
             f'Dates: {event.start_date} to {event.end_date}<br>'
             f'Sections: {sections_info}'
