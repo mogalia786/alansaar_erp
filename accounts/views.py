@@ -39,6 +39,7 @@ def forgot_password(request):
             user.set_password(new_password)
             user.save(update_fields=['password'])
             request.session['temp_password'] = new_password
+            request.session['temp_user'] = user.username
             try:
                 from notifications.utils import send_html_email
                 from django.conf import settings
@@ -58,14 +59,24 @@ def forgot_password(request):
     return render(request, 'accounts/forgot_password.html')
 
 
-@login_required
 def change_password(request):
+    temp_username = request.session.get('temp_user')
+    if request.user.is_authenticated:
+        target = request.user
+    elif temp_username:
+        target = User.objects.filter(username__iexact=temp_username).first()
+    else:
+        target = None
+    if target is None:
+        messages.info(request, 'To change your password, first request a new one below — it will be emailed to you.')
+        return redirect('accounts:forgot_password')
+
     if request.method == 'POST':
         current = request.POST.get('current_password', '')
         new1 = request.POST.get('new_password1', '')
         new2 = request.POST.get('new_password2', '')
         errors = []
-        if not request.user.check_password(current):
+        if not target.check_password(current):
             errors.append('Your current password is incorrect.')
         if current and new1 == current:
             errors.append('Your new password must be different from your current password.')
@@ -73,20 +84,25 @@ def change_password(request):
             errors.append('Your new passwords do not match.')
         if new1:
             try:
-                validate_password(new1, user=request.user)
+                validate_password(new1, user=target)
             except Exception as e:
                 errors.extend(getattr(e, 'messages', [str(e)]))
         if not errors:
-            request.user.set_password(new1)
-            request.user.save(update_fields=['password'])
-            update_session_auth_hash(request, request.user)
+            target.set_password(new1)
+            target.save(update_fields=['password'])
             request.session.pop('temp_password', None)
-            messages.success(request, 'Your password has been updated successfully.')
-            return redirect('accounts:dashboard')
+            request.session.pop('temp_user', None)
+            if request.user.is_authenticated:
+                update_session_auth_hash(request, target)
+                messages.success(request, 'Your password has been updated successfully.')
+                return redirect('accounts:dashboard')
+            messages.success(request, 'Your password has been updated successfully. Please log in with your new password.')
+            return redirect('accounts:login')
         for err in errors:
             messages.error(request, err)
     return render(request, 'accounts/change_password.html', {
         'temp_password': request.session.get('temp_password'),
+        'just_reset': bool(temp_username),
     })
 
 
