@@ -22,6 +22,9 @@
                             {% if form.password.errors %}<div class="text-danger small">{{ form.password.errors }}</div>{% endif %}
                         </div>
                         <button type="submit" class="btn btn-purple w-100">Login</button>
+                        <div class="text-center mt-2">
+                            <a href="{% url 'accounts:forgot_password' %}" class="small" style="font-size:13px;">Forgot Password?</a>
+                        </div>
                     </form>
                     <p class="text-center mt-3 mb-0">
                         Don't have an account? <a href="{% url 'accounts:register' %}">Register here</a>

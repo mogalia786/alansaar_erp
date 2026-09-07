@@ -1,9 +1,93 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth import login, authenticate, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.password_validation import validate_password
 from django.contrib import messages
+from django.http import JsonResponse
+from django.utils.crypto import get_random_string
+from django.utils.http import url_has_allowed_host_and_scheme
+import logging
 from .forms import ExhibitorRegistrationForm, LoginForm
+from .models import User
 from notifications.utils import send_welcome_email
+
+
+def check_username(request):
+    username = (request.GET.get('username') or '').strip()
+    if not username:
+        return JsonResponse({'exists': False})
+    return JsonResponse({'exists': User.objects.filter(username__iexact=username).exists()})
+
+
+def _generate_password():
+    upper = get_random_string(4, 'ABCDEFGHJKLMNPQRSTUVWXYZ')
+    lower = get_random_string(4, 'abcdefghjkmnpqrstuvwxyz')
+    digits = get_random_string(3, '23456789')
+    symbol = get_random_string(1, '!@#$%*+=')
+    return upper + lower + digits + symbol
+
+
+def forgot_password(request):
+    if request.method == 'POST':
+        identifier = (request.POST.get('identifier') or '').strip()
+        user = None
+        if identifier:
+            user = (User.objects.filter(username__iexact=identifier).first()
+                    or User.objects.filter(email__iexact=identifier).first())
+        if user and user.is_active and user.email:
+            new_password = _generate_password()
+            user.set_password(new_password)
+            user.save(update_fields=['password'])
+            request.session['temp_password'] = new_password
+            try:
+                from notifications.utils import send_html_email
+                from django.conf import settings
+                send_html_email(
+                    'Your New Password - Al Ansaar Foundation',
+                    'emails/password_reset_email.html',
+                    {'user': user, 'new_password': new_password, 'site_name': settings.SITE_NAME, 'site_url': settings.SITE_URL},
+                    [user.email],
+                )
+                messages.success(request, 'Your new password has been emailed to your registered email address. Please check your inbox (and spam folder) then log in below.')
+            except Exception as e:
+                logging.getLogger(__name__).exception(f'Failed to email new password to {user.email}: {e}')
+                messages.error(request, 'We could not email your new password right now. Please try again shortly.')
+        else:
+            messages.info(request, 'If an account exists with that username or email, a new password has been emailed to it.')
+        return redirect('accounts:forgot_password')
+    return render(request, 'accounts/forgot_password.html')
+
+
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        current = request.POST.get('current_password', '')
+        new1 = request.POST.get('new_password1', '')
+        new2 = request.POST.get('new_password2', '')
+        errors = []
+        if not request.user.check_password(current):
+            errors.append('Your current password is incorrect.')
+        if current and new1 == current:
+            errors.append('Your new password must be different from your current password.')
+        if new1 != new2:
+            errors.append('Your new passwords do not match.')
+        if new1:
+            try:
+                validate_password(new1, user=request.user)
+            except Exception as e:
+                errors.extend(getattr(e, 'messages', [str(e)]))
+        if not errors:
+            request.user.set_password(new1)
+            request.user.save(update_fields=['password'])
+            update_session_auth_hash(request, request.user)
+            request.session.pop('temp_password', None)
+            messages.success(request, 'Your password has been updated successfully.')
+            return redirect('accounts:dashboard')
+        for err in errors:
+            messages.error(request, err)
+    return render(request, 'accounts/change_password.html', {
+        'temp_password': request.session.get('temp_password'),
+    })
 
 
 def exhibitor_register(request):
@@ -48,6 +132,9 @@ def exhibitor_login(request):
                     messages.error(request, 'Your account is pending verification. Please wait for admin approval before logging in.')
                     return render(request, 'accounts/login.html', {'form': form})
                 login(request, user)
+                next_url = request.POST.get('next') or request.GET.get('next')
+                if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
+                    return redirect(next_url)
                 return redirect('accounts:dashboard')
             else:
                 messages.error(request, 'Invalid credentials.')

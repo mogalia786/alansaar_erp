@@ -25,6 +25,12 @@ class ExhibitorRegistrationForm(UserCreationForm):
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'company_name', 'company_reg_number', 'sa_id_passport', 'sa_id_passport_copy', 'vat_number', 'phone', 'address', 'proof_of_address', 'photo', 'password1', 'password2']
 
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if username and User.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError('A user with that username already exists.')
+        return username
+
     def clean_photo(self):
         f = self.cleaned_data.get('photo')
         if f:

@@ -14,7 +14,7 @@
                         <div class="fw-bold mb-2"><i class="bi bi-info-circle-fill"></i> Important - Please Read Before Registering</div>
                         <ul class="mb-0 ps-3">
                             <li class="mb-1">Please only register once, even though you might book more than one stall.</li>
-                            <li class="mb-1">Remember your name and password as that is what you will use to login once you are authorized.</li>
+                            <li class="mb-1">Remember your <strong>Username</strong> and password as that is what you will use to login once you are authorized.</li>
                             <li class="mb-1">Once authorized, go to <strong>Events</strong> then click <strong>Floor Plan</strong> to book a stand.</li>
                             <li class="mb-1">Once your stand is booked, view your booking and add additional requirements. You can add them at any time.</li>
                             <li class="mb-1">To view how your stall will look like in 3D, click <strong>View 3D Stand View</strong>.</li>
@@ -42,6 +42,9 @@
                                     <li>High resolution, JPG or PNG (max 5MB)</li>
                                 </ul>
                             </div>
+                            {% elif field.name == 'username' %}
+                            {{ field }}
+                            <div id="username-warning" class="text-danger small mt-1 d-none"></div>
                             {% elif field.name == 'address' %}
                             <textarea class="form-control" name="{{ field.name }}" rows="3" required>{{ field.value|default:'' }}</textarea>
                             {% else %}
@@ -67,5 +70,35 @@
 </div>
 {% endblock %}
 {% block extra_scripts %}
-<script>document.querySelectorAll('input[type="text"],input[type="email"],input[type="password"]').forEach(function(i){i.classList.add('form-control')});</script>
+<script>
+document.querySelectorAll('input[type="text"],input[type="email"],input[type="password"]').forEach(function(i){i.classList.add('form-control')});
+var uname = document.getElementById('id_username');
+var warn = document.getElementById('username-warning');
+var usernameTaken = false;
+if (uname && warn) {
+    uname.addEventListener('blur', function () {
+        var v = uname.value.trim();
+        if (!v) { warn.classList.add('d-none'); usernameTaken = false; return; }
+        fetch('{% url "accounts:check_username" %}?username=' + encodeURIComponent(v))
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.exists) {
+                    warn.textContent = 'This username is already taken. Please choose a different one.';
+                    warn.classList.remove('d-none');
+                    usernameTaken = true;
+                } else {
+                    warn.classList.add('d-none');
+                    usernameTaken = false;
+                }
+            })
+            .catch(function(){});
+    });
+    uname.addEventListener('input', function () {
+        if (usernameTaken) { warn.classList.add('d-none'); usernameTaken = false; }
+    });
+}
+document.querySelector('form[method="post"]').addEventListener('submit', function (e) {
+    if (usernameTaken) { e.preventDefault(); uname.focus(); }
+});
+</script>
 {% endblock %}
