@@ -10,6 +10,17 @@
                     <p class="mb-0 mt-1" style="font-size:12px;opacity:0.8;">Register for the Durban Summer Souk 2026</p>
                 </div>
                 <div class="card-body p-4">
+                    <div class="alert alert-info border-start border-4 border-purple mb-4" style="font-size:14px;">
+                        <div class="fw-bold mb-2"><i class="bi bi-info-circle-fill"></i> Important - Please Read Before Registering</div>
+                        <ul class="mb-0 ps-3">
+                            <li class="mb-1">Please only register once, even though you might book more than one stall.</li>
+                            <li class="mb-1">Remember your name and password as that is what you will use to login once you are authorized.</li>
+                            <li class="mb-1">Once authorized, go to <strong>Events</strong> then click <strong>Floor Plan</strong> to book a stand.</li>
+                            <li class="mb-1">Once your stand is booked, view your booking and add additional requirements. You can add them at any time.</li>
+                            <li class="mb-1">To view how your stall will look like in 3D, click <strong>View 3D Stand View</strong>.</li>
+                            <li class="mb-0">Note: when you make payment via EFT, your payment won't reflect in your statement immediately until it clears.</li>
+                        </ul>
+                    </div>
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         {% for field in form %}
