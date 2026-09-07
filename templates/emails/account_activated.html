@@ -21,6 +21,7 @@
 <tr><td style="color:#5B2C6F;font-weight:bold;">Your Details</td><td></td></tr>
 <tr><td><strong>Username:</strong></td><td>{{ user.username }}</td></tr>
 <tr><td><strong>Company:</strong></td><td>{{ user.company_name }}</td></tr>
+<tr><td><strong>SA ID / Passport:</strong></td><td>{{ user.sa_id_passport|default:"—" }}</td></tr>
 <tr><td><strong>Company Reg. No:</strong></td><td>{{ user.company_reg_number|default:"—" }}</td></tr>
 <tr><td><strong>VAT No:</strong></td><td>{{ user.vat_number|default:"—" }}</td></tr>
 <tr><td><strong>Email:</strong></td><td>{{ user.email }}</td></tr>

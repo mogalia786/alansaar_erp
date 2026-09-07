@@ -23,6 +23,7 @@
                     <th>Email</th>
                     <th>Phone</th>
                     <th>Address</th>
+                    <th>SA ID/Passport</th>
                     <th>Proof</th>
                     <th>Photo</th>
                     <th>Registered</th>
@@ -35,13 +36,22 @@
                 <tr>
                     <td class="fw-bold">{{ u.get_full_name|default:u.username }}</td>
                     <td>{{ u.company_name|default:"-" }}
-                        {% if u.company_reg_number or u.vat_number %}
-                        <small class="d-block text-muted">Reg: {{ u.company_reg_number|default:"-" }} | VAT: {{ u.vat_number|default:"-" }}</small>
+                        {% if u.company_reg_number or u.vat_number or u.sa_id_passport %}
+                        <small class="d-block text-muted">SA ID/Passport: {{ u.sa_id_passport|default:"-" }} | Reg: {{ u.company_reg_number|default:"-" }} | VAT: {{ u.vat_number|default:"-" }}</small>
                         {% endif %}
                     </td>
                     <td><a href="mailto:{{ u.email }}">{{ u.email }}</a></td>
                     <td>{{ u.phone|default:"-" }}</td>
                     <td style="max-width:200px;">{{ u.address|default:"-"|truncatechars:50 }}</td>
+                    <td>
+                        {% if u.sa_id_passport_copy %}
+                        <a href="{{ u.sa_id_passport_copy.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-file-earmark"></i> View
+                        </a>
+                        {% else %}
+                        <span class="text-muted">None</span>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if u.proof_of_address %}
                         <a href="{{ u.proof_of_address.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
