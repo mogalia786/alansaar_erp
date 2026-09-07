@@ -60,39 +60,41 @@ def forgot_password(request):
 
 
 def change_password(request):
-    temp_username = request.session.get('temp_user')
-    if request.user.is_authenticated:
-        target = request.user
-    elif temp_username:
-        target = User.objects.filter(username__iexact=temp_username).first()
-    else:
-        target = None
-    if target is None:
-        messages.info(request, 'To change your password, first request a new one below — it will be emailed to you.')
-        return redirect('accounts:forgot_password')
+    authenticated = request.user.is_authenticated
+    target = request.user if authenticated else None
 
     if request.method == 'POST':
+        identifier = (request.POST.get('identifier') or '').strip()
         current = request.POST.get('current_password', '')
         new1 = request.POST.get('new_password1', '')
         new2 = request.POST.get('new_password2', '')
         errors = []
-        if not target.check_password(current):
-            errors.append('Your current password is incorrect.')
-        if current and new1 == current:
-            errors.append('Your new password must be different from your current password.')
+
+        if not authenticated:
+            target = (User.objects.filter(username__iexact=identifier).first()
+                      or User.objects.filter(email__iexact=identifier).first())
+            if target is None:
+                errors.append('No account found with that username or email address.')
+
+        if target is not None:
+            if not target.check_password(current):
+                errors.append('Your current password is incorrect.')
+            if current and new1 == current:
+                errors.append('Your new password must be different from your current password.')
         if new1 != new2:
             errors.append('Your new passwords do not match.')
-        if new1:
+        if target is not None and new1:
             try:
                 validate_password(new1, user=target)
             except Exception as e:
                 errors.extend(getattr(e, 'messages', [str(e)]))
+
         if not errors:
             target.set_password(new1)
             target.save(update_fields=['password'])
             request.session.pop('temp_password', None)
             request.session.pop('temp_user', None)
-            if request.user.is_authenticated:
+            if authenticated:
                 update_session_auth_hash(request, target)
                 messages.success(request, 'Your password has been updated successfully.')
                 return redirect('accounts:dashboard')
@@ -100,9 +102,17 @@ def change_password(request):
             return redirect('accounts:login')
         for err in errors:
             messages.error(request, err)
+
+    identifier = ''
+    if authenticated:
+        identifier = request.user.username
+    elif request.method == 'POST':
+        identifier = request.POST.get('identifier') or ''
+
     return render(request, 'accounts/change_password.html', {
         'temp_password': request.session.get('temp_password'),
-        'just_reset': bool(temp_username),
+        'authenticated': authenticated,
+        'identifier': identifier,
     })
 
 
