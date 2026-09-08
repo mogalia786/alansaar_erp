@@ -747,11 +747,52 @@ def print_payments_receipt(request, booking_id):
 
 @erp_section_required('exhibitors')
 def erp_exhibitor_list(request):
-    exhibitors = User.objects.filter(user_type='exhibitor')
+    exhibitors = User.objects.filter(user_type='exhibitor', is_verified=True)
     q = request.GET.get('q')
     if q:
         exhibitors = exhibitors.filter(Q(company_name__icontains=q) | Q(email__icontains=q) | Q(username__icontains=q))
-    return render(request, 'portal/exhibitor_list.html', {'exhibitors': exhibitors})
+    return render(request, 'portal/exhibitor_list.html', {
+        'exhibitors': exhibitors,
+        'verified_count': User.objects.filter(user_type='exhibitor', is_verified=True).count(),
+    })
+
+
+@erp_section_required('exhibitors')
+def email_exhibitor(request, pk):
+    if request.method == 'POST':
+        ex = get_object_or_404(User, pk=pk, user_type='exhibitor', is_verified=True)
+        subject = (request.POST.get('subject') or '').strip()
+        message = (request.POST.get('message') or '').strip()
+        if not subject or not message:
+            messages.error(request, 'Subject and message are required.')
+        elif not ex.email:
+            messages.error(request, f'{ex.company_name or ex.username} has no email address on file.')
+        else:
+            from notifications.utils import send_admin_message
+            send_admin_message(subject, message, [ex.email])
+            messages.success(request, f'Email sent to {ex.company_name or ex.username}.')
+    return redirect('erp:exhibitor_list')
+
+
+@erp_section_required('exhibitors')
+def email_all_exhibitors(request):
+    if request.method == 'POST':
+        subject = (request.POST.get('subject') or '').strip()
+        message = (request.POST.get('message') or '').strip()
+        if not subject or not message:
+            messages.error(request, 'Subject and message are required.')
+            return redirect('erp:exhibitor_list')
+        recipients = list(
+            User.objects.filter(user_type='exhibitor', is_verified=True)
+            .exclude(email='').values_list('email', flat=True).distinct()
+        )
+        if not recipients:
+            messages.info(request, 'No authorised exhibitors with email addresses found.')
+        else:
+            from notifications.utils import send_admin_message
+            send_admin_message(subject, message, recipients)
+            messages.success(request, f'Email sent to all {len(recipients)} authorised exhibitors.')
+    return redirect('erp:exhibitor_list')
 
 
 @erp_login_required

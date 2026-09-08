@@ -402,6 +402,16 @@ def send_account_declined(user):
     )
 
 
+def send_admin_message(subject, body, to_emails):
+    context = {
+        'subject': subject,
+        'body': body,
+        'site_name': settings.SITE_NAME,
+        'site_url': settings.SITE_URL,
+    }
+    send_html_email(subject, 'emails/admin_message.html', context, to_emails)
+
+
 def send_invoice_email(invoice, trigger='created'):
     if trigger == 'created':
         subject = f'Invoice {invoice.invoice_number} - Al Ansaar Foundation'
