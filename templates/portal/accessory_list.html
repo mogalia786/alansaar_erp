@@ -15,7 +15,7 @@
     <td>{% if a.is_active %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td>
     <td>{{ a.display_order }}</td>
     <td>
-        <button type="button" class="btn btn-sm btn-outline-primary edit-acc" data-id="{{ a.pk }}" title="Edit"><i class="bi bi-pencil"></i></button>
+        <button type="button" class="btn btn-sm btn-outline-primary edit-acc" data-id="{{ a.pk }}" data-bs-toggle="modal" data-bs-target="#editAccModal" title="Edit"><i class="bi bi-pencil"></i></button>
     </td>
 </tr>{% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No accessories</td></tr>{% endfor %}</tbody>
 </table></div></div></div>
@@ -66,6 +66,10 @@
             document.getElementById('editAccUnit').value = a.unit;
             document.getElementById('editAccOrder').value = a.display_order;
             document.getElementById('editAccActive').checked = a.is_active;
+            var modalEl = document.getElementById('editAccModal');
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }
         });
     });
 </script>
