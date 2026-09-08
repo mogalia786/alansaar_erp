@@ -386,6 +386,22 @@ def send_account_activated(user):
     )
 
 
+def send_account_declined(user):
+    subject = 'Registration Not Approved \u2013 Al Ansaar Foundation'
+    context = {
+        'user': user,
+        'site_name': settings.SITE_NAME,
+        'site_url': settings.SITE_URL,
+    }
+    send_html_email(subject, 'emails/account_rejected.html', context, [user.email])
+    create_notification(
+        user, 'account',
+        'Registration Not Approved',
+        'Thank you for your interest. Please contact us if you have any questions.',
+        '/'
+    )
+
+
 def send_invoice_email(invoice, trigger='created'):
     if trigger == 'created':
         subject = f'Invoice {invoice.invoice_number} - Al Ansaar Foundation'

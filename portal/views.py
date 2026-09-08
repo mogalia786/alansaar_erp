@@ -1909,7 +1909,14 @@ def verify_exhibitor(request, pk):
         elif action == 'reject':
             user_obj.is_active = False
             user_obj.save()
-            messages.warning(request, f'{user_obj.company_name or user_obj.username} registration has been rejected.')
+            from notifications.utils import send_account_declined
+            try:
+                send_account_declined(user_obj)
+                messages.warning(request, f'{user_obj.company_name or user_obj.username} registration has been rejected. Notification email sent.')
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).exception(f'Rejection email failed for {user_obj.email}: {e}')
+                messages.warning(request, f'{user_obj.company_name or user_obj.username} registration has been rejected, but the notification email could not be sent (error logged).')
     return redirect('erp:verify_registrations')
 
 
