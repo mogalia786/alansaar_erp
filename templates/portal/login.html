@@ -9,17 +9,18 @@
                     <h4 class="mb-0"><i class="bi bi-shield-lock"></i> Staff Login</h4>
                 </div>
                 <div class="card-body p-4">
-                    <form method="post">
+                    <form method="post" autocomplete="off">
                         {% csrf_token %}
                         <div class="mb-3">
                             <label class="form-label">Username</label>
-                            <input type="text" name="username" class="form-control" required>
+                            <input type="text" name="username" class="form-control" required autocomplete="off">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Password</label>
-                            <input type="password" name="password" class="form-control" required>
+                            <input type="password" name="password" class="form-control" required autocomplete="off">
                         </div>
                         <button type="submit" class="btn w-100 text-white fw-bold" style="background: #5B2C6F;">Login</button>
+                        <p class="text-muted small mt-3 mb-0">Staff/Admin login. Exhibitor accounts (from the main site) do not work here.</p>
                     </form>
                 </div>
             </div>
