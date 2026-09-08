@@ -121,7 +121,10 @@
                             <textarea class="form-control form-control-sm" name="special_requirements" rows="2">{{ booking.special_requirements }}</textarea>
                         </div>
                         {% if booking.status == 'pending' or booking.status == 'approved' %}
-                        <button type="submit" class="btn btn-purple btn-sm mt-2"><i class="bi bi-save"></i> Update Requirements</button>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                            <button type="submit" class="btn btn-purple btn-sm"><i class="bi bi-save"></i> Update Requirements</button>
+                            <span class="fw-bold text-danger">Please click update requirements, otherwise your request will not be proccessed</span>
+                        </div>
                         {% endif %}
                     </form>
                 </div>
