@@ -44,6 +44,7 @@
                             </div>
                             {% elif field.name == 'username' %}
                             {{ field }}
+                            <div class="fw-bold text-danger small mt-1">NO SPACES ALLOWED!</div>
                             <div id="username-warning" class="text-danger small mt-1 d-none"></div>
                             {% elif field.name == 'address' %}
                             <textarea class="form-control" name="{{ field.name }}" rows="3" required>{{ field.value|default:'' }}</textarea>
