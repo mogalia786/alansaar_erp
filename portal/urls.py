@@ -28,6 +28,7 @@ urlpatterns = [
     path('exhibitors/', views.erp_exhibitor_list, name='exhibitor_list'),
     path('accessories/', views.erp_accessory_list, name='accessory_list'),
     path('accessories/add/', views.add_accessory, name='add_accessory'),
+    path('accessories/<int:pk>/update/', views.update_accessory, name='update_accessory'),
     path('discounts/', views.erp_discount_list, name='discount_list'),
     path('discounts/<int:pk>/approve/', views.approve_discount, name='approve_discount'),
     path('discounts/<int:pk>/reject/', views.reject_discount, name='reject_discount'),

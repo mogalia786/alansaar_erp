@@ -757,7 +757,19 @@ def erp_exhibitor_list(request):
 @erp_login_required
 def erp_accessory_list(request):
     accessories = AccessoryType.objects.all()
-    return render(request, 'portal/accessory_list.html', {'accessories': accessories})
+    accessory_data = [{
+        'id': a.pk,
+        'name': a.name,
+        'description': a.description,
+        'price': float(a.price),
+        'unit': a.unit,
+        'is_active': a.is_active,
+        'display_order': a.display_order,
+    } for a in accessories]
+    return render(request, 'portal/accessory_list.html', {
+        'accessories': accessories,
+        'accessory_data': accessory_data,
+    })
 
 
 @erp_login_required
@@ -770,6 +782,30 @@ def add_accessory(request):
             unit=request.POST.get('unit', 'per unit'),
         )
         messages.success(request, 'Accessory added.')
+    return redirect('erp:accessory_list')
+
+
+@erp_login_required
+def update_accessory(request, pk):
+    accessory = get_object_or_404(AccessoryType, pk=pk)
+    if request.method == 'POST':
+        name = (request.POST.get('name') or '').strip()
+        if not name:
+            messages.error(request, 'Accessory name is required.')
+        else:
+            price = request.POST.get('price')
+            accessory.name = name
+            accessory.description = request.POST.get('description', '')
+            if price:
+                accessory.price = Decimal(price)
+            accessory.unit = request.POST.get('unit', 'per unit')
+            accessory.is_active = request.POST.get('is_active') == 'on'
+            try:
+                accessory.display_order = int(request.POST.get('display_order') or 0)
+            except (TypeError, ValueError):
+                pass
+            accessory.save()
+            messages.success(request, f'{accessory.name} updated.')
     return redirect('erp:accessory_list')
 
 
