@@ -13,9 +13,16 @@
 </div>
 
 {% if users %}
+<div class="input-group mb-3" style="max-width:420px;">
+    <span class="input-group-text"><i class="bi bi-search"></i></span>
+    <input type="text" id="registrationSearch" class="form-control" placeholder="Search name, company, email, phone, username..." autocomplete="off">
+    <button class="btn btn-outline-secondary" type="button" id="registrationSearchClear" title="Clear search">
+        <i class="bi bi-x-lg"></i>
+    </button>
+</div>
 <div class="card">
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0" id="registrationTable">
             <thead class="table-purple">
                 <tr>
                     <th>Name</th>
@@ -136,5 +143,29 @@
         document.getElementById('photoModalImg').src = btn.getAttribute('data-photo');
         document.getElementById('photoModalTitle').textContent = 'Exhibitor Photo — ' + btn.getAttribute('data-name');
     });
+
+    var searchInput = document.getElementById('registrationSearch');
+    var searchClear = document.getElementById('registrationSearchClear');
+    function filterRegistrations() {
+        if (!searchInput) return;
+        var q = searchInput.value.trim().toLowerCase();
+        var rows = document.querySelectorAll('#registrationTable tbody tr');
+        var visible = 0;
+        rows.forEach(function (row) {
+            var match = !q || row.innerText.toLowerCase().indexOf(q) !== -1;
+            row.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+    }
+    if (searchInput) {
+        searchInput.addEventListener('input', filterRegistrations);
+    }
+    if (searchClear) {
+        searchClear.addEventListener('click', function () {
+            searchInput.value = '';
+            filterRegistrations();
+            searchInput.focus();
+        });
+    }
 </script>
 {% endblock %}
