@@ -1025,6 +1025,18 @@ def erp_statement(request, exhibitor_id):
     outstanding = total_invoiced - total_paid
     total_debits = entries.aggregate(s=Sum('debit'))['s'] or Decimal('0')
     total_credits = entries.aggregate(s=Sum('credit'))['s'] or Decimal('0')
+    from invoices.models import Payment
+    payment_notes = {}
+    for p in Payment.objects.filter(invoice__exhibitor=exhibitor):
+        try:
+            key = p.receipt.receipt_number
+        except Exception:
+            key = p.reference_number
+        if key:
+            payment_notes.setdefault(key, p.notes)
+    entries = list(entries)
+    for e in entries:
+        e.notes = payment_notes.get(e.reference, '') if e.entry_type == 'payment' else ''
     today = timezone.localdate()
     aging_current = aging_30 = aging_60 = aging_90 = Decimal('0')
     for inv in Invoice.objects.filter(exhibitor=exhibitor, status__in=['sent', 'partial', 'overdue']):
