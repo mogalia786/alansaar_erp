@@ -7,6 +7,7 @@ class User(AbstractUser):
         ('exhibitor', 'Exhibitor'),
         ('staff', 'Staff'),
         ('director', 'Director'),
+        ('organiser', 'Organiser'),
         ('finance', 'Finance'),
         ('service_provider', 'Service Provider'),
         ('admin', 'Admin'),

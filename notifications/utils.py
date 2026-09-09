@@ -35,6 +35,18 @@ def get_finance_emails():
     )
 
 
+def get_role_emails(*roles):
+    global User
+    if User is None:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+    return list(
+        User.objects.filter(user_type__in=roles, is_active=True)
+        .values_list('email', flat=True)
+        .distinct()
+    )
+
+
 def send_html_email(subject, template_name, context, to_emails, from_email=None):
     if not to_emails:
         return
@@ -83,8 +95,8 @@ def send_booking_received(booking):
         f'Your booking for stall {booking.stall.name} at {booking.event.name} has been received and is pending approval.',
         f'/bookings/{booking.pk}/'
     )
-    # Email to directors/admins
-    admin_emails = get_director_emails()
+    # Email to directors/admins/organisers
+    admin_emails = get_role_emails('director', 'admin', 'organiser')
     if admin_emails:
         send_html_email(
             f'New Booking - {booking.booking_reference} - {exhibitor.company_name}',
@@ -133,8 +145,8 @@ def send_payment_received(payment):
         'site_url': settings.SITE_URL,
     }
 
-    # Notify directors via email
-    admin_recipients = get_director_emails()
+    # Notify directors and finance via email
+    admin_recipients = get_role_emails('director', 'finance')
     if admin_recipients:
         send_html_email(
             f'Payment to Verify - R{amt} - {exhibitor.company_name}',
@@ -186,8 +198,8 @@ def send_payment_verified(payment, receipt):
         f'Your payment of R{amt} for {payment.invoice.invoice_number} has been verified. Receipt: {receipt.receipt_number}.',
         f'/invoices/{payment.invoice.pk}/'
     )
-    # Notify directors/admins
-    admin_emails = get_director_emails()
+    # Notify directors and finance via email
+    admin_emails = get_role_emails('director', 'finance')
     if admin_emails:
         send_html_email(
             f'Payment Verified - R{amt} - {exhibitor.company_name}',
@@ -213,9 +225,9 @@ def send_discount_request(dr):
         'site_name': settings.SITE_NAME,
         'site_url': settings.SITE_URL,
     }
-    admin_emails = get_director_emails()
+    admin_emails = get_role_emails('director', 'admin', 'organiser')
     if settings.DEBUG:
-        print(f'[send_discount_request] Director emails: {admin_emails}')
+        print(f'[send_discount_request] Role emails: {admin_emails}')
     if admin_emails:
         try:
             send_html_email(subject, 'emails/discount_request.html', context, admin_emails)
@@ -224,7 +236,7 @@ def send_discount_request(dr):
                 print(f'[send_discount_request] Email send exception: {e}')
     else:
         if settings.DEBUG:
-            print('[send_discount_request] No director emails found!')
+            print('[send_discount_request] No role emails found!')
 
     create_notification(
         dr.requested_by, 'discount',
@@ -236,7 +248,7 @@ def send_discount_request(dr):
 
 def send_discount_decision(dr):
     exhibitor = dr.booking.exhibitor
-    all_emails = get_director_emails()
+    all_emails = get_role_emails('director', 'admin', 'organiser')
     if dr.status == 'approved':
         subject = f'Discount Approved - {dr.discount_percent}% - {dr.booking.booking_reference}'
         ntitle = f'Discount of {dr.discount_percent}% Approved'
