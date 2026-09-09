@@ -154,21 +154,100 @@ def trial_balance(request):
     })
 
 
+def _ledger_balance(account, date_from=None, date_to=None):
+    """Balance of an account from its journal lines, optionally date-filtered.
+
+    For income accounts returns credits - debits; for expense accounts debits - credits,
+    matching Account.balance() semantics so ledger figures stay consistent elsewhere.
+    """
+    lines = account.lines.all()
+    if date_from:
+        lines = lines.filter(journal_entry__date__gte=date_from)
+    if date_to:
+        lines = lines.filter(journal_entry__date__lte=date_to)
+    dr = lines.aggregate(Sum('debit'))['debit__sum'] or Decimal('0')
+    cr = lines.aggregate(Sum('credit'))['credit__sum'] or Decimal('0')
+    if account.type == 'expense':
+        return dr - cr
+    return cr - dr
+
+
 @erp_section_required('accounting')
 def income_statement(request):
+    from bookings.models import Booking
+    from events.models import Event
+    from django.utils.dateparse import parse_date
+
+    events = Event.objects.order_by('start_date')
+    event_id = request.GET.get('event_id', '')
+    active_event = events.filter(pk=event_id).first() if event_id else None
+    start_date = request.GET.get('start_date') or ''
+    end_date = request.GET.get('end_date') or ''
+    date_from = parse_date(start_date) if start_date else None
+    date_to = parse_date(end_date) if end_date else None
+
     income_accounts = Account.objects.filter(type='income', is_active=True)
     expense_accounts = Account.objects.filter(type='expense', is_active=True)
-    incomes = [{'account': a, 'amount': a.balance()} for a in income_accounts if a.balance() > 0]
-    expenses = [{'account': a, 'amount': a.balance()} for a in expense_accounts if a.balance() > 0]
+
+    incomes = []
+    expenses = []
+    reconciliation = None
+
+    if active_event:
+        stall_acc = Account.objects.filter(code='4000').first()
+        sold_statuses = ['pending', 'approved', 'confirmed', 'completed']
+        sold_bks = Booking.objects.filter(event=active_event, status__in=sold_statuses)
+        stall_revenue = sold_bks.aggregate(s=Sum('total_amount'))['s'] or Decimal('0')
+        if stall_acc and stall_revenue > 0:
+            incomes.append({
+                'account': stall_acc,
+                'amount': stall_revenue,
+                'basis': 'VAT-inclusive, from bookings',
+            })
+        discounts = Decimal('0')
+        for bk in sold_bks.prefetch_related('discount_requests'):
+            for d in bk.discount_requests.filter(status='approved'):
+                discounts += d.discount_amount
+        reconciliation = {
+            'event': active_event,
+            'stalls_sold': sold_bks.count(),
+            'sales_amount': sold_bks.aggregate(s=Sum('stall_price'))['s'] or Decimal('0'),
+            'discounts': discounts,
+            'revenue': stall_revenue,
+            'received': sold_bks.aggregate(s=Sum('amount_paid'))['s'] or Decimal('0'),
+            'outstanding': sold_bks.aggregate(s=Sum('balance_due'))['s'] or Decimal('0'),
+        }
+        for acc in income_accounts:
+            if acc.code == '4000':
+                continue
+            bal = _ledger_balance(acc, date_from, date_to)
+            if bal > 0:
+                incomes.append({'account': acc, 'amount': bal, 'basis': 'Ledger (VAT-exclusive)'})
+    else:
+        for acc in income_accounts:
+            bal = _ledger_balance(acc, date_from, date_to)
+            if bal > 0:
+                incomes.append({'account': acc, 'amount': bal, 'basis': 'Ledger (VAT-exclusive)'})
+
+    for acc in expense_accounts:
+        bal = _ledger_balance(acc, date_from, date_to)
+        if bal > 0:
+            expenses.append({'account': acc, 'amount': bal})
+
     total_income = sum(i['amount'] for i in incomes)
     total_expenses = sum(e['amount'] for e in expenses)
     net_profit = total_income - total_expenses
     return render(request, 'accounting/income_statement.html', {
+        'events': events,
+        'active_event': active_event,
+        'start_date': start_date,
+        'end_date': end_date,
         'incomes': incomes,
         'expenses': expenses,
         'total_income': total_income,
         'total_expenses': total_expenses,
         'net_profit': net_profit,
+        'reconciliation': reconciliation,
     })
 
 
