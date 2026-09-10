@@ -24,14 +24,41 @@
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card bg-info text-white text-center h-100">
+            <div class="card {% if unread_count %}bg-danger{% else %}bg-info{% endif %} text-white text-center h-100">
                 <div class="card-body">
-                    <h6>Upcoming Events</h6>
-                    <h4>{{ events|length }}</h4>
+                    <h6>New Notifications</h6>
+                    <h4>{{ unread_count }}</h4>
                 </div>
             </div>
         </div>
     </div>
+
+    {% if notifications %}
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-bell-fill"></i> New Booking Alerts</h5>
+            {% if events %}
+            <a class="btn btn-sm btn-outline-light" href="{% url 'providers:mark_notifications_read' events.0.id %}">Mark all for this event read</a>
+            {% endif %}
+        </div>
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+                {% for n in notifications %}
+                <a href="{% url 'providers:event_detail' n.booking.event_id %}" class="list-group-item list-group-item-action">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong class="text-purple"><i class="bi bi-bell"></i> {{ n.title }}</strong>
+                        <span class="badge {% if n.notification_type == 'booking' %}bg-warning text-dark{% elif n.notification_type == 'accessory' %}bg-info{% else %}bg-secondary{% endif %}">{{ n.get_notification_type_display }}</span>
+                    </div>
+                    <small class="text-muted">{{ n.message }}</small>
+                    <br><small class="text-muted"><i class="bi bi-clock"></i> {{ n.created_at|timesince }} ago</small>
+                </a>
+                {% empty %}
+                <div class="list-group-item text-muted">No new alerts.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <h4>Upcoming Events</h4>
     <div class="list-group mb-4">

@@ -216,6 +216,45 @@ def send_payment_verified(payment, receipt):
         )
 
 
+def send_payment_rejected(payment):
+    exhibitor = payment.booking.exhibitor if payment.booking else payment.invoice.exhibitor
+    amt = f"{payment.amount:.2f}"
+    context = {
+        'payment': payment,
+        'booking': payment.booking,
+        'exhibitor': exhibitor,
+        'invoice': payment.invoice,
+        'site_name': settings.SITE_NAME,
+        'site_url': settings.SITE_URL,
+    }
+    send_html_email(
+        f'Payment Rejected - {payment.invoice.invoice_number} - Al Ansaar Foundation',
+        'emails/payment_rejected.html', context, [exhibitor.email]
+    )
+    create_notification(
+        exhibitor, 'payment',
+        f'Payment of R{amt} Rejected',
+        f'Your payment of R{amt} for {payment.invoice.invoice_number} was rejected. Please visit the Finance Office in person to make payment. Remember to bring your ID for security purposes.',
+        f'/invoices/{payment.invoice.pk}/'
+    )
+    # Notify directors and finance via email
+    admin_emails = get_role_emails('director', 'finance')
+    if admin_emails:
+        send_html_email(
+            f'Payment Rejected - R{amt} - {exhibitor.company_name}',
+            'emails/admin_payment_rejected.html', context, admin_emails
+        )
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    for staff in User.objects.filter(is_staff=True, is_active=True):
+        create_notification(
+            staff, 'payment',
+            f'Payment Rejected: R{amt}',
+            f'{exhibitor.company_name} payment of R{amt} for {payment.invoice.invoice_number} rejected.',
+            f'/erp/payments/'
+        )
+
+
 def send_discount_request(dr):
     subject = f'Discount Request - {dr.discount_percent}% - {dr.booking.booking_reference}'
     context = {
@@ -599,6 +638,127 @@ def send_quotation_rejected(quotation):
     send_html_email(
         subject, 'emails/quotation_rejected.html', context, [recipient_email]
     )
+
+
+def send_accessory_removed(booking, accessory_name, removed_by, quantity=1):
+    """Email the exhibitor and notify them that an accessory was removed from their booking."""
+    exhibitor = booking.exhibitor
+    if not exhibitor.email:
+        return
+    accessory_total = float(booking.accessories_total or 0)
+    context = {
+        'booking': booking,
+        'exhibitor': exhibitor,
+        'accessory_name': accessory_name,
+        'quantity': quantity,
+        'removed_by': removed_by,
+        'new_subtotal': booking.total_amount,
+        'new_balance': booking.balance_due,
+        'site_name': settings.SITE_NAME,
+        'site_url': settings.SITE_URL,
+    }
+    send_html_email(
+        f'Accessory Removed - {booking.booking_reference} - Al Ansaar Foundation',
+        'emails/accessory_removed.html', context, [exhibitor.email]
+    )
+    create_notification(
+        exhibitor, 'booking',
+        f'Accessory Removed: {accessory_name}',
+        f'The {accessory_name} accessory was removed from your booking {booking.booking_reference}. '
+        f'Your new total is R{booking.total_amount:.2f} and balance due is R{booking.balance_due:.2f}.',
+        f'/bookings/{booking.pk}/'
+    )
+
+
+def send_stand_builder_notification(booking, change_type='booking', accessory=None, quantity=1):
+    """Notify the stand builder provider of a new booking, new accessory, or updated requirements.
+
+    Emails the provider (and their secondary contact) and creates an in-app/
+    dashboard notification. Electrical-related items are flagged so they appear
+    under the Electrical tab, stand items under the Stand Build tab.
+    """
+    from providers.models import ServiceProvider
+
+    provider = _stand_builder_provider()
+    if provider is None:
+        return
+    recipients = ['ashmunitz@gmail.com', 'nicole@exposolutions.co.za']
+
+    exhibitor = booking.exhibitor
+    stand = booking.stall
+    size_m = f"{float(stand.width)/1000:.1f}m x {float(stand.height)/1000:.1f}m"
+    side_walls = booking.get_side_wall_removal_display()
+    accessory_lines = []
+    for ba in booking.accessories.all().select_related('accessory'):
+        cat = 'Electrical' if ba.accessory.category == 'electrical' else 'Stand Build'
+        accessory_lines.append(f"* {ba.accessory.name} x{ba.quantity} ({cat})")
+
+    if change_type == 'booking':
+        title = f'New Booking - {exhibitor.company_name} - Stand {stand.name}'
+        subject = f'New Booking Notification - {exhibitor.company_name} - Stand {stand.name}'
+        badge = 'New Booking'
+        intro = (f'{exhibitor.company_name} has booked Stand {stand.name} for the '
+                 f'{booking.event.name}. The stand build details below are ready for attention.')
+    elif change_type == 'accessory':
+        title = f'New Accessory Added - {exhibitor.company_name} - Stand {stand.name}'
+        subject = f'Accessory Added - {exhibitor.company_name} - Stand {stand.name}'
+        badge = 'New Accessory'
+        category = accessory.category if accessory else 'stand'
+        cat_label = 'Electrical' if category == 'electrical' else 'Stand Build'
+        intro = (f'{exhibitor.company_name} has added the {accessory.name} x{quantity} '
+                 f'({cat_label}) accessory to Stand {stand.name}.')
+    else:
+        title = f'Requirements Updated - {exhibitor.company_name} - Stand {stand.name}'
+        subject = f'Stand Requirements Updated - {exhibitor.company_name} - Stand {stand.name}'
+        badge = 'Requirements Updated'
+        intro = (f'{exhibitor.company_name} has updated the requirements for Stand {stand.name}. '
+                 f'Please review the updated stand build details below.')
+
+    needs_electrical_attention = (
+        booking.requires_power or booking.requires_water
+        or booking.accessories.filter(accessory__category='electrical').exists()
+        or booking.require_extra_plugs or booking.require_extra_lights
+    )
+
+    context = {
+        'booking': booking,
+        'exhibitor': exhibitor,
+        'stand': stand,
+        'size_m': size_m,
+        'side_walls': side_walls,
+        'accessory_lines': accessory_lines,
+        'provider': provider,
+        'badge': badge,
+        'intro': intro,
+        'needs_electrical_attention': needs_electrical_attention,
+        'dashboard_url': f"{settings.SITE_URL}/providers/events/{booking.event_id}/",
+        'site_name': settings.SITE_NAME,
+        'site_url': settings.SITE_URL,
+    }
+    send_html_email(subject, 'emails/stand_builder_notification.html', context, recipients)
+
+    from providers.models import ProviderNotification
+    ProviderNotification.objects.create(
+        provider=provider,
+        booking=booking,
+        notification_type='booking' if change_type == 'booking' else ('accessory' if change_type == 'accessory' else 'requirements'),
+        title=title,
+        message=(
+            f'{exhibitor.company_name} - Stand {stand.name} ({size_m}). '
+            + ('Electrical attention required. ' if needs_electrical_attention else '')
+            + ('Accessories: ' + '; '.join(accessory_lines) + '.' if accessory_lines else '')
+        ),
+        link=f'/providers/events/{booking.event_id}/',
+    )
+
+
+def _stand_builder_provider():
+    """Return the active stand builder provider (used as the primary dashboard recipient)."""
+    from providers.models import ServiceProvider
+    provider = ServiceProvider.objects.filter(is_active=True, service_type='stand_builder').first()
+    if provider is None:
+        provider = ServiceProvider.objects.filter(is_active=True, service_type='electrical').first()
+    return provider
 
 
 def send_requirements_update(booking, changed_by):

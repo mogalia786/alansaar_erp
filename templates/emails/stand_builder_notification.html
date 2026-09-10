@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Stand Builder Notification</title></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:30px 10px;">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+<tr><td style="background:linear-gradient(135deg,#5B2C6F,#7B3F95);padding:30px 40px;text-align:center;">
+<img src="{{ site_url }}/media/logo/al_ansaar_logo.png" alt="Al Ansaar Foundation" height="50" style="margin-bottom:10px;">
+<h1 style="color:#ffffff;margin:0;font-size:20px;letter-spacing:1px;">AL ANSAAR FOUNDATION</h1>
+<p style="color:#D4AF37;margin:5px 0 0;font-size:13px;letter-spacing:1px;">{{ badge|upper }}</p>
+</td></tr>
+<tr><td style="padding:30px 40px;">
+<h2 style="color:#5B2C6F;margin:0 0 15px;">{{ badge }}</h2>
+<p style="color:#444;font-size:14px;margin:0 0 15px;">Dear {{ provider.company_name }},</p>
+<p style="color:#444;font-size:14px;line-height:1.6;margin:0 0 20px;">{{ intro }}</p>
+
+<table width="100%" cellpadding="8" cellspacing="0" style="background:#f8f4fc;border-radius:6px;margin:0 0 20px;">
+<tr><td style="border-bottom:1px solid #e0d4ed;font-weight:bold;width:40%;">Exhibitor</td><td>{{ exhibitor.company_name }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;font-weight:bold;">Stand Number</td><td>{{ stand.name }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;font-weight:bold;">Stand Size</td><td>{{ size_m }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;font-weight:bold;">Side Wall Removal</td><td>{{ side_walls }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;font-weight:bold;">Event</td><td>{{ booking.event.name }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;font-weight:bold;">Booking Reference</td><td>{{ booking.booking_reference }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;font-weight:bold;">Fascia</td><td>{{ booking.fascia_name|default:"-" }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;font-weight:bold;">Floor Mat</td><td>{{ booking.require_floor_mat|yesno:"Yes,No" }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;font-weight:bold;">Carpet</td><td>{{ booking.require_carpet|yesno:"Yes,No" }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;font-weight:bold;">Power</td><td>{{ booking.requires_power|yesno:"Yes,No" }} ({{ booking.power_amps }}A)</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;font-weight:bold;">Water</td><td>{{ booking.requires_water|yesno:"Yes,No" }}</td></tr>
+<tr><td style="font-weight:bold;">Requirements Version</td><td>v{{ booking.requirements_version }}</td></tr>
+</table>
+
+{% if accessory_lines %}
+<h4 style="color:#5B2C6F;margin:0 0 10px;">Additional Accessories</h4>
+<ul style="color:#444;font-size:14px;line-height:1.8;margin:0 0 20px;">
+{% for line in accessory_lines %}
+<li>{{ line }}</li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% if needs_electrical_attention %}
+<p style="background:#fff3cd;border:1px solid #ffeeba;border-radius:6px;padding:12px 16px;color:#856404;font-size:13px;margin:0 0 20px;">
+&#9888; This booking requires <strong>electrical attention</strong>. Please review the Electrical tab on your dashboard.
+</p>
+{% endif %}
+
+{% if booking.special_requirements %}
+<p style="color:#444;font-size:14px;"><strong>Special Requirements:</strong><br>{{ booking.special_requirements }}</p>
+{% endif %}
+
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:25px 0 0;"><tr><td align="center">
+<a href="{{ dashboard_url }}" style="display:inline-block;background:#5B2C6F;color:#ffffff;padding:12px 30px;border-radius:6px;text-decoration:none;font-weight:bold;">View in Provider Portal &rarr;</a>
+</td></tr></table>
+
+<p style="color:#999;font-size:12px;margin:25px 0 0;text-align:center;">New notifications are also available immediately on your dashboard at
+<a href="{{ site_url }}/providers/">Ashley Stand Builder</a> when you log in.</p>
+
+</td></tr>
+<tr><td style="background:#2c3e50;padding:20px 40px;text-align:center;">
+<p style="color:rgba(255,255,255,0.5);font-size:11px;margin:0;">Al Ansaar Foundation &bull; 11 Walnut Road, Durban, KwaZulu-Natal<br>
+Tel: +27 (0)31 123 4567 | Email: info@alansaar.org.za</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>

@@ -209,11 +209,16 @@ class FloorPlanSection(models.Model):
 
 
 class AccessoryType(models.Model):
+    CATEGORY_CHOICES = [
+        ('stand', 'Stand Build'),
+        ('electrical', 'Electrical'),
+    ]
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=8, decimal_places=2)
     unit = models.CharField(max_length=50, default='per unit')
     icon = models.CharField(max_length=50, blank=True, help_text="FontAwesome icon")
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='stand', help_text="Which provider tab this accessory belongs to (Stand Build or Electrical)")
     is_active = models.BooleanField(default=True)
     display_order = models.PositiveIntegerField(default=0)
 

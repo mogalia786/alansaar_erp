@@ -81,8 +81,11 @@
         {% if invoices %}
         <div class="card"><div class="card-header bg-purple text-white"><h6 class="mb-0">Invoices</h6></div>
         <div class="card-body p-0">{% for inv in invoices %}
-            <div class="p-2 border-bottom d-flex justify-content-between">
-                <a href="{% url 'erp:invoice_detail' inv.id %}">{{ inv.invoice_number }}</a>
+            <div class="p-2 border-bottom d-flex justify-content-between align-items-center">
+                <div>
+                    <a href="{% url 'erp:invoice_detail' inv.id %}">{{ inv.invoice_number }}</a>
+                    <a href="{% url 'print_invoice' inv.id %}" target="_blank" class="ms-1 text-muted" title="Print Invoice"><i class="bi bi-printer"></i></a>
+                </div>
                 <span class="badge bg-{% if inv.status == 'paid' %}success{% elif inv.status == 'overdue' %}danger{% else %}warning{% endif %}">{{ inv.get_status_display }}</span>
             </div>{% endfor %}
         </div></div>
@@ -94,7 +97,7 @@
         </div>
         <div class="card-body p-0">{% for p in payments %}
             <div class="p-2 border-bottom d-flex justify-content-between">
-                <span>R{{ p.amount|floatformat:2 }} <small class="text-muted">{{ p.get_payment_method_display }} {{ p.payment_date|date:"d M" }}</small></span>
+                <span>R{{ p.amount|floatformat:2 }} <small class="text-muted">{{ p.notes|default:p.get_payment_method_display }} {{ p.payment_date|date:"d M" }}</small></span>
                 <span class="badge bg-{% if p.status == 'verified' %}success{% elif p.status == 'pending' %}warning{% else %}danger{% endif %}">{{ p.get_status_display }}</span>
             </div>{% endfor %}
         </div></div>
@@ -103,7 +106,7 @@
         {% for inv in invoices %}
         {% if inv.balance_due > 0 %}
         <a href="{% url 'erp:collect_cash' booking.id %}" class="btn btn-success w-100 mt-2">
-            <i class="bi bi-cash-coin"></i> Collect Cash Payment
+            <i class="bi bi-cash-coin"></i> Collect Cash / Credit Card Payment / EFT
         </a>
         {% endif %}
         {% endfor %}

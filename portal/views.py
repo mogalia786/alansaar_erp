@@ -521,6 +521,12 @@ def confirm_booking(request, pk):
         booking.stall.save()
         messages.success(request, f'Booking {booking.booking_reference} confirmed.')
         send_booking_confirmation(booking)
+        from notifications.utils import send_stand_builder_notification
+        try:
+            send_stand_builder_notification(booking, change_type='booking')
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f'Failed to notify stand builder of confirmed booking: {e}')
     return redirect('erp:booking_detail', pk=pk)
 
 
@@ -544,7 +550,8 @@ def erp_invoice_list(request):
 def erp_invoice_detail(request, pk):
     invoice = get_object_or_404(
         Invoice.objects.select_related('exhibitor', 'event').prefetch_related(
-            'invoice_lines__booking__stall', 'invoice_lines__booking__event'
+            'invoice_lines__booking__stall', 'invoice_lines__booking__event',
+            'invoice_lines__booking__accessories__accessory'
         ),
         pk=pk,
     )
@@ -555,10 +562,44 @@ def erp_invoice_detail(request, pk):
     payments = invoice.payments.all().select_related('invoice').order_by('payment_date')
     lines = invoice.invoice_lines.all()
     verified_total = payments.filter(status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
+    can_remove_accessory = request.user.user_type in ('admin', 'superadmin', 'finance')
     return render(request, 'portal/invoice_detail.html', {
         'invoice': invoice, 'booking': booking,
         'payments': payments, 'verified_total': verified_total, 'lines': lines,
+        'can_remove_accessory': can_remove_accessory,
     })
+
+
+@erp_section_required('invoices')
+def remove_accessory(request, invoice_id, accessory_id):
+    if request.user.user_type not in ('admin', 'superadmin', 'finance'):
+        messages.error(request, 'Access denied: only Admin or Finance may remove accessories.')
+        return redirect('erp:invoice_detail', pk=invoice_id)
+    from bookings.models import BookingAccessory, Booking
+    ba = get_object_or_404(BookingAccessory, pk=accessory_id)
+    booking = ba.booking
+    if booking.invoice_line.invoice_id != invoice_id:
+        messages.error(request, 'This accessory does not belong to an invoice line on this invoice.')
+        return redirect('erp:invoice_detail', pk=invoice_id)
+    if request.method == 'POST':
+        acc_name = ba.accessory.name
+        ba_quantity = ba.quantity
+        ba.delete()
+        booking.accessories_total = sum((a.price * a.quantity for a in booking.accessories.all()), Decimal('0'))
+        from bookings.pricing import booking_totals
+        booking.subtotal, booking.vat_amount = booking_totals(
+            booking.stall_price, booking.electricity_deposit,
+            booking.accessories_total, float(booking.event.vat_rate) / 100
+        )
+        booking.total_amount = booking.subtotal
+        booking.balance_due = booking.total_amount - booking.amount_paid
+        booking.save()
+        from invoices.views import update_invoice_from_booking
+        update_invoice_from_booking(booking)
+        from notifications.utils import send_accessory_removed
+        send_accessory_removed(booking, acc_name, request.user, quantity=ba_quantity)
+        messages.success(request, f'Removed {acc_name} from {booking.booking_reference}. Invoice updated.')
+    return redirect('erp:invoice_detail', pk=invoice_id)
 
 
 @erp_login_required
@@ -647,7 +688,9 @@ def verify_payment(request, pk):
         elif action == 'reject':
             payment.status = 'rejected'
             payment.save()
-            messages.warning(request, 'Payment rejected.')
+            from notifications.utils import send_payment_rejected
+            send_payment_rejected(payment)
+            messages.warning(request, 'Payment rejected. Exhibitor has been notified.')
     return redirect('erp:payment_list')
 
 
@@ -944,10 +987,12 @@ def print_electrician(request, event_id):
             b = get_object_or_404(Booking, pk=pk)
             if action == 'complete_electrical':
                 b.electrical_completed = True
+                b.electrical_completed_at = timezone.now()
                 b.save()
                 messages.success(request, f'{b.booking_reference} marked electrical complete.')
             elif action == 'reset_electrical':
                 b.electrical_completed = False
+                b.electrical_completed_at = None
                 b.save()
                 messages.success(request, f'{b.booking_reference} electrical reset.')
         return redirect('erp:print_electrician', event_id=event_id)
@@ -965,10 +1010,12 @@ def print_stand_builder(request, event_id):
             b = get_object_or_404(Booking, pk=pk)
             if action == 'complete_build':
                 b.stand_build_completed = True
+                b.stand_build_completed_at = timezone.now()
                 b.save()
                 messages.success(request, f'{b.booking_reference} marked build complete.')
             elif action == 'reset_build':
                 b.stand_build_completed = False
+                b.stand_build_completed_at = None
                 b.save()
                 messages.success(request, f'{b.booking_reference} build reset.')
         return redirect('erp:print_stand_builder', event_id=event_id)
@@ -1134,7 +1181,51 @@ def build_section_summary(event):
 
 
 @erp_section_required('booking_reports')
-def erp_consolidated_bookings_report(request):
+def erp_stall_bookings_summary_report(request):
+    from django.core.exceptions import ObjectDoesNotExist
+
+    events = Event.objects.order_by('start_date')
+    active_event = events.first()
+    event_id = request.GET.get('event_id')
+    section_id = request.GET.get('section_id', '')
+    if event_id:
+        active_event = events.filter(pk=event_id).first() or active_event
+    if not active_event:
+        return render(request, 'portal/stall_bookings_summary_report.html', {
+            'events': [], 'sections': [], 'active_event': None,
+            'active_section': None, 'all_sections': True,
+            'section_summary': None,
+        })
+
+    sections = list(active_event.floor_plan_sections.all().order_by('display_order', 'name'))
+    active_section = None
+    all_sections = section_id == '' or section_id == 'all'
+    if not all_sections:
+        try:
+            active_section = next((s for s in sections if str(s.pk) == str(section_id)), None)
+        except (ObjectDoesNotExist, ValueError):
+            active_section = None
+        if active_section is None:
+            all_sections = True
+
+    section_summary = build_section_summary(active_event)
+    if not all_sections and active_section:
+        row = next((r for r in section_summary['sections'] if r['section'].pk == active_section.pk), None)
+        if row:
+            section_summary = {'sections': [row], 'grand': row}
+
+    return render(request, 'portal/stall_bookings_summary_report.html', {
+        'events': events,
+        'sections': sections,
+        'active_event': active_event,
+        'active_section': active_section if not all_sections else None,
+        'all_sections': all_sections,
+        'section_summary': section_summary,
+    })
+
+
+@erp_section_required('booking_reports')
+def erp_all_bookings_report(request):
     from django.db.models import Prefetch
     from django.core.exceptions import ObjectDoesNotExist
 
@@ -1145,7 +1236,7 @@ def erp_consolidated_bookings_report(request):
     if event_id:
         active_event = events.filter(pk=event_id).first() or active_event
     if not active_event:
-        return render(request, 'portal/consolidated_bookings_report.html', {
+        return render(request, 'portal/all_bookings_report.html', {
             'events': [], 'sections': [], 'active_event': None,
             'active_section': None, 'all_sections': True, 'rows': [],
             'totals': None,
@@ -1179,21 +1270,11 @@ def erp_consolidated_bookings_report(request):
         'elec': Decimal('0'),
         'discount': Decimal('0'),
         'due': Decimal('0'),
-        'paid1': Decimal('0'),
-        'paid2': Decimal('0'),
         'paid': Decimal('0'),
         'balance': Decimal('0'),
     }
     for bk in base_qs:
         stall = bk.stall
-        pay1 = pay2 = Decimal('0')
-        pay_type = '-'
-        pays = getattr(bk, 'verified_payments', [])
-        if pays:
-            pay1 = pays[0].amount
-            pay_type = pays[0].get_payment_method_display()
-        if len(pays) >= 2:
-            pay2 = pays[1].amount
         discount = sum((d.discount_amount for d in bk.discount_requests.filter(status='approved')), Decimal('0'))
         size = f"{(Decimal(stall.width or 0) / 1000).quantize(Decimal('0.1'))}x{(Decimal(stall.height or 0) / 1000).quantize(Decimal('0.1'))}" if stall else ''
         due = bk.total_amount
@@ -1210,9 +1291,6 @@ def erp_consolidated_bookings_report(request):
             'elec': bk.electricity_deposit,
             'discount': discount,
             'due': due,
-            'pay_type': pay_type,
-            'pay1': pay1,
-            'pay2': pay2,
             'paid': bk.amount_paid,
             'balance': bk.balance_due,
             'pct': pct,
@@ -1224,13 +1302,11 @@ def erp_consolidated_bookings_report(request):
         totals['elec'] += bk.electricity_deposit
         totals['discount'] += discount
         totals['due'] += due
-        totals['paid1'] += pay1
-        totals['paid2'] += pay2
         totals['paid'] += bk.amount_paid
         totals['balance'] += bk.balance_due
     totals['pct'] = (totals['balance'] / totals['due'] * 100).quantize(Decimal('0.01')) if totals['due'] else Decimal('0')
 
-    return render(request, 'portal/consolidated_bookings_report.html', {
+    return render(request, 'portal/all_bookings_report.html', {
         'events': events,
         'sections': sections,
         'active_event': active_event,
@@ -1238,7 +1314,6 @@ def erp_consolidated_bookings_report(request):
         'all_sections': all_sections,
         'rows': rows,
         'totals': totals,
-        'section_summary': build_section_summary(active_event),
     })
 
 

@@ -84,7 +84,8 @@
                 {% endif %}
                 <div class="nav-section">Reports</div>
                 {% if request.user|has_perm:'reports' %}<a href="{% url 'erp:reports' %}" class="nav-link"><i class="bi bi-graph-up"></i> Reports</a>{% endif %}
-                {% if request.user|has_perm:'booking_reports' %}<a href="{% url 'erp:consolidated_bookings_report' %}" class="nav-link"><i class="bi bi-table"></i> Consolidated Bookings Reports</a>{% endif %}
+                {% if request.user|has_perm:'booking_reports' %}<a href="{% url 'erp:stall_bookings_summary_report' %}" class="nav-link"><i class="bi bi-table"></i> Stall Bookings Summary Report</a>{% endif %}
+                {% if request.user|has_perm:'booking_reports' %}<a href="{% url 'erp:all_bookings_report' %}" class="nav-link"><i class="bi bi-list-ul"></i> All Bookings Report</a>{% endif %}
                 <hr class="border-secondary mx-3">
                 <a href="{% url 'erp:logout' %}" class="nav-link"><i class="bi bi-box-arrow-right"></i> Logout</a>
             </div>
@@ -129,7 +130,8 @@
                             <a href="{% url 'accounting:balance_sheet' %}" class="d-block py-1">Balance Sheet</a>
                             {% endif %}
                             {% if request.user|has_perm:'reports' %}<a href="{% url 'erp:reports' %}" class="d-block py-1">Reports</a>{% endif %}
-                            {% if request.user|has_perm:'booking_reports' %}<a href="{% url 'erp:consolidated_bookings_report' %}" class="d-block py-1">Consolidated Bookings Reports</a>{% endif %}
+                            {% if request.user|has_perm:'booking_reports' %}<a href="{% url 'erp:stall_bookings_summary_report' %}" class="d-block py-1">Stall Bookings Summary Report</a>{% endif %}
+                            {% if request.user|has_perm:'booking_reports' %}<a href="{% url 'erp:all_bookings_report' %}" class="d-block py-1">All Bookings Report</a>{% endif %}
                             <a href="{% url 'erp:logout' %}" class="d-block py-1">Logout</a>
                         </div>
                     </div>

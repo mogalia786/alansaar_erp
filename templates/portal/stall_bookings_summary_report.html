@@ -1,0 +1,115 @@
+{% extends 'portal/base.html' %}
+{% block title %}Stall Bookings Summary Report - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <h3 class="fw-bold mb-0"><i class="bi bi-file-earmark-bar-graph"></i> Stall Bookings Summary Report</h3>
+    <div>
+        <button onclick="window.print()" class="btn btn-purple btn-sm"><i class="bi bi-printer"></i> Print</button>
+    </div>
+</div>
+
+<div class="card mb-4 no-print">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label small mb-1">Event</label>
+                <select name="event_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    {% for ev in events %}
+                    <option value="{{ ev.pk }}" {% if active_event and ev.pk == active_event.pk %}selected{% endif %}>{{ ev.name }} ({{ ev.start_date|date:"Y" }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-1">Section</label>
+                <select name="section_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="all">All Sections</option>
+                    {% for s in sections %}
+                    <option value="{{ s.pk }}" {% if active_section and s.pk == active_section.pk %}selected{% endif %}>{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'erp:stall_bookings_summary_report' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if not active_event %}
+<div class="alert alert-info">No events found.</div>
+{% else %}
+<div class="d-flex align-items-center gap-2 mb-3 no-print">
+    <h5 class="mb-0 text-purple fw-bold">
+        {% if active_section %}{{ active_section.name }}{% else %}All Sections{% endif %}
+        <span class="text-muted fw-normal">- {{ active_event.name }}</span>
+    </h5>
+</div>
+
+<div class="row g-3 mb-4 no-print">
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-primary"><div class="stat-value h4 mb-0">{{ section_summary.grand.total_stalls }}</div><div class="text-muted small">Total Stalls</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-success"><div class="stat-value h4 mb-0">{{ section_summary.grand.stalls_sold }}</div><div class="text-muted small">Stalls Sold</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-dark"><div class="stat-value h4 mb-0">R{{ section_summary.grand.revenue|floatformat:2 }}</div><div class="text-muted small">Total Revenue</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-success"><div class="stat-value h4 mb-0">R{{ section_summary.grand.received|floatformat:2 }}</div><div class="text-muted small">Received</div></div></div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-purple text-white"><h6 class="mb-0"><i class="bi bi-clipboard-data"></i> Summary - {{ active_event.name }}</h6></div>
+    <div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-bordered mb-0 align-middle" style="font-size:12px;">
+        <thead class="table-purple">
+            <tr>
+                <th>Section</th>
+                <th class="text-center">Total Stalls</th>
+                <th class="text-center">Stalls Sold</th>
+                <th class="text-center">Stalls Available</th>
+                <th class="text-center">Stalls Held</th>
+                <th class="text-end">Stall Sales Amount</th>
+                <th class="text-end">Stalls Not Sold Value</th>
+                <th class="text-end">Total Discounts</th>
+                <th class="text-end">Total Revenue</th>
+                <th class="text-end">Received</th>
+                <th class="text-end">Outstanding</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for r in section_summary.sections %}
+        <tr>
+            <td><strong>{{ r.section.name }}</strong></td>
+            <td class="text-center">{{ r.total_stalls }}</td>
+            <td class="text-center">{{ r.stalls_sold }}</td>
+            <td class="text-center">{{ r.stalls_available }}</td>
+            <td class="text-center">{{ r.stalls_held }}</td>
+            <td class="text-end">R{{ r.sales_amount|floatformat:2 }}</td>
+            <td class="text-end">R{{ r.unsold_amount|floatformat:2 }}</td>
+            <td class="text-end">R{{ r.discounts|floatformat:2 }}</td>
+            <td class="text-end fw-bold">R{{ r.revenue|floatformat:2 }}</td>
+            <td class="text-end">R{{ r.received|floatformat:2 }}</td>
+            <td class="text-end text-danger">R{{ r.outstanding|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot class="fw-bold table-light">
+            <tr>
+                <td>Total</td>
+                <td class="text-center">{{ section_summary.grand.total_stalls }}</td>
+                <td class="text-center">{{ section_summary.grand.stalls_sold }}</td>
+                <td class="text-center">{{ section_summary.grand.stalls_available }}</td>
+                <td class="text-center">{{ section_summary.grand.stalls_held }}</td>
+                <td class="text-end">R{{ section_summary.grand.sales_amount|floatformat:2 }}</td>
+                <td class="text-end">R{{ section_summary.grand.unsold_amount|floatformat:2 }}</td>
+                <td class="text-end">R{{ section_summary.grand.discounts|floatformat:2 }}</td>
+                <td class="text-end">R{{ section_summary.grand.revenue|floatformat:2 }}</td>
+                <td class="text-end">R{{ section_summary.grand.received|floatformat:2 }}</td>
+                <td class="text-end text-danger">R{{ section_summary.grand.outstanding|floatformat:2 }}</td>
+            </tr>
+        </tfoot>
+    </table></div></div>
+</div>
+
+<div class="row g-3 mb-4 no-print">
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-warning"><div class="stat-value h4 mb-0">R{{ section_summary.grand.outstanding|floatformat:2 }}</div><div class="text-muted small">Balance Outstanding</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-secondary"><div class="stat-value h4 mb-0">{{ section_summary.grand.stalls_available }}</div><div class="text-muted small">Stalls Available</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-dark"><div class="stat-value h4 mb-0">{{ section_summary.grand.stalls_held }}</div><div class="text-muted small">Stalls Held</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-danger"><div class="stat-value h4 mb-0">R{{ section_summary.grand.discounts|floatformat:2 }}</div><div class="text-muted small">Total Discounts</div></div></div>
+</div>
+{% endif %}
+{% endblock %}

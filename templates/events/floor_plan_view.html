@@ -154,6 +154,10 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
             <span class="tl" style="font-size:14px;">Price</span>
             <span class="tv" style="color:#27ae60;font-size:18px;font-weight:900;" id="tpr"></span>
         </div>
+        <div class="tr" id="tpd-wrap" style="display:none;border-top:1px solid #eee;margin-top:4px;padding-top:6px;">
+            <span class="tl" style="align-self:flex-start;">Products</span>
+            <span class="tv" id="tpd" style="text-align:right;width:60%;font-weight:500;white-space:pre-line;"></span>
+        </div>
     </div>
     <div class="tf" id="tft"></div>
 </div>
@@ -210,6 +214,10 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
                     <div class="mb-2 small">
                         <label class="form-label fw-bold">Special Requirements</label>
                         <textarea class="form-control form-control-sm" name="special_requirements" rows="2"></textarea>
+                    </div>
+                    <div class="mb-2 small">
+                        <label class="form-label fw-bold">List description of products to be sold or promoted</label>
+                        <textarea class="form-control form-control-sm" name="products_description" rows="3" placeholder="e.g. Clothing, cosmetics, homeware, electronics..."></textarea>
                     </div>
                     <div class="d-flex justify-content-between">
                         <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
@@ -284,15 +292,21 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
             d.dataset.ph = (s.h/1000).toFixed(1);
             d.dataset.rot = s.rotation || 0;
             d.dataset.bp = s.price;
+            d.dataset.pd = s.products_desc || '';
             if (s.rotation) d.style.transform = 'rotate(' + s.rotation + 'deg)';
             inner.appendChild(d);
         });
+        var canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
         inner.querySelectorAll('.stall').forEach(function(el){
-            el.onmouseenter = function(e){showTT(e,el);};
-            el.onmousemove = moveTT;
-            el.onmouseleave = hideTT;
+            if (canHover) {
+                el.onmouseenter = function(e){showTT(e,el);};
+                el.onmousemove = moveTT;
+                el.onmouseleave = hideTT;
+            }
             if (el.classList.contains('avail')) {
                 el.onclick = function(){ showBookingModal(el.dataset); };
+            } else {
+                el.onclick = function(){ if(ttPinn===el) hideTT(); else pinTT(el); };
             }
         });
     }
@@ -333,7 +347,8 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
     wrap.addEventListener('mousemove',function(e){if(!drag)wrap.style.cursor='grab';});
 
     var tt = document.getElementById('tt');
-    function showTT(e,el){
+    var ttPinn = null;
+    function fillTT(el){
         var d=el.dataset, c={available:'#27ae60',reserved:'#f39c12',pending:'#f39c12',confirmed:'#c0392b',blocked:'#78788c'};
         document.getElementById('tth').textContent=d.n;
         document.getElementById('tth').style.background=c[d.st]||'#666';
@@ -341,13 +356,27 @@ body { background: #0d0d1a !important; margin: 0; padding: 0; }
         document.getElementById('tzn').textContent=d.z||'General';
         var se=document.getElementById('tst');se.textContent=d.st.charAt(0).toUpperCase()+d.st.slice(1);se.style.color=c[d.st]||'#666';
         document.getElementById('tpr').textContent='R'+parseFloat(d.p).toLocaleString();
+        var tpdw=document.getElementById('tpd-wrap'), tpd=document.getElementById('tpd');
+        if(d.pd){tpdw.style.display='flex';tpd.textContent=d.pd;}
+        else{tpdw.style.display='none';tpd.textContent='';}
         var f=document.getElementById('tft');
         if(d.st==='available'){f.textContent='CLICK TO BOOK';f.className='tf book';}
         else{f.textContent=d.st==='reserved'?'Currently reserved':d.st==='confirmed'?'Already booked':'Not available';f.className='tf';}
-        moveTT(e);tt.classList.add('show');
+    }
+    function showTT(e,el){fillTT(el);moveTT(e);tt.classList.add('show');}
+    function pinTT(el){
+        fillTT(el);ttPinn=el;
+        var r=el.getBoundingClientRect();
+        var x=Math.min(Math.max(12,r.left+r.width/2-130),window.innerWidth-272);
+        var y=Math.min(Math.max(12,r.top+r.height/2-30),window.innerHeight-240);
+        tt.style.left=x+'px';tt.style.top=y+'px';
+        tt.classList.add('show');
     }
     function moveTT(e){var x=e.clientX+14,y=e.clientY+14;if(x+260>innerWidth)x=e.clientX-274;if(y+220>innerHeight)y=e.clientY-234;tt.style.left=x+'px';tt.style.top=y+'px';}
-    function hideTT(){tt.classList.remove('show');}
+    function hideTT(){tt.classList.remove('show');ttPinn=null;}
+    document.addEventListener('click', function(e){
+        if(ttPinn && ttPinn!==e.target && !tt.contains(e.target)) hideTT();
+    });
 
     var modal = document.getElementById('bookingModal');
     var bsModal = new bootstrap.Modal(modal);

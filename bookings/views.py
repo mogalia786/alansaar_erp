@@ -31,6 +31,8 @@ def my_bookings(request):
     event_groups = []
     for event in events:
         all_stalls = event.stalls.all().select_related('zone').order_by('name')
+        from events.views import _products_desc_map
+        desc_map = _products_desc_map(all_stalls)
 
         all_stalls_data = [{
             'id': s.id, 'name': s.name,
@@ -41,6 +43,7 @@ def my_bookings(request):
             'price': float(s.total_price),
             'size_sqm': float(s.size_sqm),
             'zone': s.zone.name if s.zone else '',
+            'products_desc': desc_map.get(s.id, ''),
         } for s in all_stalls]
 
         ev_bookings = [b for b in bookings if b.event_id == event.id]
@@ -124,6 +127,7 @@ def book_stall(request, event_id, stall_id):
             require_extra_plugs=request.POST.get('require_extra_plugs') == 'on',
             require_extra_lights=request.POST.get('require_extra_lights') == 'on',
             special_requirements=request.POST.get('special_requirements', ''),
+            products_description=request.POST.get('products_description', ''),
             side_wall_removal=request.POST.get('side_wall_removal', 'none'),
         )
         stall.status = 'reserved'
@@ -155,6 +159,7 @@ def update_booking(request, pk):
         booking.require_extra_plugs = request.POST.get('require_extra_plugs') == 'on'
         booking.require_extra_lights = request.POST.get('require_extra_lights') == 'on'
         booking.special_requirements = request.POST.get('special_requirements', '')
+        booking.products_description = request.POST.get('products_description', '')
         booking.side_wall_removal = request.POST.get('side_wall_removal', 'none')
         elec_dep = booking.event.electricity_deposit if booking.requires_power else Decimal('0')
         booking.electricity_deposit = elec_dep
@@ -164,6 +169,13 @@ def update_booking(request, pk):
         booking.save()
         from invoices.views import update_invoice_from_booking
         update_invoice_from_booking(booking)
+        if booking.status == 'confirmed':
+            from notifications.utils import send_stand_builder_notification
+            try:
+                send_stand_builder_notification(booking, change_type='requirements')
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f'Failed to notify stand builder of booking update: {e}')
         messages.success(request, 'Booking updated.')
     return redirect('booking_detail', pk=pk)
 
@@ -185,6 +197,13 @@ def add_accessory(request, pk):
         booking.save()
         from invoices.views import update_invoice_from_booking
         update_invoice_from_booking(booking)
+        if booking.status == 'confirmed':
+            from notifications.utils import send_stand_builder_notification
+            try:
+                send_stand_builder_notification(booking, change_type='accessory', accessory=accessory, quantity=qty)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f'Failed to notify stand builder of new accessory: {e}')
         messages.success(request, f'Added {accessory.name} x{qty}')
     return redirect('booking_detail', pk=pk)
 

@@ -197,7 +197,7 @@ body { background: #0d0d1a !important; }
                 d.style.height=(s.h/VH*100)+'%';
                 d.style.fontSize=fs+'px';
                 d.textContent=sn(s.name);
-                d.title=s.name+(s.is_mine?' (YOUR STAND)':'');
+                d.title=s.name+(s.is_mine?' (YOUR STAND)':'')+(s.products_desc?'\nProducts: '+s.products_desc:'');
                 inner.appendChild(d);
             });
         }

@@ -80,11 +80,15 @@ def provider_dashboard(request):
     my_quotations = Quotation.objects.filter(
         models.Q(provider=provider) | models.Q(submitter_email=provider.email)
     ).select_related('rfq').order_by('-submitted_at')[:5]
+    notifications = provider.notifications.select_related('booking__stall', 'booking__exhibitor').filter(is_read=False)[:20]
+    unread_count = provider.notifications.filter(is_read=False).count()
     return render(request, 'providers/dashboard.html', {
         'provider': provider,
         'events': upcoming,
         'open_rfqs': open_rfqs,
         'my_quotations': my_quotations,
+        'notifications': notifications,
+        'unread_count': unread_count,
     })
 
 
@@ -110,19 +114,37 @@ def provider_event_detail(request, event_id):
             b = get_object_or_404(Booking, pk=pk)
             if action in ('complete_build', 'reset_build') and provider.service_type in ('stand_builder', 'electrical'):
                 b.stand_build_completed = (action == 'complete_build')
+                b.stand_build_completed_at = timezone.now() if action == 'complete_build' else None
                 b.save()
                 messages.success(request, f'{b.booking_reference} build {"complete" if action == "complete_build" else "reset"}.')
             elif action in ('complete_electrical', 'reset_electrical') and provider.service_type in ('stand_builder', 'electrical'):
                 b.electrical_completed = (action == 'complete_electrical')
+                b.electrical_completed_at = timezone.now() if action == 'complete_electrical' else None
                 b.save()
                 messages.success(request, f'{b.booking_reference} electrical {"complete" if action == "complete_electrical" else "reset"}.')
         return redirect('providers:event_detail', event_id=event_id)
+
+    stand_related = [b for b in bookings if b.require_stand_build or b.has_stand_accessories]
+    elec_related = [b for b in bookings if b.requires_power or b.requires_water or b.require_extra_plugs or b.require_extra_lights or b.has_electrical_accessories]
 
     return render(request, 'providers/event_detail.html', {
         'event': event,
         'bookings': bookings,
         'provider': provider,
+        'stand_to_do_count': sum(1 for b in stand_related if not b.stand_build_completed),
+        'stand_completed_count': sum(1 for b in stand_related if b.stand_build_completed),
+        'elec_to_do_count': sum(1 for b in elec_related if not b.electrical_completed),
+        'elec_completed_count': sum(1 for b in elec_related if b.electrical_completed),
     })
+
+
+@provider_required
+def mark_notifications_read(request, event_id):
+    provider = get_object_or_404(ServiceProvider, pk=request.session['provider_id'])
+    from django.shortcuts import redirect
+    qs = provider.notifications.filter(is_read=False, booking__event_id=event_id)
+    qs.update(is_read=True)
+    return redirect('providers:event_detail', event_id=event_id)
 
 
 @provider_required

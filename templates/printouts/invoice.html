@@ -169,11 +169,11 @@
     <div style="margin-top:15px;">
         <h6 style="font-size:11px;color:#5B2C6F;margin-bottom:5px;">PAYMENT HISTORY</h6>
         <table class="payment-history">
-            <thead><tr><th>Date</th><th>Receipt</th><th>Method</th><th>Reference</th><th style="text-align:right;">Amount</th></tr></thead>
+            <thead><tr><th>Date</th><th>Receipt</th><th>Pay Type</th><th>Reference</th><th style="text-align:right;">Amount</th></tr></thead>
             <tbody>{% for p in invoice.payments.all %}<tr>
                 <td>{{ p.payment_date|date:"d M Y" }}</td>
                 <td>{% if p.receipt %}{{ p.receipt.receipt_number }}{% else %}-{% endif %}</td>
-                <td>{{ p.get_payment_method_display }}</td>
+                <td>{{ p.notes|default:p.get_payment_method_display }}</td>
                 <td>{{ p.reference_number|default:"-" }}</td>
                 <td style="text-align:right;font-weight:600;">R{{ p.amount|floatformat:2 }}</td>
             </tr>{% endfor %}</tbody>

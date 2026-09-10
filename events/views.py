@@ -33,6 +33,22 @@ def event_detail(request, event_id):
     })
 
 
+def _products_desc_map(stalls):
+    from bookings.models import Booking
+    stall_ids = [s.id for s in stalls]
+    if not stall_ids:
+        return {}
+    desc_map = {}
+    qs = (Booking.objects.filter(stall_id__in=stall_ids)
+          .exclude(status__in=['cancelled', 'rejected'])
+          .order_by('stall_id', '-booking_date')
+          .values_list('stall_id', 'products_description'))
+    for stall_id, desc in qs:
+        if desc:
+            desc_map[stall_id] = desc
+    return desc_map
+
+
 def _get_svg_dims(path):
     fp_w, fp_h = 502485, 721189
     try:
@@ -121,6 +137,7 @@ def floor_plan_view(request, event_id, section_id=None):
     if not sections.exists():
         svg_content, fp_w, fp_h = _load_svg_content()
         stalls = event.stalls.all().select_related('zone').order_by('name')
+        desc_map = _products_desc_map(stalls)
         stalls_data = [{
             'id': s.id, 'name': s.name,
             'x': s.position_x, 'y': s.position_y,
@@ -129,6 +146,7 @@ def floor_plan_view(request, event_id, section_id=None):
             'status': s.status,
             'size_sqm': float(s.size_sqm),
             'zone': s.zone.name if s.zone else '',
+            'products_desc': desc_map.get(s.id, ''),
         } for s in stalls]
         return render(request, 'events/floor_plan_view.html', {
             'event': event,
@@ -147,6 +165,7 @@ def floor_plan_view(request, event_id, section_id=None):
 
     stalls = event.stalls.filter(section=active_section).select_related('zone').order_by('name')
     scale = float(active_section.scale_factor)
+    desc_map = _products_desc_map(stalls)
     stalls_data = [{
         'id': s.id, 'name': s.name,
         'x': round(s.position_x * scale / 1000),
@@ -158,6 +177,7 @@ def floor_plan_view(request, event_id, section_id=None):
         'size_sqm': float(s.size_sqm),
         'zone': s.zone.name if s.zone else '',
         'rotation': s.rotation,
+        'products_desc': desc_map.get(s.id, ''),
     } for s in stalls]
 
     sections_data = [{

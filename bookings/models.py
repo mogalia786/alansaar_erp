@@ -49,9 +49,12 @@ class Booking(models.Model):
     stand_build_instructions = models.TextField(blank=True, help_text="Special stand build instructions")
     exhibitor_requirements = models.TextField(blank=True, help_text="Exhibitor's special requirements")
     special_requirements = models.TextField(blank=True)
+    products_description = models.TextField(blank=True, help_text="Description of products to be sold or promoted")
     admin_notes = models.TextField(blank=True)
     stand_build_completed = models.BooleanField(default=False)
     electrical_completed = models.BooleanField(default=False)
+    stand_build_completed_at = models.DateTimeField(null=True, blank=True)
+    electrical_completed_at = models.DateTimeField(null=True, blank=True)
     requirements_version = models.IntegerField(default=0, help_text="Incremented when exhibitor changes requirements")
     requirements_updated_at = models.DateTimeField(null=True, blank=True)
     booking_date = models.DateTimeField(auto_now_add=True)
@@ -64,6 +67,22 @@ class Booking(models.Model):
 
     def __str__(self):
         return f"{self.booking_reference} - {self.exhibitor.company_name}"
+
+    @property
+    def has_stand_accessories(self):
+        return self.accessories.filter(accessory__category='stand').exists()
+
+    @property
+    def has_electrical_accessories(self):
+        return self.accessories.filter(accessory__category='electrical').exists()
+
+    @property
+    def stand_accessories(self):
+        return self.accessories.filter(accessory__category='stand').select_related('accessory')
+
+    @property
+    def electrical_accessories(self):
+        return self.accessories.filter(accessory__category='electrical').select_related('accessory')
 
 
 class BookingAccessory(models.Model):

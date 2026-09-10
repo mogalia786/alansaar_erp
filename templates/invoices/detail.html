@@ -68,13 +68,13 @@
                 </div>
                 <div class="card-body">
                     <table class="table table-sm">
-                        <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th><th>Reference</th></tr></thead>
+                        <thead><tr><th>Date</th><th>Amount</th><th>Pay Type</th><th>Status</th><th>Reference</th></tr></thead>
                         <tbody>
                             {% for p in payments %}
                             <tr>
                                 <td>{{ p.payment_date|date:"d M Y" }}</td>
                                 <td>R{{ p.amount|floatformat:2 }}</td>
-                                <td>{{ p.get_payment_method_display }}</td>
+                                <td>{{ p.notes|default:p.get_payment_method_display }}</td>
                                 <td><span class="badge bg-{% if p.status == 'verified' %}success{% elif p.status == 'pending' %}warning{% else %}danger{% endif %}">{{ p.get_status_display }}</span></td>
                                 <td>{{ p.reference_number|default:"-" }}</td>
                             </tr>

@@ -64,6 +64,32 @@ class ServiceProvider(models.Model):
         return self.company_name
 
 
+class ProviderNotification(models.Model):
+    TYPE_CHOICES = [
+        ('booking', 'New Booking'),
+        ('accessory', 'New Accessory'),
+        ('requirements', 'Requirements Updated'),
+        ('system', 'System'),
+    ]
+    provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='notifications')
+    booking = models.ForeignKey(
+        'bookings.Booking', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='provider_notifications'
+    )
+    notification_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='booking')
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    link = models.CharField(max_length=200, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} - {self.provider.company_name}"
+
+
 class ServiceLog(models.Model):
     provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='service_logs')
     event = models.ForeignKey('events.Event', on_delete=models.SET_NULL, null=True, blank=True, related_name='service_logs')

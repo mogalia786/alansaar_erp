@@ -10,5 +10,6 @@ urlpatterns = [
     path('', views.provider_dashboard, name='dashboard'),
     path('events/', views.provider_events, name='events'),
     path('events/<int:event_id>/', views.provider_event_detail, name='event_detail'),
+    path('events/<int:event_id>/notifications-read/', views.mark_notifications_read, name='mark_notifications_read'),
     path('my-quotations/', views.provider_my_quotations, name='my_quotations'),
 ]

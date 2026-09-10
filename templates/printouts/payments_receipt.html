@@ -128,7 +128,7 @@
                     <th>#</th>
                     <th>Date</th>
                     <th>Time</th>
-                    <th>Method</th>
+                    <th>Pay Type</th>
                     <th>Reference</th>
                     <th style="text-align:right;">Amount</th>
                     <th>Status</th>
@@ -140,7 +140,7 @@
                     <td>{{ forloop.counter }}</td>
                     <td>{{ p.payment_date|date:"d M Y" }}</td>
                     <td>{{ p.payment_date|date:"H:i" }}</td>
-                    <td>{{ p.get_payment_method_display }}</td>
+                    <td>{{ p.notes|default:p.get_payment_method_display }}</td>
                     <td>{{ p.reference_number|default:"-" }}</td>
                     <td class="amount">R{{ p.amount|floatformat:2 }}</td>
                     <td><span class="badge bg-{% if p.status == 'verified' %}success{% elif p.status == 'pending' %}warning{% else %}danger{% endif %}">{{ p.get_status_display }}</span></td>

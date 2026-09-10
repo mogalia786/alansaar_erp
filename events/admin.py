@@ -7,4 +7,10 @@ admin.site.register(FloorPlan)
 admin.site.register(FloorPlanSection)
 admin.site.register(Zone)
 admin.site.register(Stall)
-admin.site.register(AccessoryType)
+
+
+@admin.register(AccessoryType)
+class AccessoryTypeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'category', 'price', 'unit', 'is_active', 'display_order')
+    list_editable = ('category', 'price', 'is_active', 'display_order')
+    list_filter = ('category', 'is_active')

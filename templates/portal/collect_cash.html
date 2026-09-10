@@ -1,11 +1,11 @@
 {% extends 'portal/base.html' %}
-{% block title %}Collect Cash - {{ booking.booking_reference }}{% endblock %}
+{% block title %}Collect Payment - {{ booking.booking_reference }}{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-6">
         <div class="card">
             <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-cash-coin"></i> Collect Cash Payment</h5>
+                <h5 class="mb-0"><i class="bi bi-cash-coin"></i> Collect Cash / Credit Card Payment / EFT</h5>
                 <a href="{% url 'erp:booking_detail' booking.id %}" class="btn btn-sm btn-outline-light">Back</a>
             </div>
             <div class="card-body">
@@ -48,12 +48,17 @@
                                value="{{ booking.stall.name }}" maxlength="100">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Notes (optional)</label>
-                        <textarea class="form-control" name="notes" rows="2" placeholder="e.g. Partial payment, deposit, etc."></textarea>
+                        <label class="form-label fw-bold">Payment Method <span class="text-danger">*</span></label>
+                        <select class="form-select" name="notes" required id="payment-method">
+                            <option value="">-- Select Payment Method --</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Credit Card" {% if payment_method_note == 'Credit Card' %}selected{% endif %}>Credit Card</option>
+                            <option value="EFT">EFT</option>
+                        </select>
                     </div>
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-success btn-lg" onclick="return confirm('Record R' + document.getElementById('cash-amount').value + ' cash payment?')">
-                            <i class="bi bi-check-circle"></i> Collect Cash & Issue Receipt
+                        <button type="submit" class="btn btn-success btn-lg" onclick="return confirm('Record R' + document.getElementById('cash-amount').value + ' payment?')">
+                            <i class="bi bi-check-circle"></i> Collect Payment & Issue Receipt
                         </button>
                         <a href="{% url 'erp:booking_detail' booking.id %}" class="btn btn-outline-secondary">Cancel</a>
                     </div>
