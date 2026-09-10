@@ -3512,7 +3512,7 @@
   "model": "providers.serviceprovider",
   "pk": 1,
   "fields": {
-    "email": "mogalia.apps@gmail.com",
+    "email": "ashmunitz@gmail.com",
     "password": "pbkdf2_sha256$1200000$Vb2RcPcsj5XrRy2gXY1jNn$HJhNVub4kTwmBoyGkeJhP9utCyR9vT5C5V3I6/OE4dU=",
     "company_name": "Ashley Stand Builder",
     "company_type": "sole",
