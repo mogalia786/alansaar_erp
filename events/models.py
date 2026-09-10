@@ -170,6 +170,10 @@ class Stall(models.Model):
     def total_price(self):
         return self.base_price + self.corner_premium + self.entrance_premium
 
+    @property
+    def dims_m(self):
+        return f"{self.width / 1000:.1f}m x {self.height / 1000:.1f}m"
+
 
 class FloorPlanSection(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='floor_plan_sections')

@@ -22,6 +22,7 @@
                 <thead class="table-dark">
                     <tr>
                         <th>Stall</th>
+                        <th>Size</th>
                         <th>Exhibitor</th>
                         <th>Fascia</th>
                         <th>Side Walls</th>
@@ -38,6 +39,7 @@
                     {% if b.require_stand_build or b.has_stand_accessories %}
                     <tr>
                         <td>{{ b.stall.name }}</td>
+                        <td>{{ b.stall.dims_m }}</td>
                         <td>{{ b.exhibitor.company_name }}</td>
                         <td>{{ b.fascia_name }}</td>
                         <td>{{ b.get_side_wall_removal_display }}</td>
@@ -63,7 +65,7 @@
                     {% endif %}
                     {% endif %}
                     {% empty %}
-                    <tr><td colspan="9" class="text-muted">No pending stand build tasks.</td></tr>
+                    <tr><td colspan="10" class="text-muted">No pending stand build tasks.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -75,6 +77,7 @@
                 <thead class="table-success">
                     <tr>
                         <th>Stall</th>
+                        <th>Size</th>
                         <th>Exhibitor</th>
                         <th>Fascia</th>
                         <th>Side Walls</th>
@@ -88,6 +91,7 @@
                     {% if b.stand_build_completed %}
                     <tr class="table-success">
                         <td>{{ b.stall.name }}</td>
+                        <td>{{ b.stall.dims_m }}</td>
                         <td>{{ b.exhibitor.company_name }}</td>
                         <td>{{ b.fascia_name }}</td>
                         <td>{{ b.get_side_wall_removal_display }}</td>
@@ -108,7 +112,7 @@
                     </tr>
                     {% endif %}
                     {% empty %}
-                    <tr><td colspan="7" class="text-muted">No completed stand build tasks.</td></tr>
+                    <tr><td colspan="8" class="text-muted">No completed stand build tasks.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
