@@ -91,6 +91,9 @@ def booking_detail(request, pk):
 def book_stall(request, event_id, stall_id):
     event = get_object_or_404(Event, pk=event_id)
     stall = get_object_or_404(Stall, pk=stall_id, event=event)
+    if not request.user.is_verified:
+        messages.error(request, 'Your registration is still pending approval. You will be able to make a booking once the admin team authorises your account.')
+        return redirect('floor_plan_view', event_id=event_id)
     if stall.status != 'available':
         messages.error(request, 'This stall is no longer available.')
         return redirect('floor_plan_view', event_id=event_id)
