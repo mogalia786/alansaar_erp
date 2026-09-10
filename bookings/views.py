@@ -91,11 +91,12 @@ def booking_detail(request, pk):
 def book_stall(request, event_id, stall_id):
     event = get_object_or_404(Event, pk=event_id)
     stall = get_object_or_404(Stall, pk=stall_id, event=event)
-    if not request.user.is_verified:
-        messages.error(request, 'Your registration is still pending approval. You will be able to make a booking once the admin team authorises your account.')
-        return redirect('floor_plan_view', event_id=event_id)
     if stall.status != 'available':
         messages.error(request, 'This stall is no longer available.')
+        return redirect('floor_plan_view', event_id=event_id)
+    products_description = request.POST.get('products_description', '').strip()
+    if not products_description:
+        messages.error(request, 'Please list the description of products to be sold or promoted before booking.')
         return redirect('floor_plan_view', event_id=event_id)
     if request.method == 'POST':
         import uuid
@@ -127,7 +128,7 @@ def book_stall(request, event_id, stall_id):
             require_extra_plugs=request.POST.get('require_extra_plugs') == 'on',
             require_extra_lights=request.POST.get('require_extra_lights') == 'on',
             special_requirements=request.POST.get('special_requirements', ''),
-            products_description=request.POST.get('products_description', ''),
+            products_description=products_description,
             side_wall_removal=request.POST.get('side_wall_removal', 'none'),
         )
         stall.status = 'reserved'
