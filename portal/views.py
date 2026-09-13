@@ -706,6 +706,9 @@ def collect_cash(request, booking_id):
         amount = Decimal(request.POST.get('amount', '0'))
         ref = request.POST.get('reference_number', booking.stall.name)
         notes = request.POST.get('notes', '')
+        extra_note = request.POST.get('additional_notes', '').strip()
+        if extra_note:
+            notes = f"{notes.strip()} - {extra_note}".strip(' -')
         if amount <= 0:
             messages.error(request, 'Amount must be greater than zero.')
             return redirect('erp:collect_cash', booking_id=booking_id)

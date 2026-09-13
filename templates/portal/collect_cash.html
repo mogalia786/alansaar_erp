@@ -56,6 +56,16 @@
                             <option value="EFT">EFT</option>
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Notes <span class="text-muted fw-normal">(optional)</span></label>
+                        <textarea class="form-control" name="additional_notes" rows="3"
+                                  placeholder="Optional internal note about this payment (shown on the statement and invoice)"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Notes <span class="text-muted fw-normal">(optional)</span></label>
+                        <textarea class="form-control" name="additional_notes" rows="3"
+                                  placeholder="Optional internal note about this payment (shown on the statement and invoice)"></textarea>
+                    </div>
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-success btn-lg" onclick="return confirm('Record R' + document.getElementById('cash-amount').value + ' payment?')">
                             <i class="bi bi-check-circle"></i> Collect Payment & Issue Receipt
