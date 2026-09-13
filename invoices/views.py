@@ -233,6 +233,14 @@ def print_payments_receipt(request, pk):
 def account_statement(request):
     exhibitor = request.user
     entries = LedgerEntry.objects.filter(exhibitor=exhibitor).select_related('booking').order_by('entry_date', 'created_at')
+    payment_notes = {}
+    for p in Payment.objects.filter(invoice__exhibitor=exhibitor).select_related('receipt'):
+        key = getattr(getattr(p, 'receipt', None), 'receipt_number', None) or p.reference_number
+        if key:
+            payment_notes.setdefault(key, p.notes)
+    entries = list(entries)
+    for e in entries:
+        e.notes = payment_notes.get(e.reference, '') if e.entry_type == 'payment' else ''
     invoices = Invoice.objects.filter(exhibitor=exhibitor).order_by('issue_date')
     rows = []
     stand_balances = []
