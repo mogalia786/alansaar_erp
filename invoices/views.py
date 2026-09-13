@@ -160,8 +160,16 @@ def make_payment(request, pk):
     refresh_invoice(invoice)
     invoice.refresh_from_db()
     if request.method == 'POST':
-        amount = Decimal(request.POST.get('amount', '0'))
-        ref = request.POST.get('reference_number', '')
+        from decimal import Decimal, InvalidOperation
+        amount_raw = request.POST.get('amount', '').strip()
+        try:
+            amount = Decimal(amount_raw)
+        except InvalidOperation:
+            amount = Decimal('0')
+        if amount <= 0:
+            messages.error(request, 'Please enter a valid payment amount.')
+            return redirect('make_payment', pk=pk)
+        ref = request.POST.get('reference_number', '').strip()
         method = request.POST.get('payment_method', 'eft')
         pop = request.FILES.get('proof_of_payment')
         payment = Payment.objects.create(
@@ -172,10 +180,15 @@ def make_payment(request, pk):
             reference_number=ref,
             proof_of_payment=pop,
         )
-        messages.success(request, 'Payment submitted for verification.')
         send_payment_received(payment)
-        return redirect('invoice_detail', pk=pk)
+        return redirect('payment_completed', pk=payment.pk)
     return render(request, 'invoices/pay.html', {'invoice': invoice})
+
+
+@login_required
+def payment_completed(request, pk):
+    payment = get_object_or_404(Payment, pk=pk, invoice__exhibitor=request.user)
+    return render(request, 'invoices/payment_completed.html', {'payment': payment})
 
 
 @login_required

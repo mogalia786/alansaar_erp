@@ -25,13 +25,17 @@
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label class="form-label">Amount (R)</label>
-                            <input type="number" name="amount" step="0.01" class="form-control" value="{{ invoice.balance_due }}" required>
+                            <label class="form-label fw-bold">Amount to Pay (R) <span class="text-danger">*</span></label>
+                            <input type="number" name="amount" step="0.01" min="0.01" class="form-control" placeholder="Enter the amount you are paying" required>
+                            <div class="form-text">Please fill in the amount you are paying (in Rands).</div>
                         </div>
                         <input type="hidden" name="payment_method" value="eft">
                         <div class="mb-3">
                             <label class="form-label">Reference Number</label>
-                            <input type="text" name="reference_number" class="form-control" placeholder="EFT reference / deposit slip no." value="{{ invoice.display_booking.stall.name|default:invoice.invoice_number }}">
+                            <input type="text" name="reference_number" class="form-control" placeholder="Your EFT reference" value="{{ invoice.display_booking.stall.name|default:invoice.invoice_number }}">
+                            <div class="form-text fw-semibold" style="color:var(--purple,#5B2C6F);">
+                                <i class="bi bi-info-circle"></i> <strong>Use this as your reference number when making payment via your bank EFT.</strong>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Proof of Payment (optional)</label>
