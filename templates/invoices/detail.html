@@ -43,9 +43,7 @@
                             {% endfor %}
                         </tbody>
                         <tfoot>
-                            <tr><td>Subtotal (excl. VAT)</td><td class="text-end">R{{ invoice.amount_excl|floatformat:2 }}</td></tr>
-                            <tr><td>VAT (15%)</td><td class="text-end">R{{ invoice.vat_amount|floatformat:2 }}</td></tr>
-                            <tr class="fw-bold"><td>Total Incl. VAT</td><td class="text-end">R{{ invoice.amount_incl|floatformat:2 }}</td></tr>
+                            <tr class="fw-bold"><td>Total</td><td class="text-end">R{{ invoice.amount_incl|floatformat:2 }}</td></tr>
                             <tr><td>Verified Payments</td><td class="text-end text-success">R{{ invoice.amount_paid|floatformat:2 }}</td></tr>
                             {% if pending_total > 0 %}
                             <tr><td>Pending Payments</td><td class="text-end text-warning">R{{ pending_total|floatformat:2 }} <span class="badge bg-warning text-dark">awaiting verification</span></td></tr>

@@ -105,16 +105,8 @@
                 <span class="val">R{{ booking.accessories_total|floatformat:2 }}</span>
             </div>
             {% endif %}
-            <div class="summary-row">
-                <span class="lbl">Subtotal (excl. VAT)</span>
-                <span class="val">R{{ invoice.amount_excl|floatformat:2 }}</span>
-            </div>
-            <div class="summary-row">
-                <span class="lbl">VAT (15%)</span>
-                <span class="val">R{{ invoice.vat_amount|floatformat:2 }}</span>
-            </div>
             <div class="summary-row total">
-                <span class="lbl">Total Incl. VAT</span>
+                <span class="lbl">Total</span>
                 <span class="val">R{{ invoice.amount_incl|floatformat:2 }}</span>
             </div>
         </div>

@@ -37,17 +37,14 @@
                     </div>
                     <h5 class="text-purple">Financial Summary</h5>
                     <table class="table table-bordered">
-                        <tr><td>Stall Price (VAT incl)</td><td class="text-end">R{{ booking.stall_price|floatformat:2 }}</td></tr>
+                        <tr><td>Stall Price</td><td class="text-end">R{{ booking.stall_price|floatformat:2 }}</td></tr>
                         {% if booking.accessories_total > 0 %}
                         <tr><td>Accessories</td><td class="text-end">R{{ booking.accessories_total|floatformat:2 }}</td></tr>
                         {% endif %}
                         {% if booking.electricity_deposit > 0 %}
                         <tr><td>Electricity Deposit (refundable)</td><td class="text-end">R{{ booking.electricity_deposit|floatformat:2 }}</td></tr>
                         {% endif %}
-                        <tr><td>Subtotal (VAT incl)</td><td class="text-end">R{{ booking.subtotal|floatformat:2 }}</td></tr>
-                        {% if booking.vat_amount > 0 %}
-                        <tr><td>VAT (included)</td><td class="text-end">R{{ booking.vat_amount|floatformat:2 }}</td></tr>
-                        {% endif %}
+                        <tr class="fw-bold"><td>Subtotal</td><td class="text-end">R{{ booking.subtotal|floatformat:2 }}</td></tr>
                         <tr class="fw-bold"><td>Total</td><td class="text-end">R{{ booking.total_amount|floatformat:2 }}</td></tr>
                         <tr><td>Amount Paid</td><td class="text-end text-success">R{{ paid_amount|floatformat:2 }}</td></tr>
                         <tr class="fw-bold"><td>Balance Due</td><td class="text-end text-{% if balance_due > 0 %}danger{% else %}success{% endif %}">R{{ balance_due|floatformat:2 }}</td></tr>
@@ -193,6 +190,37 @@
                         <i class="bi bi-credit-card"></i> Make Payment
                     </a>
                     {% endif %}
+                    {% endif %}
+                    {% if booking.status == 'pending' or booking.status == 'approved' or booking.status == 'confirmed' %}
+                    <button class="btn btn-outline-primary w-100 mb-2" data-bs-toggle="collapse" data-bs-target="#transferForm">
+                        <i class="bi bi-arrow-left-right"></i> Request Stand Change
+                    </button>
+                    <div class="collapse" id="transferForm">
+                        <form method="POST" action="{% url 'request_stall_transfer' booking.id %}">
+                            {% csrf_token %}
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">New Stand</label>
+                                <select class="form-select form-select-sm" name="stall_id" required>
+                                    <option value="">Select available stand...</option>
+                                    {% for s in available_stalls %}
+                                    <option value="{{ s.id }}">{{ s.name }}{% if s.zone %} - {{ s.zone.name }}{% endif %} - R{{ s.total_price|floatformat:2 }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">Reason</label>
+                                <textarea class="form-control form-control-sm" name="reason" rows="2"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm w-100">Submit Stand Change Request</button>
+                        </form>
+                    </div>
+                    {% for tr in transfer_requests %}
+                    <div class="mt-2 p-2 border rounded small">
+                        <strong>Stand Change &rarr; {{ tr.requested_stall.name }}</strong>
+                        <span class="badge bg-{% if tr.status == 'pending' %}warning{% elif tr.status == 'approved' %}success{% else %}danger{% endif %}">{{ tr.get_status_display }}</span>
+                        {% if tr.status == 'approved' and tr.new_booking %}<br>New booking: {{ tr.new_booking.booking_reference }}{% endif %}
+                    </div>
+                    {% endfor %}
                     {% endif %}
                     {% if booking.status == 'pending' or booking.status == 'approved' %}
                     <a href="{% url 'cancel_booking' booking.id %}" class="btn btn-outline-danger w-100" onclick="return confirm('Are you sure?')">

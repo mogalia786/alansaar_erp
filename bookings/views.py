@@ -72,6 +72,9 @@ def booking_detail(request, pk):
         raise Http404
     from events.models import AccessoryType
     accessories = AccessoryType.objects.filter(is_active=True)
+    from events.models import Stall
+    available_stalls = Stall.objects.filter(event=booking.event, status='available').order_by('name')
+    transfer_requests = booking.transfer_requests.all()
     paid_amount = booking.amount_paid
     balance_due = booking.balance_due
     line = getattr(booking, 'invoice_line', None)
@@ -84,6 +87,8 @@ def booking_detail(request, pk):
         'paid_amount': paid_amount,
         'balance_due': balance_due,
         'invoice': line.invoice if line is not None else None,
+        'available_stalls': available_stalls,
+        'transfer_requests': transfer_requests,
     })
 
 
@@ -239,6 +244,43 @@ def request_discount(request, pk):
                 f'/erp/discounts/'
             )
         messages.success(request, 'Discount request submitted.')
+    return redirect('booking_detail', pk=pk)
+
+
+@login_required
+def request_stall_transfer(request, pk):
+    booking = get_object_or_404(Booking, pk=pk, exhibitor=request.user)
+    if request.method == 'POST':
+        if booking.status in ('cancelled', 'rejected', 'completed'):
+            messages.error(request, 'This booking can no longer be transferred.')
+            return redirect('booking_detail', pk=pk)
+        from events.models import Stall
+        stall_id = request.POST.get('stall_id')
+        stall = get_object_or_404(Stall, pk=stall_id, event=booking.event)
+        if stall.status != 'available':
+            messages.error(request, f'Stall {stall.name} is no longer available.')
+            return redirect('booking_detail', pk=pk)
+        if stall.id == booking.stall_id:
+            messages.error(request, 'That is your current stall.')
+            return redirect('booking_detail', pk=pk)
+        from .models import StallTransferRequest
+        if StallTransferRequest.objects.filter(booking=booking, status='pending').exists():
+            messages.error(request, 'You already have a pending transfer request for this booking.')
+            return redirect('booking_detail', pk=pk)
+        tr = StallTransferRequest.objects.create(
+            booking=booking, requested_stall=stall, requested_by=request.user,
+            reason=request.POST.get('reason', '').strip(),
+        )
+        from notifications.utils import create_notification
+        from django.contrib.auth import get_user_model
+        for staff in get_user_model().objects.filter(is_staff=True, is_active=True):
+            create_notification(
+                staff, 'discount',
+                f'Stall Transfer Request: {booking.booking_reference}',
+                f'{request.user.company_name or request.user.username} wants to move from stall {booking.stall.name} to stall {stall.name}.',
+                '/erp/stall-transfers/'
+            )
+        messages.success(request, 'Stand change request submitted. Our team will review it.')
     return redirect('booking_detail', pk=pk)
 
 

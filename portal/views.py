@@ -929,9 +929,7 @@ def approve_discount(request, pk):
         dr.approved_by_second = request.user
         dr.status = 'approved'
         dr.booking.subtotal -= dr.discount_amount
-        from bookings.pricing import embedded_vat
-        rate = float(dr.booking.event.vat_rate) / 100
-        dr.booking.vat_amount = embedded_vat(dr.booking.subtotal - dr.booking.electricity_deposit, rate=rate)
+        dr.booking.vat_amount = Decimal('0')
         dr.booking.total_amount = dr.booking.subtotal
         dr.booking.balance_due = dr.booking.total_amount - dr.booking.amount_paid
         dr.booking.save()
@@ -960,6 +958,56 @@ def approve_discount(request, pk):
         send_discount_decision(dr)
         messages.success(request, f'Discount fully approved by {request.user.username} (2/2). Totals updated.')
     return redirect('erp:discount_list')
+
+
+@erp_section_required('bookings')
+def erp_stall_transfer_list(request):
+    from bookings.models import StallTransferRequest
+    transfers = StallTransferRequest.objects.all().select_related('booking', 'booking__stall', 'booking__exhibitor', 'requested_stall', 'requested_by')
+    return render(request, 'portal/stall_transfer_list.html', {'transfers': transfers})
+
+
+@erp_login_required
+def approve_stall_transfer(request, pk):
+    from bookings.models import StallTransferRequest
+    from bookings.services import execute_stall_transfer
+    tr = get_object_or_404(StallTransferRequest, pk=pk)
+    if tr.status != 'pending':
+        messages.error(request, 'This request is no longer pending.')
+        return redirect('erp:stall_transfer_list')
+    try:
+        new_booking = execute_stall_transfer(tr, reviewed_by=request.user)
+        from notifications.utils import create_notification
+        create_notification(
+            tr.requested_by, 'discount',
+            f'Stand Change Approved - {tr.booking.booking_reference}',
+            f'Your stand change to stall {tr.requested_stall.name} was approved. New booking: {new_booking.booking_reference}. Your previous payments have been transferred.',
+            f'/bookings/{new_booking.id}/'
+        )
+        messages.success(request, f'Stand transfer approved. New booking {new_booking.booking_reference} created; payments transferred.')
+    except ValueError as e:
+        messages.error(request, str(e))
+    return redirect('erp:stall_transfer_list')
+
+
+@erp_login_required
+def reject_stall_transfer(request, pk):
+    from bookings.models import StallTransferRequest
+    tr = get_object_or_404(StallTransferRequest, pk=pk)
+    if tr.status == 'pending':
+        tr.status = 'rejected'
+        tr.reviewed_by = request.user
+        tr.reviewed_at = timezone.now()
+        tr.save()
+        from notifications.utils import create_notification
+        create_notification(
+            tr.requested_by, 'discount',
+            f'Stand Change Rejected - {tr.booking.booking_reference}',
+            f'Your request to change to stall {tr.requested_stall.name} was rejected.',
+            f'/bookings/{tr.booking.id}/'
+        )
+        messages.success(request, 'Stand change request rejected.')
+    return redirect('erp:stall_transfer_list')
 
 
 @erp_login_required
@@ -999,7 +1047,7 @@ def print_electrician(request, event_id):
                 b.save()
                 messages.success(request, f'{b.booking_reference} electrical reset.')
         return redirect('erp:print_electrician', event_id=event_id)
-    bookings = event.bookings.all().select_related('stall', 'exhibitor').prefetch_related('accessories__accessory')
+    bookings = event.bookings.exclude(status__in=['cancelled', 'rejected']).select_related('stall', 'exhibitor').prefetch_related('accessories__accessory')
     return render(request, 'printouts/electrician.html', {'event': event, 'bookings': bookings})
 
 
@@ -1022,7 +1070,7 @@ def print_stand_builder(request, event_id):
                 b.save()
                 messages.success(request, f'{b.booking_reference} build reset.')
         return redirect('erp:print_stand_builder', event_id=event_id)
-    bookings = event.bookings.all().select_related('stall__zone', 'exhibitor')
+    bookings = event.bookings.exclude(status__in=['cancelled', 'rejected']).select_related('stall__zone', 'exhibitor')
     total_tables = sum(b.stall.num_tables for b in bookings if b.stall)
     total_chairs = sum(b.stall.num_chairs for b in bookings if b.stall)
     return render(request, 'printouts/stand_builder.html', {
@@ -1034,7 +1082,7 @@ def print_stand_builder(request, event_id):
 @erp_login_required
 def print_accessories(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
-    bookings = event.bookings.all().prefetch_related('accessories__accessory', 'stall')
+    bookings = event.bookings.exclude(status__in=['cancelled', 'rejected']).prefetch_related('accessories__accessory', 'stall')
     return render(request, 'printouts/accessories.html', {'event': event, 'bookings': bookings})
 
 

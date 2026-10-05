@@ -172,7 +172,7 @@ SITE_NAME = 'Al Ansaar Event Management'
 SITE_URL = config('SITE_URL', default='https://alansaar.site')
 CURRENCY_SYMBOL = 'R'
 CURRENCY_CODE = 'ZAR'
-VAT_RATE = 0.15
+VAT_RATE = 0
 
 # Discount approval admins
 DISCOUNT_APPROVAL_EMAILS = config('DISCOUNT_APPROVAL_EMAILS', default='', cast=Csv())

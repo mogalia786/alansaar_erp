@@ -95,6 +95,30 @@ class BookingAccessory(models.Model):
         return f"{self.accessory.name} x {self.quantity}"
 
 
+class StallTransferRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='transfer_requests')
+    requested_stall = models.ForeignKey('events.Stall', on_delete=models.CASCADE, related_name='transfer_requests')
+    requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='stall_transfer_requests')
+    reason = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='reviewed_transfer_requests')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_notes = models.TextField(blank=True)
+    new_booking = models.ForeignKey(Booking, null=True, blank=True, on_delete=models.SET_NULL, related_name='transfer_from', help_text="Booking created by the approved transfer")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Transfer {self.booking.booking_reference} -> Stall {self.requested_stall.name} ({self.status})"
+
+
 class DiscountRequest(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending Approval'),

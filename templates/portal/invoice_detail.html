@@ -94,9 +94,7 @@
             <div class="card-header bg-purple text-white"><h6 class="mb-0">Financial Summary</h6></div>
             <div class="card-body">
                 <table class="table table-sm mb-0">
-                    <tr><td>Amount (excl VAT)</td><td class="text-end">R{{ invoice.amount_excl|floatformat:2 }}</td></tr>
-                    <tr><td>VAT (included)</td><td class="text-end">R{{ invoice.vat_amount|floatformat:2 }}</td></tr>
-                    <tr class="fw-bold"><td>Amount (incl VAT)</td><td class="text-end">R{{ invoice.amount_incl|floatformat:2 }}</td></tr>
+                    <tr class="fw-bold"><td>Amount</td><td class="text-end">R{{ invoice.amount_incl|floatformat:2 }}</td></tr>
                     <tr><td>Total Paid</td><td class="text-end text-success">R{{ verified_total|floatformat:2 }}</td></tr>
                     <tr class="fw-bold"><td>Balance Due</td><td class="text-end text-danger">R{{ invoice.balance_due|floatformat:2 }}</td></tr>
                 </table>

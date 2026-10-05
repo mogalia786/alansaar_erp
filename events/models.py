@@ -41,7 +41,7 @@ class Event(models.Model):
     booking_open = models.BooleanField(default=False)
     max_stalls_per_exhibitor = models.PositiveIntegerField(default=5)
     electricity_deposit = models.DecimalField(max_digits=8, decimal_places=2, default=500.00, help_text="Electricity deposit per stall requiring power")
-    vat_rate = models.DecimalField(max_digits=5, decimal_places=2, default=15.00, help_text="VAT rate as percentage (e.g. 15.00 for 15%)")
+    vat_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="VAT rate as percentage (0 — NPO does not charge VAT)")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

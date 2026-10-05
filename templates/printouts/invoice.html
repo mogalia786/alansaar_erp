@@ -113,8 +113,8 @@
             <th style="width:5%;">#</th>
             <th style="width:40%;">Description</th>
             <th style="width:10%;text-align:center;">Qty</th>
-            <th style="width:18%;text-align:right;">Unit Price (incl. VAT)</th>
-            <th style="width:12%;text-align:right;">VAT (included)</th>
+            <th style="width:18%;text-align:right;">Unit Price</th>
+            
             <th style="width:15%;text-align:right;">Total</th>
         </tr></thead>
         <tbody>
@@ -130,7 +130,6 @@
                 </td>
                 <td style="text-align:center;">1</td>
                 <td style="text-align:right;">R{{ l.amount_incl|floatformat:2 }}</td>
-                <td style="text-align:right;">R{{ l.vat_amount|floatformat:2 }}</td>
                 <td style="text-align:right;font-weight:600;">R{{ l.amount_incl|floatformat:2 }}</td>
             </tr>
             {% empty %}
@@ -142,7 +141,6 @@
                 </td>
                 <td style="text-align:center;">1</td>
                 <td style="text-align:right;">R{{ invoice.amount_incl|floatformat:2 }}</td>
-                <td style="text-align:right;">R{{ invoice.vat_amount|floatformat:2 }}</td>
                 <td style="text-align:right;font-weight:600;">R{{ invoice.amount_incl|floatformat:2 }}</td>
             </tr>
             {% endfor %}
@@ -150,9 +148,8 @@
     </table>
 
     <table class="totals">
-        <tr><td class="label">Subtotal (excl. VAT)</td><td class="amount">R{{ invoice.amount_excl|floatformat:2 }}</td></tr>
-        <tr><td class="label">VAT (included)</td><td class="amount">R{{ invoice.vat_amount|floatformat:2 }}</td></tr>
-        <tr class="total-row"><td class="label">Total Incl. VAT</td><td class="amount">R{{ invoice.amount_incl|floatformat:2 }}</td></tr>
+        <tr><td class="label">Subtotal</td><td class="amount">R{{ invoice.amount_excl|floatformat:2 }}</td></tr>
+        <tr class="total-row"><td class="label">Total</td><td class="amount">R{{ invoice.amount_incl|floatformat:2 }}</td></tr>
     </table>
 
     <div class="amount-due-box">
@@ -200,8 +197,8 @@
         2. Late payments may incur a 20% surcharge on the outstanding amount.<br>
         3. All stall fees are non-refundable after the event commencement date.<br>
         4. Please quote the invoice number as payment reference for reconciliation purposes.<br>
-        5. All prices are inclusive of 15% VAT; the VAT amount included is shown for your records.<br>
-        6. This document serves as a valid tax invoice for VAT purposes in South Africa.<br>
+        5. Prices are final — no VAT is charged (NPO).<br>
+        
         7. Al Ansaar Foundation reserves the right to cancel bookings for non-payment.
     </div>
 
