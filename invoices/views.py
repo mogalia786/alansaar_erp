@@ -63,7 +63,8 @@ def evaluate_invoice_discounts(invoice):
         if b is None:
             continue
         pool = list(tagged.get(b.id, [])) + list(untagged)
-        target = Decimal(b.stall_price or 0)
+        stall = Decimal(b.stall_price or 0)
+        target = stall + (Decimal(b.electricity_deposit or 0) if b.requires_power else Decimal('0')) + Decimal(b.accessories_total or 0)
         # Rule A: stand fully covered by verified payments within the deadline window
         covered = Decimal('0')
         fully_paid_date = None
@@ -85,10 +86,10 @@ def evaluate_invoice_discounts(invoice):
         if fully_paid_date is not None and target > 0:
             grace = timedelta(days=5)
             if fully_paid_date <= EARLY_5_DEADLINE + grace:
-                discount = (target * Decimal('0.05')).quantize(Decimal('0.01')); tier = '5'
+                discount = (stall * Decimal('0.05')).quantize(Decimal('0.01')); tier = '5'
             elif fully_paid_date <= EARLY_25_DEADLINE + grace:
-                discount = (target * Decimal('0.025')).quantize(Decimal('0.01')); tier = '2.5'
-        # Rule B: single payment matching ~95% (5% tier) or ~97.5% (2.5% tier) of stand price
+                discount = (stall * Decimal('0.025')).quantize(Decimal('0.01')); tier = '2.5'
+        # Rule B: single payment matching ~95% (5% tier) or ~97.5% (2.5% tier) of the stand's total (stall + deposit + accessories)
         if not tier and target > 0:
             for p in pool:
                 pdate = p.payment_date.date() if p.payment_date else None
@@ -99,9 +100,9 @@ def evaluate_invoice_discounts(invoice):
                 exp25 = target * Decimal('0.975')
                 tol = max(Decimal('2.00'), target * Decimal('0.005'))
                 if abs(p.amount - exp5) <= tol and pdate <= EARLY_5_DEADLINE + grace:
-                    discount = (target * Decimal('0.05')).quantize(Decimal('0.01')); tier = '5'
+                    discount = (stall * Decimal('0.05')).quantize(Decimal('0.01')); tier = '5'
                 elif abs(p.amount - exp25) <= tol and pdate <= EARLY_25_DEADLINE + grace:
-                    discount = (target * Decimal('0.025')).quantize(Decimal('0.01')); tier = '2.5'
+                    discount = (stall * Decimal('0.025')).quantize(Decimal('0.01')); tier = '2.5'
                 if tier:
                     if p.booking_id is None and p in untagged:
                         untagged.remove(p)
