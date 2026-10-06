@@ -64,7 +64,7 @@ def evaluate_invoice_discounts(invoice):
             continue
         pool = list(tagged.get(b.id, [])) + list(untagged)
         stall = Decimal(b.stall_price or 0)
-        target = stall + (Decimal(b.electricity_deposit or 0) if b.requires_power else Decimal('0')) + Decimal(b.accessories_total or 0)
+        target = stall
         # Rule A: stand fully covered by verified payments within the deadline window
         covered = Decimal('0')
         fully_paid_date = None
