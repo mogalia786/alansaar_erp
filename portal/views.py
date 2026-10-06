@@ -497,7 +497,7 @@ def approve_booking(request, pk):
     return redirect('erp:booking_detail', pk=pk)
 
 
-@erp_login_required
+@erp_section_required('bookings')
 def erp_cancel_booking(request, pk):
     booking = get_object_or_404(Booking, pk=pk)
     if request.method != 'POST':
@@ -552,21 +552,21 @@ def erp_cancel_booking(request, pk):
     return redirect('erp:booking_detail', pk=pk)
 
 
-@erp_login_required
+@erp_section_required('early_discounts')
 def erp_early_discounts(request):
     bookings = Booking.objects.filter(early_payment_discount__gt=0).select_related('exhibitor', 'stall', 'event').order_by('-booking_date')
     total = sum((b.early_payment_discount for b in bookings), Decimal('0'))
     return render(request, 'portal/early_discounts.html', {'bookings': bookings, 'total': total})
 
 
-@erp_login_required
+@erp_section_required('refunds')
 def erp_refund_list(request):
     from invoices.models import Refund
     refunds = Refund.objects.all().select_related('booking', 'booking__exhibitor', 'booking__stall', 'created_by')
     return render(request, 'portal/refund_list.html', {'refunds': refunds})
 
 
-@erp_login_required
+@erp_section_required('refunds')
 def erp_mark_refund(request, pk):
     from invoices.models import Refund
     r = get_object_or_404(Refund, pk=pk)
@@ -1065,7 +1065,7 @@ def erp_stall_transfer_list(request):
     return render(request, 'portal/stall_transfer_list.html', {'transfers': transfers})
 
 
-@erp_login_required
+@erp_section_required('stall_changes')
 def approve_stall_transfer(request, pk):
     from bookings.models import StallTransferRequest
     from bookings.services import execute_stall_transfer
@@ -1088,7 +1088,7 @@ def approve_stall_transfer(request, pk):
     return redirect('erp:stall_transfer_list')
 
 
-@erp_login_required
+@erp_section_required('stall_changes')
 def reject_stall_transfer(request, pk):
     from bookings.models import StallTransferRequest
     tr = get_object_or_404(StallTransferRequest, pk=pk)
