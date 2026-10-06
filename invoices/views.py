@@ -65,48 +65,34 @@ def evaluate_invoice_discounts(invoice):
         pool = list(tagged.get(b.id, [])) + list(untagged)
         stall = Decimal(b.stall_price or 0)
         target = stall
-        # Rule A: stand fully covered by verified payments within the deadline window
+        # Eligibility is based strictly on STALL PRICE coverage (ignore deposit/accessories).
+        # - verified payments totaling >= 95% of stall price by 30 Sep 2026 (+5 day grace) → 5%
+        # - verified payments totaling >= 97.5% of stall price by 31 Oct 2026 (+5 day grace) → 2.5%
+        coverage_95_date = None
+        coverage_975_date = None
         covered = Decimal('0')
-        fully_paid_date = None
-        fully_paid_via_eft = False
         consumed = []
         for p in sorted(pool, key=lambda x: x.payment_date or _dt.datetime.max):
             covered += p.amount
             if p.booking_id is None:
                 consumed.append(p)
-            if covered >= target:
-                fully_paid_date = p.payment_date.date() if p.payment_date else None
-                fully_paid_via_eft = (p.payment_method == 'eft')
+            if coverage_95_date is None and covered >= stall * Decimal('0.95'):
+                coverage_95_date = p.payment_date.date() if p.payment_date else None
+            if coverage_975_date is None and covered >= stall * Decimal('0.975'):
+                coverage_975_date = p.payment_date.date() if p.payment_date else None
+            if coverage_95_date is not None and coverage_975_date is not None:
                 break
         for p in consumed:
             if p in untagged:
                 untagged.remove(p)
         discount = Decimal('0')
         tier = ''
-        if fully_paid_date is not None and target > 0:
+        if stall > 0:
             grace = timedelta(days=5)
-            if fully_paid_date <= EARLY_5_DEADLINE + grace:
+            if coverage_95_date is not None and coverage_95_date <= EARLY_5_DEADLINE + grace:
                 discount = (stall * Decimal('0.05')).quantize(Decimal('0.01')); tier = '5'
-            elif fully_paid_date <= EARLY_25_DEADLINE + grace:
+            elif coverage_975_date is not None and coverage_975_date <= EARLY_25_DEADLINE + grace:
                 discount = (stall * Decimal('0.025')).quantize(Decimal('0.01')); tier = '2.5'
-        # Rule B: single payment matching ~95% (5% tier) or ~97.5% (2.5% tier) of the stand's total (stall + deposit + accessories)
-        if not tier and target > 0:
-            for p in pool:
-                pdate = p.payment_date.date() if p.payment_date else None
-                if pdate is None:
-                    continue
-                grace = timedelta(days=5)
-                exp5 = target * Decimal('0.95')
-                exp25 = target * Decimal('0.975')
-                tol = max(Decimal('2.00'), target * Decimal('0.005'))
-                if abs(p.amount - exp5) <= tol and pdate <= EARLY_5_DEADLINE + grace:
-                    discount = (stall * Decimal('0.05')).quantize(Decimal('0.01')); tier = '5'
-                elif abs(p.amount - exp25) <= tol and pdate <= EARLY_25_DEADLINE + grace:
-                    discount = (stall * Decimal('0.025')).quantize(Decimal('0.01')); tier = '2.5'
-                if tier:
-                    if p.booking_id is None and p in untagged:
-                        untagged.remove(p)
-                    break
         b.early_payment_discount = discount
         b.early_payment_tier = tier
         b.total_amount = (b.subtotal or Decimal('0')) - discount
