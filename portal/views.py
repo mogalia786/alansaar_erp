@@ -1292,7 +1292,7 @@ def build_section_summary(event):
         stalls_sold = sold_qs.count()
         sales_amount = sold_qs.aggregate(s=Sum('stall_price'))['s'] or Decimal('0')
         revenue = sold_qs.aggregate(s=Sum('total_amount'))['s'] or Decimal('0')
-        discounts = Decimal('0')
+        discounts = sold_qs.aggregate(s=Sum('early_payment_discount'))['s'] or Decimal('0')
         for bk in sold_qs.prefetch_related('discount_requests'):
             for d in bk.discount_requests.filter(status='approved'):
                 discounts += d.discount_amount
@@ -1424,7 +1424,7 @@ def erp_all_bookings_report(request):
     }
     for bk in base_qs:
         stall = bk.stall
-        discount = sum((d.discount_amount for d in bk.discount_requests.filter(status='approved')), Decimal('0'))
+        discount = sum((d.discount_amount for d in bk.discount_requests.filter(status='approved')), Decimal('0')) + bk.early_payment_discount
         size = f"{(Decimal(stall.width or 0) / 1000).quantize(Decimal('0.1'))}x{(Decimal(stall.height or 0) / 1000).quantize(Decimal('0.1'))}" if stall else ''
         due = bk.total_amount
         pct = (bk.balance_due / due * 100).quantize(Decimal('0.01')) if due else Decimal('0')

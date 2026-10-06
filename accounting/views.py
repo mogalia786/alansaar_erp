@@ -204,7 +204,7 @@ def income_statement(request):
                 'amount': stall_revenue,
                 'basis': 'VAT-inclusive, from bookings',
             })
-        discounts = Decimal('0')
+        discounts = sold_bks.aggregate(s=Sum('early_payment_discount'))['s'] or Decimal('0')
         for bk in sold_bks.prefetch_related('discount_requests'):
             for d in bk.discount_requests.filter(status='approved'):
                 discounts += d.discount_amount
