@@ -1772,8 +1772,12 @@ def erp_role_edit(request, pk):
         messages.success(request, f'Role {role.name} updated.')
         return redirect('erp:role_list')
     perms = {p.section: p for p in role.permissions.all()}
+    for section, _ in RolePermission.SECTIONS:
+        if section not in perms:
+            perms[section] = role.permissions.create(section=section)
+    sections = [(section, perms.get(section)) for section, _ in RolePermission.SECTIONS]
     return render(request, 'portal/role_form.html', {
-        'role': role, 'perms': perms, 'sections': RolePermission.SECTIONS, 'edit': True,
+        'role': role, 'perms': perms, 'section_rows': sections, 'sections': RolePermission.SECTIONS, 'edit': True,
     })
 
 
