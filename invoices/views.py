@@ -83,7 +83,7 @@ def evaluate_invoice_discounts(invoice):
         discount = Decimal('0')
         tier = ''
         if fully_paid_date is not None and target > 0:
-            grace = timedelta(days=5) if fully_paid_via_eft else timedelta(days=0)
+            grace = timedelta(days=5)
             if fully_paid_date <= EARLY_5_DEADLINE + grace:
                 discount = (target * Decimal('0.05')).quantize(Decimal('0.01')); tier = '5'
             elif fully_paid_date <= EARLY_25_DEADLINE + grace:
@@ -94,7 +94,7 @@ def evaluate_invoice_discounts(invoice):
                 pdate = p.payment_date.date() if p.payment_date else None
                 if pdate is None:
                     continue
-                grace = timedelta(days=5) if p.payment_method == 'eft' else timedelta(days=0)
+                grace = timedelta(days=5)
                 exp5 = target * Decimal('0.95')
                 exp25 = target * Decimal('0.975')
                 tol = max(Decimal('2.00'), target * Decimal('0.005'))
