@@ -791,10 +791,20 @@ def collect_cash(request, booking_id):
     if request.method == 'POST':
         amount = Decimal(request.POST.get('amount', '0'))
         ref = request.POST.get('reference_number', booking.stall.name)
-        notes = request.POST.get('notes', '')
+        method_raw = request.POST.get('payment_method', 'cash').lower()
+        if method_raw == 'eft':
+            method = 'eft'
+            method_note = 'EFT'
+        elif method_raw == 'credit card':
+            method = 'cash'
+            method_note = 'Credit Card'
+        else:
+            method = 'cash'
+            method_note = 'Cash'
         extra_note = request.POST.get('additional_notes', '').strip()
+        notes = method_note
         if extra_note:
-            notes = f"{notes.strip()} - {extra_note}".strip(' -')
+            notes = f"{notes} - {extra_note}".strip(' -')
         if amount <= 0:
             messages.error(request, 'Amount must be greater than zero.')
             return redirect('erp:collect_cash', booking_id=booking_id)
@@ -805,7 +815,7 @@ def collect_cash(request, booking_id):
             invoice=invoice,
             booking=booking,
             amount=amount,
-            payment_method='cash',
+            payment_method=method,
             reference_number=ref,
             status='verified',
             verified_by=request.user,

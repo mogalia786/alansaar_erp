@@ -49,11 +49,10 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">Payment Method <span class="text-danger">*</span></label>
-                        <select class="form-select" name="notes" required id="payment-method">
-                            <option value="">-- Select Payment Method --</option>
-                            <option value="Cash">Cash</option>
-                            <option value="Credit Card" {% if payment_method_note == 'Credit Card' %}selected{% endif %}>Credit Card</option>
-                            <option value="EFT">EFT</option>
+                        <select class="form-select" name="payment_method" required id="payment-method">
+                            <option value="cash">Cash</option>
+                            <option value="eft">EFT</option>
+                            <option value="credit card">Credit Card</option>
                         </select>
                     </div>
                     <div class="mb-3">
