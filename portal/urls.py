@@ -20,6 +20,7 @@ urlpatterns = [
     path('bookings/<int:pk>/confirm/', views.confirm_booking, name='confirm_booking'),
     path('bookings/<int:pk>/erp-cancel/', views.erp_cancel_booking, name='erp_cancel_booking'),
     path('refunds/', views.erp_refund_list, name='refund_list'),
+    path('discounts/early/', views.erp_early_discounts, name='early_discounts'),
     path('refunds/<int:pk>/mark-refunded/', views.erp_mark_refund, name='mark_refund'),
     path('invoices/', views.erp_invoice_list, name='invoice_list'),
     path('invoices/<int:pk>/', views.erp_invoice_detail, name='invoice_detail'),

@@ -75,6 +75,7 @@
                 <a href="{% url 'erp:discount_list' %}" class="nav-link"><i class="bi bi-percent"></i> Discounts</a>
                 <a href="{% url 'erp:stall_transfer_list' %}" class="nav-link"><i class="bi bi-arrow-left-right"></i> Stand Changes</a>
                 <a href="{% url 'erp:refund_list' %}" class="nav-link"><i class="bi bi-arrow-return-left"></i> Refunds</a>
+                <a href="{% url 'erp:early_discounts' %}" class="nav-link"><i class="bi bi-cash-coin"></i> Early Discounts</a>
                 {% if request.user|has_perm:'accounting' %}
                 <div class="nav-section">Accounting</div>
                 <a href="{% url 'accounting:dashboard' %}" class="nav-link"><i class="bi bi-calculator"></i> Dashboard</a>
@@ -123,6 +124,7 @@
                             <a href="{% url 'erp:discount_list' %}" class="d-block py-1">Discounts</a>
                             <a href="{% url 'erp:stall_transfer_list' %}" class="d-block py-1">Stand Changes</a>
                             <a href="{% url 'erp:refund_list' %}" class="d-block py-1">Refunds</a>
+                            <a href="{% url 'erp:early_discounts' %}" class="d-block py-1">Early Discounts</a>
                             {% if request.user|has_perm:'accounting' %}
                             <hr class="border-secondary my-2">
                             <div class="text-uppercase" style="font-size:.7rem;color:var(--gold);letter-spacing:1px;">Accounting</div>

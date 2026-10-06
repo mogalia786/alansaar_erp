@@ -80,6 +80,9 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                    {% if invoice.total_early_discount > 0 %}
+                    <div class="text-success small p-2"><i class="bi bi-check-circle"></i> Early payment discount applied: <strong>-R{{ invoice.total_early_discount|floatformat:2 }}</strong></div>
+                    {% endif %}
                 </div>
             </div>
             {% endif %}

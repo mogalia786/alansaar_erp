@@ -96,6 +96,9 @@
             <div class="card-body">
                 <table class="table table-sm mb-0">
                     <tr class="fw-bold"><td>Amount</td><td class="text-end">R{{ invoice.amount_incl|floatformat:2 }}</td></tr>
+                    {% if invoice.total_early_discount > 0 %}
+                    <tr class="text-success"><td>Early Payment Discount</td><td class="text-end">-R{{ invoice.total_early_discount|floatformat:2 }}</td></tr>
+                    {% endif %}
                     <tr><td>Total Paid</td><td class="text-end text-success">R{{ verified_total|floatformat:2 }}</td></tr>
                     <tr class="fw-bold"><td>Balance Due</td><td class="text-end text-danger">R{{ invoice.balance_due|floatformat:2 }}</td></tr>
                 </table>

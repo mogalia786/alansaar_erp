@@ -44,6 +44,11 @@ class Invoice(models.Model):
     def line_count(self):
         return self.invoice_lines.count()
 
+    @property
+    def total_early_discount(self):
+        from decimal import Decimal
+        return sum((l.booking.early_payment_discount for l in self.invoice_lines.select_related('booking').all() if l.booking), Decimal('0'))
+
 
 class InvoiceLine(models.Model):
     """A single stall/booking on a consolidated exhibitor invoice."""

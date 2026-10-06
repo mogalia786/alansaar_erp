@@ -553,6 +553,13 @@ def erp_cancel_booking(request, pk):
 
 
 @erp_login_required
+def erp_early_discounts(request):
+    bookings = Booking.objects.filter(early_payment_discount__gt=0).select_related('exhibitor', 'stall', 'event').order_by('-booking_date')
+    total = sum((b.early_payment_discount for b in bookings), Decimal('0'))
+    return render(request, 'portal/early_discounts.html', {'bookings': bookings, 'total': total})
+
+
+@erp_login_required
 def erp_refund_list(request):
     from invoices.models import Refund
     refunds = Refund.objects.all().select_related('booking', 'booking__exhibitor', 'booking__stall', 'created_by')
