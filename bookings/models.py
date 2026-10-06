@@ -33,6 +33,8 @@ class Booking(models.Model):
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     balance_due = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     fascia_name = models.CharField(max_length=28, blank=True, help_text="Name on fascia board (max 28 chars)")
+    early_payment_discount = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Early full-payment discount on stand price")
+    early_payment_tier = models.CharField(max_length=10, blank=True, help_text="5 or 2.5")
     terms_accepted = models.BooleanField(default=False)
     requires_power = models.BooleanField(default=False)
     power_amps = models.IntegerField(default=0, help_text="Additional power required in amps")

@@ -25,6 +25,15 @@
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="mb-3">
+                            <label class="form-label fw-bold">Payment For (Stand) <span class="text-danger">*</span></label>
+                            <select name="booking_id" class="form-select" required>
+                                {% for l in invoice.invoice_lines.all %}
+                                <option value="{{ l.booking.id }}">Stall {{ l.booking.stall.name }}{% if l.booking.stall.zone %} - {{ l.booking.stall.zone.name }}{% endif %} ({{ l.booking.booking_reference }})</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Select which stand this payment is for.</div>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label fw-bold">Amount to Pay (R) <span class="text-danger">*</span></label>
                             <input type="number" name="amount" step="0.01" min="0.01" class="form-control" placeholder="Enter the amount you are paying" required>
                             <div class="form-text">Please fill in the amount you are paying (in Rands).</div>

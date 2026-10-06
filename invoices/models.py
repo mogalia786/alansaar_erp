@@ -92,6 +92,29 @@ class Payment(models.Model):
         return f"Payment {self.id} - {self.amount}"
 
 
+class Refund(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('refunded', 'Refunded'),
+        ('waived', 'Waived / Offset'),
+    ]
+    booking = models.ForeignKey('bookings.Booking', on_delete=models.CASCADE, related_name='refunds')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    reason = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='refunds_created')
+    refunded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='refunds_processed')
+    refunded_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Refund {self.id} - {self.booking.booking_reference} - R{self.amount} ({self.status})"
+
+
 class PaymentReminder(models.Model):
     booking = models.ForeignKey('bookings.Booking', on_delete=models.CASCADE, related_name='payment_reminders')
     sent_at = models.DateTimeField(auto_now_add=True)

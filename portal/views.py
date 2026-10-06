@@ -498,6 +498,81 @@ def approve_booking(request, pk):
 
 
 @erp_login_required
+def erp_cancel_booking(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
+    if request.method != 'POST':
+        return redirect('erp:booking_detail', pk=pk)
+    if booking.status == 'cancelled':
+        messages.error(request, 'Booking is already cancelled.')
+        return redirect('erp:booking_detail', pk=pk)
+    from invoices.views import refresh_invoice
+    from invoices.models import Payment, Refund
+    # payments made against this stand
+    # payments made against this stand: prefer per-booking payment attribution,
+    # fall back to the booking's own allocated paid amount for legacy rows
+    attributed = Payment.objects.filter(booking=booking, status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
+    paid_to_stand = attributed if attributed > 0 else booking.amount_paid
+    # 1. release the stall
+    if booking.stall:
+        booking.stall.status = 'available'
+        booking.stall.save()
+    # 2. zero out the invoice line for this booking and refresh the invoice
+    line = getattr(booking, 'invoice_line', None)
+    inv = line.invoice if line is not None else booking.invoices.first()
+    if line is not None:
+        line.description = f"CANCELLED - {line.description}"
+        line.amount_excl = Decimal('0')
+        line.vat_amount = Decimal('0')
+        line.amount_incl = Decimal('0')
+        line.save()
+    if inv is not None:
+        refresh_invoice(inv)
+    # 3. record refund due (what they paid toward this stand)
+    if paid_to_stand > 0:
+        Refund.objects.create(
+            booking=booking, amount=paid_to_stand, status='pending',
+            reason=request.POST.get('reason', ''),
+            notes=f'Paid to stand {booking.stall.name if booking.stall else "-"} before cancellation',
+            created_by=request.user,
+        )
+        LedgerEntry.objects.create(
+            exhibitor=booking.exhibitor, booking=booking, entry_type='credit',
+            description=f'Booking cancelled - refund of R{paid_to_stand} due',
+            reference=booking.booking_reference, debit=0, credit=paid_to_stand,
+            balance=0, entry_date=timezone.now().date(),
+        )
+    # 4. cancel the booking
+    booking.status = 'cancelled'
+    booking.payment_status = 'unpaid'
+    booking.amount_paid = Decimal('0')
+    booking.balance_due = Decimal('0')
+    booking.admin_notes = (booking.admin_notes or '') + f"\n[Cancelled by ERP {request.user.username} on {timezone.now():%Y-%m-%d}. Refund due: R{paid_to_stand}]"
+    booking.save()
+    messages.success(request, f'Booking cancelled. Stand released. Refund due to exhibitor: R{paid_to_stand}.')
+    return redirect('erp:booking_detail', pk=pk)
+
+
+@erp_login_required
+def erp_refund_list(request):
+    from invoices.models import Refund
+    refunds = Refund.objects.all().select_related('booking', 'booking__exhibitor', 'booking__stall', 'created_by')
+    return render(request, 'portal/refund_list.html', {'refunds': refunds})
+
+
+@erp_login_required
+def erp_mark_refund(request, pk):
+    from invoices.models import Refund
+    r = get_object_or_404(Refund, pk=pk)
+    if r.status == 'pending':
+        r.status = 'refunded'
+        r.refunded_by = request.user
+        r.refunded_at = timezone.now()
+        r.save()
+        messages.success(request, f'Refund R{r.amount} marked as refunded.')
+    return redirect('erp:refund_list')
+
+
+@erp_login_required
 def reject_booking(request, pk):
     booking = get_object_or_404(Booking, pk=pk)
     if booking.status == 'pending':
@@ -657,8 +732,12 @@ def verify_payment(request, pk):
             payment.receipt_number = f"RCT-{uuid.uuid4().hex[:8].upper()}"
             payment.save()
             inv = payment.invoice
-            from invoices.views import refresh_invoice
+            from invoices.views import refresh_invoice, evaluate_early_payment_discount
             refresh_invoice(inv)
+            if payment.booking_id:
+                evaluate_early_payment_discount(payment.booking)
+                from invoices.views import update_invoice_from_booking
+                update_invoice_from_booking(payment.booking)
             exhibitor = payment.invoice.exhibitor or (payment.booking.exhibitor if payment.booking else None)
             booking = inv.display_booking
             receipt = Receipt.objects.create(
@@ -728,8 +807,10 @@ def collect_cash(request, booking_id):
         )
         payment.receipt_number = f"RCT-{uuid.uuid4().hex[:8].upper()}"
         payment.save()
-        from invoices.views import refresh_invoice
+        from invoices.views import refresh_invoice, evaluate_early_payment_discount, update_invoice_from_booking
         refresh_invoice(inv)
+        evaluate_early_payment_discount(booking)
+        update_invoice_from_booking(booking)
         receipt = Receipt.objects.create(
             receipt_number=payment.receipt_number,
             payment=payment,

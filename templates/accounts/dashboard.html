@@ -67,7 +67,7 @@
                     <td><span class="badge bg-{% if b.payment_status == 'paid' %}success{% elif b.payment_status == 'unpaid' %}danger{% else %}warning{% endif %}">{{ b.get_payment_status_display }}</span></td>
                     <td>
                         <a href="{% url 'booking_detail' b.id %}" class="btn btn-sm btn-purple">View</a>
-                        {% if b.status == 'pending' or b.status == 'approved' %}
+                        {% if b.status == 'pending' %}
                         <a href="{% url 'cancel_booking' b.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel this booking?')">Cancel</a>
                         {% endif %}
                     </td>

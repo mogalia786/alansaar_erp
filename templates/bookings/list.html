@@ -132,7 +132,7 @@ body { background: #0d0d1a !important; }
                 <div class="pr">R{{ b.total_amount|floatformat:2 }} <span class="pay {{ b.payment_status }}">{{ b.get_payment_status_display }}</span></div>
                 <div class="acts">
                     <a href="{% url 'booking_detail' b.id %}" class="bv">Details</a>
-                    {% if b.status == 'pending' or b.status == 'approved' %}
+                    {% if b.status == 'pending' %}
                     <a href="{% url 'cancel_booking' b.id %}" class="bx" onclick="return confirm('Cancel?')">Cancel</a>
                     {% endif %}
                 </div>

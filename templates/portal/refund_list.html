@@ -1,0 +1,19 @@
+{% extends 'portal/base.html' %}
+{% block title %}Refunds - ERP{% endblock %}
+{% block content %}
+<h3 class="fw-bold mb-3"><i class="bi bi-arrow-return-left"></i> Refunds</h3>
+<div class="card"><div class="card-body p-0">
+<div class="table-responsive"><table class="table table-hover mb-0">
+<thead class="table-purple"><tr><th>Booking</th><th>Exhibitor</th><th>Stall</th><th>Amount</th><th>Reason</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+<tbody>{% for r in refunds %}<tr>
+    <td><a href="{% url 'erp:booking_detail' r.booking.id %}">{{ r.booking.booking_reference }}</a></td>
+    <td>{{ r.booking.exhibitor.company_name|default:r.booking.exhibitor.username }}</td>
+    <td>{{ r.booking.stall.name|default:"-" }}</td>
+    <td class="fw-bold">R{{ r.amount|floatformat:2 }}</td>
+    <td>{{ r.reason|truncatechars:40 }}</td>
+    <td><span class="badge bg-{% if r.status == 'pending' %}warning{% elif r.status == 'refunded' %}success{% else %}secondary{% endif %}">{{ r.get_status_display }}</span></td>
+    <td>{{ r.created_at|date:"d M Y" }}</td>
+    <td>{% if r.status == 'pending' %}<a href="{% url 'erp:mark_refund' r.id %}" class="btn btn-sm btn-success" onclick="return confirm('Mark this refund as paid out?')"><i class="bi bi-check-lg"></i> Mark Refunded</a>{% elif r.status == 'refunded' %}{{ r.refunded_at|date:"d M" }} by {{ r.refunded_by.username }}{% endif %}</td>
+</tr>{% empty %}<tr><td colspan="8" class="text-center text-muted py-4">No refunds</td></tr>{% endfor %}</tbody>
+</table></div></div></div>
+{% endblock %}

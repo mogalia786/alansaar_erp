@@ -14,8 +14,84 @@ from notifications.utils import send_invoice_email, send_payment_received
 
 def booking_amount_incl(booking):
     elec_dep = booking.electricity_deposit if booking.requires_power else Decimal('0')
-    amount_incl, vat_amount = booking_totals(booking.stall_price, elec_dep, booking.accessories_total, float(booking.event.vat_rate) / 100)
-    return amount_incl, vat_amount
+    amount_incl, vat_amount = booking_totals(booking.stall_price, elec_dep, booking.accessories_total, 0)
+    return amount_incl - (booking.early_payment_discount or Decimal('0')), vat_amount
+
+
+# Early full-payment discounts: 5% of stand price if the stand is fully paid by
+# 30 Sep 2026; otherwise 2.5% if fully paid by 31 Oct 2026. Never combined (max one tier).
+EARLY_5_DEADLINE = __import__('datetime').date(2026, 9, 30)
+EARLY_25_DEADLINE = __import__('datetime').date(2026, 10, 31)
+
+
+def evaluate_early_payment_discount(booking):
+    """Assess tiered early-payment discount for a booking based on verified
+    payments attributed to it. Single tier only (5% XOR 2.5%)."""
+    from invoices.models import Payment
+    line = getattr(booking, 'invoice_line', None)
+    inv = line.invoice if line is not None else booking.invoices.first()
+    if inv is None:
+        return Decimal('0')
+    return evaluate_invoice_discounts(inv).get(booking.id, Decimal('0'))
+
+
+def evaluate_invoice_discounts(invoice):
+    """Evaluate early-payment discounts for every booking on an invoice.
+
+    A payment can only fund ONE stand: payments tagged to a booking count
+    toward that booking only; untagged payments (booking=None) are consumed
+    once across bookings of the same invoice (in booking order), so the same
+    money can never trigger two discounts. Within each stand, the tier is
+    fixed by the date cumulative verified payments first reached that
+    stand's price (5% if on/before 30 Sep 2026, 2.5% if on/before 31 Oct
+    2026, never both).
+    """
+    import datetime as _dt
+    from invoices.models import Payment
+    payments = list(Payment.objects.filter(invoice=invoice, status='verified').order_by('payment_date'))
+    tagged = {}
+    untagged = []
+    for p in payments:
+        if p.booking_id:
+            tagged.setdefault(p.booking_id, []).append(p)
+        else:
+            untagged.append(p)
+    results = {}
+    for line in invoice.invoice_lines.select_related('booking').all():
+        b = line.booking
+        if b is None:
+            continue
+        pool = list(tagged.get(b.id, [])) + list(untagged)
+        target = Decimal(b.stall_price or 0)
+        covered = Decimal('0')
+        fully_paid_date = None
+        consumed = []
+        for p in sorted(pool, key=lambda x: x.payment_date or _dt.datetime.max):
+            covered += p.amount
+            if p.booking_id is None:
+                consumed.append(p)
+            if covered >= target:
+                fully_paid_date = p.payment_date.date() if p.payment_date else None
+                break
+        for p in consumed:
+            if p in untagged:
+                untagged.remove(p)
+        discount = Decimal('0')
+        tier = ''
+        if fully_paid_date is not None and target > 0:
+            if fully_paid_date <= EARLY_5_DEADLINE:
+                discount = (target * Decimal('0.05')).quantize(Decimal('0.01'))
+                tier = '5'
+            elif fully_paid_date <= EARLY_25_DEADLINE:
+                discount = (target * Decimal('0.025')).quantize(Decimal('0.01'))
+                tier = '2.5'
+        b.early_payment_discount = discount
+        b.early_payment_tier = tier
+        b.total_amount = (b.subtotal or Decimal('0')) - discount
+        b.balance_due = b.total_amount - (b.amount_paid or Decimal('0'))
+        b.save(update_fields=['early_payment_discount', 'early_payment_tier', 'total_amount', 'balance_due'])
+        results[b.id] = discount
+    return results
 
 
 def _stall_description(booking):
@@ -172,9 +248,13 @@ def make_payment(request, pk):
         ref = request.POST.get('reference_number', '').strip()
         method = request.POST.get('payment_method', 'eft')
         pop = request.FILES.get('proof_of_payment')
+        pay_booking = None
+        bid = request.POST.get('booking_id')
+        if bid:
+            pay_booking = Booking.objects.filter(pk=bid, invoice_line__invoice=invoice).first()
         payment = Payment.objects.create(
             invoice=invoice,
-            booking=invoice.display_booking,
+            booking=pay_booking or invoice.display_booking,
             amount=amount,
             payment_method=method,
             reference_number=ref,

@@ -287,14 +287,14 @@ def request_stall_transfer(request, pk):
 @login_required
 def cancel_booking(request, pk):
     booking = get_object_or_404(Booking, pk=pk, exhibitor=request.user)
-    if booking.status in ['pending', 'approved']:
+    if booking.status == 'pending':
         booking.status = 'cancelled'
         booking.save()
         booking.stall.status = 'available'
         booking.stall.save()
         messages.success(request, 'Booking cancelled.')
     else:
-        messages.error(request, 'Cannot cancel this booking.')
+        messages.error(request, 'Cannot cancel this booking — only bookings awaiting approval can be cancelled. Please request a stand change or contact us.')
     return redirect('my_bookings')
 
 

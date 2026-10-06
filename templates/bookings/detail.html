@@ -45,6 +45,9 @@
                         <tr><td>Electricity Deposit (refundable)</td><td class="text-end">R{{ booking.electricity_deposit|floatformat:2 }}</td></tr>
                         {% endif %}
                         <tr class="fw-bold"><td>Subtotal</td><td class="text-end">R{{ booking.subtotal|floatformat:2 }}</td></tr>
+                        {% if booking.early_payment_discount > 0 %}
+                        <tr class="text-success"><td>Early Payment Discount ({{ booking.early_payment_tier }}%)</td><td class="text-end">-R{{ booking.early_payment_discount|floatformat:2 }}</td></tr>
+                        {% endif %}
                         <tr class="fw-bold"><td>Total</td><td class="text-end">R{{ booking.total_amount|floatformat:2 }}</td></tr>
                         <tr><td>Amount Paid</td><td class="text-end text-success">R{{ paid_amount|floatformat:2 }}</td></tr>
                         <tr class="fw-bold"><td>Balance Due</td><td class="text-end text-{% if balance_due > 0 %}danger{% else %}success{% endif %}">R{{ balance_due|floatformat:2 }}</td></tr>
@@ -222,7 +225,7 @@
                     </div>
                     {% endfor %}
                     {% endif %}
-                    {% if booking.status == 'pending' or booking.status == 'approved' %}
+                    {% if booking.status == 'pending' %}
                     <a href="{% url 'cancel_booking' booking.id %}" class="btn btn-outline-danger w-100" onclick="return confirm('Are you sure?')">
                         <i class="bi bi-x-circle"></i> Cancel Booking
                     </a>
