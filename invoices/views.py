@@ -21,7 +21,7 @@ def booking_amount_incl(booking):
 # Early full-payment discounts: 5% of stand price if the stand is fully paid by
 # 30 Sep 2026; otherwise 2.5% if fully paid by 31 Oct 2026. Never combined (max one tier).
 EARLY_5_DEADLINE = __import__('datetime').date(2026, 9, 30)
-EARLY_25_DEADLINE = __import__('datetime').date(2026, 10, 31)
+EARLY_25_DEADLINE = __import__('datetime').date(2027, 10, 15)
 
 
 def evaluate_early_payment_discount(booking):
