@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Request Stand Swap{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h3 class="fw-bold mb-3"><i class="bi bi-arrow-left-right"></i> Request Stand Swap</h3>
+    <p class="text-muted">Choose which of your stands you want to change, and the available stand you want to move to. All payments made for that stand transfer with it.</p>
+    {% for b in bookings %}
+    <div class="card mb-3">
+        <div class="card-header bg-purple text-white"><strong>{{ b.booking_reference }}</strong> — Stall {{ b.stall.name }} — {{ b.event.name }}</div>
+        <div class="card-body">
+            {% if b.pending_transfer %}
+            <div class="alert alert-warning mb-0">Pending transfer to Stall {{ b.pending_transfer.requested_stall.name }} ({{ b.pending_transfer.get_status_display }})</div>
+            {% else %}
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="booking_id" value="{{ b.id }}">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <select class="form-select" name="stall_id" required>
+                            <option value="">Select available stand...</option>
+                            {% for s in b.available_stalls %}
+                            <option value="{{ s.id }}">{{ s.name }}{% if s.zone %} - {{ s.zone.name }}{% endif %} - R{{ s.total_price|floatformat:2 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" name="reason" placeholder="Reason (optional)">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Request Swap</button>
+                    </div>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <p class="text-muted">You have no active bookings that can be swapped.</p>
+    {% endfor %}
+</div>
+{% endblock %}

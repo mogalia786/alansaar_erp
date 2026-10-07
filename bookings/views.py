@@ -285,6 +285,40 @@ def request_stall_transfer(request, pk):
 
 
 @login_required
+def stand_swap_request(request):
+    bookings = request.user.bookings.filter(status__in=['pending', 'approved', 'confirmed']).select_related('event', 'stall')
+    from events.models import Stall
+    from django.shortcuts import render
+    from .models import StallTransferRequest
+    if request.method == 'POST':
+        booking_id = request.POST.get('booking_id')
+        stall_id = request.POST.get('stall_id')
+        reason = request.POST.get('reason', '').strip()
+        booking = get_object_or_404(Booking, pk=booking_id, exhibitor=request.user)
+        stall = get_object_or_404(Stall, pk=stall_id, event=booking.event)
+        if booking.status in ('cancelled', 'rejected', 'completed'):
+            messages.error(request, 'That booking can no longer be transferred.')
+        elif stall.status != 'available':
+            messages.error(request, f'Stall {stall.name} is no longer available.')
+        elif stall.id == booking.stall_id:
+            messages.error(request, 'That is the current stand.')
+        elif StallTransferRequest.objects.filter(booking=booking, status='pending').exists():
+            messages.error(request, 'A transfer request is already pending for this booking.')
+        else:
+            StallTransferRequest.objects.create(booking=booking, requested_stall=stall, requested_by=request.user, reason=reason)
+            from notifications.utils import create_notification
+            from django.contrib.auth import get_user_model
+            for staff in get_user_model().objects.filter(is_staff=True, is_active=True):
+                create_notification(staff, 'discount', f'Stand Transfer Request: {booking.booking_reference}', f'{request.user.company_name or request.user.username} wants to move from {booking.stall.name} to {stall.name}.', '/erp/stall-transfers/')
+            messages.success(request, 'Stand change request submitted.')
+        return redirect('stand_swap_request')
+    for b in bookings:
+        b.available_stalls = Stall.objects.filter(event=b.event, status='available').exclude(id=b.stall_id).order_by('name')
+        b.pending_transfer = StallTransferRequest.objects.filter(booking=b, status='pending').first()
+    return render(request, 'bookings/stand_swap_request.html', {'bookings': bookings})
+
+
+@login_required
 def cancel_booking(request, pk):
     booking = get_object_or_404(Booking, pk=pk, exhibitor=request.user)
     if booking.status == 'pending':

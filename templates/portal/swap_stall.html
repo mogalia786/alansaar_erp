@@ -1,0 +1,37 @@
+{% extends 'portal/base.html' %}
+{% block title %}Swap Stand - ERP{% endblock %}
+{% block content %}
+<h3 class="fw-bold mb-3"><i class="bi bi-arrow-left-right"></i> Swap Stand</h3>
+<form method="GET" class="mb-4 d-flex gap-2">
+    <input type="text" name="q" class="form-control" placeholder="Search exhibitor by name, username or email" value="{{ q }}">
+    <button class="btn btn-purple">Search</button>
+</form>
+{% for r in results %}
+<div class="card mb-3">
+    <div class="card-header bg-purple text-white"><strong>{{ r.exhibitor.company_name|default:r.exhibitor.username }}</strong></div>
+    <div class="card-body">
+        {% if r.bookings %}
+        {% for b in r.bookings %}
+        <div class="border rounded p-2 mb-2">
+            <strong>{{ b.booking_reference }}</strong> — {{ b.event.name }} — Stall {{ b.stall.name }} — {{ b.get_status_display }}
+            <form method="POST" class="row g-2 mt-2">
+                {% csrf_token %}
+                <input type="hidden" name="booking_id" value="{{ b.id }}">
+                <div class="col-md-5">
+                    <select name="stall_id" class="form-select form-select-sm" required>
+                        <option value="">Move to available stand...</option>
+                        {% for s in b.event.stalls.all %}{% if s.status == 'available' %}<option value="{{ s.id }}">{{ s.name }} — R{{ s.total_price|floatformat:2 }}{% if s.zone %} — {{ s.zone.name }}{% endif %}</option>{% endif %}{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4"><input type="text" name="reason" class="form-control form-control-sm" placeholder="Reason (optional)"></div>
+                <div class="col-md-3"><button class="btn btn-sm btn-success w-100" onclick="return confirm('Swap this stand? Payments and the invoice line will move to the new stand.')">Swap</button></div>
+            </form>
+        </div>
+        {% endfor %}
+        {% else %}<p class="text-muted mb-0">No active bookings.</p>{% endif %}
+    </div>
+</div>
+{% empty %}
+{% if q %}<p class="text-muted">No exhibitors found.</p>{% endif %}
+{% endfor %}
+{% endblock %}

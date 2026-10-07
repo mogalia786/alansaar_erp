@@ -1058,6 +1058,36 @@ def approve_discount(request, pk):
     return redirect('erp:discount_list')
 
 
+@erp_section_required('stall_changes')
+def erp_swap_stall(request):
+    from accounts.models import User
+    from events.models import Stall
+    from bookings.models import StallTransferRequest
+    from bookings.services import execute_stall_transfer
+    q = request.GET.get('q', '').strip()
+    results = []
+    if q:
+        exhibitors = User.objects.filter(user_type='exhibitor').filter(
+            Q(company_name__icontains=q) | Q(username__icontains=q) | Q(email__icontains=q)
+        )[:20]
+        for ex in exhibitors:
+            results.append({'exhibitor': ex, 'bookings': ex.bookings.filter(status__in=['pending', 'approved', 'confirmed']).select_related('stall', 'event')})
+    if request.method == 'POST':
+        booking_id = request.POST.get('booking_id')
+        stall_id = request.POST.get('stall_id')
+        reason = request.POST.get('reason', '')
+        booking = get_object_or_404(Booking, pk=booking_id)
+        stall = get_object_or_404(Stall, pk=stall_id, event=booking.event)
+        try:
+            tr = StallTransferRequest.objects.create(booking=booking, requested_stall=stall, requested_by=booking.exhibitor, reason=reason)
+            new_booking = execute_stall_transfer(tr, reviewed_by=request.user)
+            messages.success(request, f'Stand swapped. {booking.booking_reference} cancelled; new booking {new_booking.booking_reference} on stall {stall.name} created. Payments transferred.')
+        except ValueError as e:
+            messages.error(request, str(e))
+        return redirect('erp:swap_stall')
+    return render(request, 'portal/swap_stall.html', {'q': q, 'results': results})
+
+
 @erp_section_required('bookings')
 def erp_stall_transfer_list(request):
     from bookings.models import StallTransferRequest

@@ -77,6 +77,7 @@
                     {% if user.is_authenticated %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'my_bookings' %}">My Bookings</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'stand_swap_request' %}">Swap Stand</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'my_invoices' %}">Invoices</a></li>
                     {% endif %}
                 </ul>

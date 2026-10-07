@@ -40,6 +40,7 @@ urlpatterns = [
     path('discounts/<int:pk>/approve/', views.approve_discount, name='approve_discount'),
     path('discounts/<int:pk>/reject/', views.reject_discount, name='reject_discount'),
     path('stall-transfers/', views.erp_stall_transfer_list, name='stall_transfer_list'),
+    path('swap-stall/', views.erp_swap_stall, name='swap_stall'),
     path('stall-transfers/<int:pk>/approve/', views.approve_stall_transfer, name='approve_stall_transfer'),
     path('stall-transfers/<int:pk>/reject/', views.reject_stall_transfer, name='reject_stall_transfer'),
     path('print/stand-spec/<int:booking_id>/', views.print_stand_spec, name='print_stand_spec'),
