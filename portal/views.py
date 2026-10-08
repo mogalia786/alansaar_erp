@@ -1496,6 +1496,235 @@ def erp_all_bookings_report(request):
     })
 
 
+PAYMENT_BAND_COUNT = 10
+
+# Bookings that actually hold a stand (matches the statuses used by the
+# section summary report). Cancelled/rejected bookings are excluded because
+# the stand has been released and nothing is owed.
+ACTIVE_BOOKING_STATUSES = ('pending', 'approved', 'confirmed', 'completed')
+
+
+def build_payment_status_rows(event):
+    """Group an event's stand bookings by exhibitor and work out what
+    percentage of their total they have paid, for the payment status report."""
+    qs = (Booking.objects.filter(event=event, stall__isnull=False,
+                                 status__in=ACTIVE_BOOKING_STATUSES)
+          .select_related('exhibitor', 'stall', 'stall__section')
+          .order_by('booking_date'))
+
+    grouped = {}
+    for bk in qs:
+        u = bk.exhibitor
+        row = grouped.get(u.pk)
+        if row is None:
+            row = {
+                'id': u.pk,
+                'name': u.company_name or u.get_full_name() or u.username,
+                'contact': u.get_full_name() or u.username,
+                'email': u.email or '',
+                'phone': u.phone or '',
+                'bookings': [],
+                'first_booking': bk.booking_date,
+                'stall_cost': Decimal('0'),
+                'total': Decimal('0'),
+                'paid': Decimal('0'),
+                'balance': Decimal('0'),
+                'stands_count': 0,
+            }
+            grouped[u.pk] = row
+        stall = bk.stall
+        w = (Decimal(stall.width or 0) / Decimal('1000')).quantize(Decimal('0.1'))
+        h = (Decimal(stall.height or 0) / Decimal('1000')).quantize(Decimal('0.1'))
+        row['bookings'].append({
+            'ref': bk.booking_reference,
+            'stall': stall.name,
+            'section': stall.section.name if stall.section else '-',
+            'size': f"{w} x {h}",
+            'total': bk.total_amount,
+            'paid': bk.amount_paid,
+            'balance': bk.total_amount - bk.amount_paid,
+            'date': bk.booking_date,
+            'booking': bk,
+        })
+        if bk.booking_date < row['first_booking']:
+            row['first_booking'] = bk.booking_date
+        row['stall_cost'] += bk.stall_price
+        row['total'] += bk.total_amount
+        row['paid'] += bk.amount_paid
+        row['stands_count'] += 1
+
+    rows = []
+    for row in grouped.values():
+        # Always derive the balance so the columns can never contradict each
+        # other (the stored balance_due is zeroed on cancellation etc).
+        row['balance'] = row['total'] - row['paid']
+        if row['total'] > 0:
+            pct = (row['paid'] / row['total'] * 100).quantize(Decimal('0.1'))
+        else:
+            pct = Decimal('100.0') if row['balance'] <= 0 else Decimal('0.0')
+        pct = max(pct, Decimal('0'))
+        row['pct'] = pct
+        row['pct_int'] = min(int(pct), 100)
+        row['bucket'] = min(int(pct // 10), PAYMENT_BAND_COUNT - 1)
+        row['stands_text'] = ', '.join(f"{b['stall']} ({b['section']})" for b in row['bookings'])
+        rows.append(row)
+    return rows
+
+
+def _payment_band_badge(index):
+    if index == 0:
+        return 'bg-danger'
+    if index <= 4:
+        return 'bg-warning text-dark'
+    if index <= 8:
+        return 'bg-info text-dark'
+    return 'bg-success'
+
+
+def _default_reminder_body(row, event):
+    return (
+        f"Dear {row['contact']},\n\n"
+        "We hope this message finds you well.\n\n"
+        f"This is a friendly reminder that payment is still outstanding on your stand "
+        f"booking(s) for {event.name}.\n\n"
+        f"  \u2022 Total stand booking value: R{row['total']:,.2f}\n"
+        f"  \u2022 Amount paid to date: R{row['paid']:,.2f}\n"
+        f"  \u2022 Outstanding balance: R{row['balance']:,.2f}  ({row['pct']}% paid)\n\n"
+        "Kindly arrange settlement of the outstanding balance at your earliest convenience. "
+        "Should you wish to arrange a payment plan, or require a copy of your invoice, "
+        "please do not hesitate to contact our events team.\n\n"
+        "We look forward to welcoming you.\n\n"
+        "Kind regards,\n"
+        "Al Ansaar Foundation Events Team"
+    )
+
+
+@erp_section_required('booking_reports')
+def erp_payment_status_report(request):
+    events = Event.objects.order_by('start_date')
+    active_event = events.first()
+    event_id = request.GET.get('event_id')
+    if event_id:
+        active_event = events.filter(pk=event_id).first() or active_event
+
+    buckets = [{
+        'index': i,
+        'label': f"{i * 10}\u2013{(i + 1) * 10}%",
+        'badge': _payment_band_badge(i),
+        'items': [],
+        'stands': 0,
+        'total': Decimal('0'),
+        'paid': Decimal('0'),
+        'balance': Decimal('0'),
+    } for i in range(PAYMENT_BAND_COUNT)]
+
+    rows, summary = [], None
+    if active_event:
+        rows = build_payment_status_rows(active_event)
+        for r in rows:
+            r['email_subject'] = f"Payment Reminder \u2013 Outstanding Balance \u2013 {active_event.name}"
+            r['email_body'] = _default_reminder_body(r, active_event)
+            b = buckets[r['bucket']]
+            b['items'].append(r)
+            b['stands'] += r['stands_count']
+            b['total'] += r['total']
+            b['paid'] += r['paid']
+            b['balance'] += r['balance']
+        for b in buckets:
+            b['items'].sort(key=lambda x: x['first_booking'])
+
+        total = sum((r['total'] for r in rows), Decimal('0'))
+        paid = sum((r['paid'] for r in rows), Decimal('0'))
+        summary = {
+            'exhibitors': len(rows),
+            'stands': sum(r['stands_count'] for r in rows),
+            'total': total,
+            'paid': paid,
+            'balance': sum((r['balance'] for r in rows), Decimal('0')),
+            'pct': (paid / total * 100).quantize(Decimal('0.1')) if total else Decimal('0'),
+        }
+
+    tab_arg = request.GET.get('tab')
+    if tab_arg is not None and tab_arg.isdigit() and 0 <= int(tab_arg) < PAYMENT_BAND_COUNT:
+        active_tab = int(tab_arg)
+    else:
+        active_tab = next((b['index'] for b in buckets if b['items']), 0)
+
+    return render(request, 'portal/payment_status_report.html', {
+        'events': events,
+        'active_event': active_event,
+        'buckets': buckets,
+        'summary': summary,
+        'active_tab': active_tab,
+        'today': timezone.localdate(),
+    })
+
+
+@erp_section_required('booking_reports')
+def send_payment_reminder(request):
+    from django.urls import reverse
+    from invoices.models import PaymentReminder
+    from notifications.utils import send_html_email
+
+    if request.method != 'POST':
+        return redirect('erp:payment_status_report')
+
+    events = Event.objects.order_by('start_date')
+    event = events.first()
+    if request.POST.get('event_id'):
+        event = events.filter(pk=request.POST['event_id']).first() or event
+    if not event:
+        messages.error(request, 'No event found.')
+        return redirect('erp:payment_status_report')
+
+    exhibitor_id = request.POST.get('exhibitor_id', '')
+    subject = (request.POST.get('subject') or '').strip()
+    message = (request.POST.get('message') or '').strip()
+    row = next((r for r in build_payment_status_rows(event) if str(r['id']) == str(exhibitor_id)), None)
+
+    if row is None:
+        messages.error(request, 'That exhibitor has no stand bookings for this event.')
+        return redirect('erp:payment_status_report')
+    if not subject or not message:
+        messages.error(request, 'Both a subject and a message are required.')
+        return redirect(f"{reverse('erp:payment_status_report')}?event_id={event.pk}&tab={row['bucket']}")
+    if not row['email']:
+        messages.error(request, f"{row['name']} has no email address on file.")
+        return redirect(f"{reverse('erp:payment_status_report')}?event_id={event.pk}&tab={row['bucket']}")
+
+    stands = [{
+        'name': b['stall'],
+        'section': b['section'],
+        'size': b['size'],
+        'ref': b['ref'],
+        'total': b['total'],
+        'paid': b['paid'],
+        'balance': b['balance'],
+        'date': b['date'],
+    } for b in row['bookings']]
+
+    send_html_email(subject, 'emails/payment_reminder.html', {
+        'event': event,
+        'exhibitor_name': row['name'],
+        'paragraphs': [p.strip() for p in message.splitlines() if p.strip()],
+        'stands': stands,
+        'total_value': row['total'],
+        'amount_paid': row['paid'],
+        'balance': row['balance'],
+        'pct_paid': row['pct'],
+        'site_url': getattr(settings, 'SITE_URL', ''),
+    }, [row['email']])
+
+    for b in row['bookings']:
+        PaymentReminder.objects.create(
+            booking=b['booking'], sent_to=row['email'],
+            reminder_type='outstanding', notes=message,
+        )
+
+    messages.success(request, f"Payment reminder sent to {row['name']} ({row['email']}).")
+    return redirect(f"{reverse('erp:payment_status_report')}?event_id={event.pk}&tab={row['bucket']}")
+
+
 @erp_section_required('expenses')
 def erp_expense_list(request):
     expenses = Expense.objects.all().select_related('provider', 'created_by')

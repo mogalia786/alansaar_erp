@@ -1,0 +1,337 @@
+{% extends 'portal/base.html' %}
+{% block title %}Payment Status Report - ERP{% endblock %}
+{% block extra_head %}
+<style>
+    .payment-tabs .nav-link { color:#5B2C6F; font-size:12px; font-weight:600; padding:.45rem .7rem; border-radius:6px 6px 0 0; white-space:nowrap; }
+    .payment-tabs .nav-link.active { background:#5B2C6F; color:#fff; }
+    .payment-tabs .nav-link:not(.active):hover { background:#f1e9f6; }
+    .payment-tabs .badge { font-size:10px; }
+    .btn-outline-purple { color:#5B2C6F; border-color:#5B2C6F; }
+    .btn-outline-purple:hover { background:#5B2C6F; color:#fff; }
+    .band-table th { font-size:11px; text-transform:uppercase; letter-spacing:.4px; }
+    .stands-list { line-height:1.5; }
+    .stands-list .stall-chip { display:inline-block; background:#f1e9f6; color:#5B2C6F; border:1px solid #e0d4ed; border-radius:4px; padding:1px 6px; font-weight:600; font-size:11px; }
+    .stands-list .ref-chip { font-size:10px; color:#888; }
+    .print-head { display:none; }
+    .email-summary { background:#f8f4fc; border:1px solid #e7dcf0; border-radius:8px; padding:12px 14px; font-size:13px; }
+    .email-summary .row-line { display:flex; justify-content:space-between; padding:3px 0; }
+    @media print {
+        @page { size: landscape; margin: 10mm; }
+        .print-head { display:block !important; }
+        .payment-tabs, .navbar { display:none !important; }
+        .tab-content > .tab-pane { display:none !important; }
+        .tab-content > .tab-pane.active { display:block !important; opacity:1 !important; }
+        .band-table { font-size:10px !important; }
+        .band-table thead { display:table-header-group; }
+        .band-table th { background:#5B2C6F !important; color:#fff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .col-action, .col-action-th { display:none !important; }
+        .card { box-shadow:none !important; border:1px solid #ddd !important; }
+        .main-content { padding:0 !important; }
+        .stall-chip { border:1px solid #ccc !important; }
+    }
+</style>
+{% endblock %}
+{% block content %}
+
+<!-- Print-only letterhead -->
+<div class="print-head">
+    <div class="d-flex justify-content-between align-items-end border-bottom pb-2 mb-3" style="border-color:#5B2C6F !important;">
+        <div>
+            <h2 class="mb-0" style="color:#5B2C6F;font-weight:700;letter-spacing:2px;font-size:22px;">AL ANSAAR FOUNDATION</h2>
+            <div style="color:#D4AF37;letter-spacing:3px;font-size:11px;font-weight:600;">PAYMENT STATUS REPORT</div>
+        </div>
+        <div class="text-end" style="font-size:11px;line-height:1.7;">
+            <div><strong>Event:</strong> {{ active_event.name }}</div>
+            <div><strong>Payment Band:</strong> <span id="printBand">&nbsp;</span></div>
+            <div><strong>Report Date:</strong> {{ today|date:"d F Y" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <h3 class="fw-bold mb-0"><i class="bi bi-credit-card"></i> Payment Status Report</h3>
+    <button onclick="window.print()" class="btn btn-purple btn-sm"><i class="bi bi-printer"></i> Print</button>
+</div>
+
+<div class="card mb-4 no-print">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label small mb-1">Event</label>
+                <select name="event_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    {% for ev in events %}
+                    <option value="{{ ev.pk }}" {% if active_event and ev.pk == active_event.pk %}selected{% endif %}>{{ ev.name }} ({{ ev.start_date|date:"Y" }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <span class="form-label small mb-1 d-block">Generated</span>
+                <span class="text-muted" style="font-size:12px;">{{ today|date:"d M Y" }}</span>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'erp:payment_status_report' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if not active_event %}
+<div class="alert alert-info">No events found.</div>
+{% elif not summary %}
+<div class="alert alert-info">No stand bookings found for this event.</div>
+{% else %}
+
+<h5 class="mb-3 text-purple fw-bold">
+    Payment Collection by Band
+    <span class="text-muted fw-normal">- {{ active_event.name }}</span>
+</h5>
+
+<!-- Summary cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="card stat-card p-3">
+            <div class="text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Exhibitors</div>
+            <div class="fs-4 fw-bold text-purple">{{ summary.exhibitors }}</div>
+            <div class="text-muted" style="font-size:11px;">{{ summary.stands }} stands booked</div>
+            <span class="icon"><i class="bi bi-people"></i></span>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card stat-card p-3">
+            <div class="text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Total Stand Value</div>
+            <div class="fs-4 fw-bold text-purple">R{{ summary.total|floatformat:2 }}</div>
+            <div class="text-muted" style="font-size:11px;">All stand bookings</div>
+            <span class="icon"><i class="bi bi-receipt"></i></span>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card stat-card p-3">
+            <div class="text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Received</div>
+            <div class="fs-4 fw-bold" style="color:#198754;">R{{ summary.paid|floatformat:2 }}</div>
+            <div class="text-muted" style="font-size:11px;">{{ summary.pct }}% collected</div>
+            <span class="icon"><i class="bi bi-check2-circle"></i></span>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card stat-card p-3">
+            <div class="text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;">Outstanding</div>
+            <div class="fs-4 fw-bold text-danger">R{{ summary.balance|floatformat:2 }}</div>
+            <div class="text-muted" style="font-size:11px;">Across all bands</div>
+            <span class="icon"><i class="bi bi-exclamation-triangle"></i></span>
+        </div>
+    </div>
+</div>
+
+<!-- Band tabs -->
+<ul class="nav nav-tabs payment-tabs no-print" id="bandTabs" role="tablist">
+    {% for b in buckets %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link {% if b.index == active_tab %}active{% endif %}" id="tabbtn-{{ b.index }}"
+                data-idx="{{ b.index }}" data-bs-toggle="tab" data-bs-target="#tab-{{ b.index }}" type="button" role="tab">
+            {{ b.label }} <span class="badge {{ b.badge }}">{{ b.items|length }}</span>
+        </button>
+    </li>
+    {% endfor %}
+</ul>
+
+<div class="tab-content" id="bandTabContent">
+{% for b in buckets %}
+<div class="tab-pane fade show {% if b.index == active_tab %}active{% endif %}" id="tab-{{ b.index }}" role="tabpanel">
+    <div class="d-flex justify-content-between align-items-center mb-2 no-print">
+        <div class="text-muted" style="font-size:12px;">
+            <strong class="text-purple">{{ b.label }}</strong> &bull;
+            {{ b.items|length }} exhibitor{{ b.items|length|pluralize }} &bull;
+            {{ b.stands }} stand{{ b.stands|pluralize }} &bull;
+            Value <strong>R{{ b.total|floatformat:2 }}</strong> &bull;
+            Paid <strong class="text-success">R{{ b.paid|floatformat:2 }}</strong> &bull;
+            Outstanding <strong class="text-danger">R{{ b.balance|floatformat:2 }}</strong>
+        </div>
+        <button type="button" class="btn btn-purple btn-sm" onclick="printBand({{ b.index }})">
+            <i class="bi bi-printer"></i> Print This Tab
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered table-striped mb-0 align-middle band-table" style="font-size:12px;">
+                    <thead class="table-purple">
+                        <tr>
+                            <th style="width:32px;" class="text-center">No</th>
+                            <th>Exhibitor</th>
+                            <th>Stands Booked</th>
+                            <th>Booked On</th>
+                            <th class="text-end">Stand Cost</th>
+                            <th class="text-end">Total Due</th>
+                            <th class="text-end">Paid</th>
+                            <th class="text-end">Balance</th>
+                            <th style="width:110px;">% Paid</th>
+                            <th class="text-center col-action" style="width:60px;">Remind</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for r in b.items %}
+                    <tr>
+                        <td class="text-center">{{ forloop.counter }}</td>
+                        <td>
+                            <strong>{{ r.name }}</strong>
+                            <div class="text-muted" style="font-size:10px;">
+                                {{ r.contact }}{% if r.email %} &bull; {{ r.email }}{% endif %}
+                            </div>
+                        </td>
+                        <td class="stands-list">
+                            {% for bk in r.bookings %}
+                            <span class="stall-chip">{{ bk.stall }}</span>
+                            <span class="ref-chip">{{ bk.section }} &bull; {{ bk.size }}m &bull; {{ bk.ref }}</span>{% if not forloop.last %}<br>{% endif %}
+                            {% endfor %}
+                        </td>
+                        <td class="text-nowrap">{{ r.first_booking|date:"d M Y" }}</td>
+                        <td class="text-end">R{{ r.stall_cost|floatformat:2 }}</td>
+                        <td class="text-end fw-bold">R{{ r.total|floatformat:2 }}</td>
+                        <td class="text-end" style="color:#198754;">R{{ r.paid|floatformat:2 }}</td>
+                        <td class="text-end {% if r.balance > 0 %}text-danger fw-bold{% endif %}">R{{ r.balance|floatformat:2 }}</td>
+                        <td>
+                            <span class="badge {% if r.pct >= 100 %}bg-success{% elif r.pct >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ r.pct }}%</span>
+                            <div class="progress mt-1" style="height:5px;">
+                                <div class="progress-bar {% if r.pct >= 100 %}bg-success{% elif r.pct >= 50 %}bg-warning{% else %}bg-danger{% endif %}" style="width:{{ r.pct_int }}%"></div>
+                            </div>
+                        </td>
+                        <td class="text-center col-action">
+                            <button type="button" class="btn btn-outline-purple btn-sm rounded-circle email-btn"
+                                    data-bs-toggle="modal" data-bs-target="#reminderModal"
+                                    data-exhibitor="{{ r.id }}"
+                                    data-name="{{ r.name }}"
+                                    data-email="{{ r.email }}"
+                                    data-stands="{{ r.stands_text }}"
+                                    data-total="R{{ r.total|floatformat:2 }}"
+                                    data-paid="R{{ r.paid|floatformat:2 }}"
+                                    data-balance="R{{ r.balance|floatformat:2 }}"
+                                    data-pct="{{ r.pct }}%"
+                                    data-subject="{{ r.email_subject }}"
+                                    data-body="{{ r.email_body }}"
+                                    title="{% if r.email %}Send payment reminder email{% else %}No email address on file{% endif %}"
+                                    {% if not r.email %}disabled{% endif %}>
+                                <i class="bi bi-envelope-paper"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="10" class="text-center text-muted py-4">No exhibitors fall within this payment band.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                    {% if b.items %}
+                    <tfoot class="fw-bold table-light">
+                        <tr>
+                            <td class="text-center">{{ b.items|length }}</td>
+                            <td>Band Totals</td>
+                            <td>{{ b.stands }} stands</td>
+                            <td></td>
+                            <td class="text-end">-</td>
+                            <td class="text-end">R{{ b.total|floatformat:2 }}</td>
+                            <td class="text-end text-success">R{{ b.paid|floatformat:2 }}</td>
+                            <td class="text-end text-danger">R{{ b.balance|floatformat:2 }}</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+</div>
+
+{% endif %}
+
+<!-- Reminder modal -->
+<div class="modal fade" id="reminderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <form method="post" action="{% url 'erp:send_payment_reminder' %}" id="reminderForm">
+            {% csrf_token %}
+            <input type="hidden" name="event_id" value="{{ active_event.pk }}">
+            <input type="hidden" name="exhibitor_id" id="rmExhibitor" value="">
+            <div class="modal-header" style="background:#5B2C6F;color:#fff;">
+                <h5 class="modal-title"><i class="bi bi-envelope-paper"></i> Send Payment Reminder</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="email-summary mb-3">
+                    <div class="row-line"><span>Exhibitor</span><strong id="rmName">-</strong></div>
+                    <div class="row-line"><span>Stands</span><strong id="rmStands" class="text-end">-</strong></div>
+                    <div class="row-line"><span>Total Due</span><strong id="rmTotal">-</strong></div>
+                    <div class="row-line"><span>Paid</span><strong id="rmPaid" class="text-success">-</strong></div>
+                    <div class="row-line"><span>Outstanding</span><strong id="rmBalance" class="text-danger">-</strong></div>
+                    <div class="row-line border-top pt-2 mt-1"><span>% Paid</span><strong id="rmPct">-</strong></div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label small mb-1">To</label>
+                    <input type="email" class="form-control form-control-sm" id="rmEmail" name="email" readonly>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small mb-1">Subject</label>
+                    <input type="text" class="form-control form-control-sm" name="subject" id="rmSubject" required>
+                </div>
+                <div class="mb-1">
+                    <label class="form-label small mb-1">Message</label>
+                    <textarea class="form-control form-control-sm" name="message" id="rmMessage" rows="12" required></textarea>
+                </div>
+                <div class="form-text">A branded HTML email with the stand and payment breakdown table is sent from the ERP.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-purple btn-sm"><i class="bi bi-send"></i> Send Reminder</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    var BAND_LABELS = [{% for b in buckets %}"{{ b.label }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+    var printBandEl = document.getElementById('printBand');
+    var activeIdx = {{ active_tab }};
+
+    function setBandLabel(idx) {
+        activeIdx = idx;
+        if (printBandEl) printBandEl.textContent = BAND_LABELS[idx] || '';
+    }
+    setBandLabel(activeIdx);
+
+    document.querySelectorAll('#bandTabs button[data-bs-toggle="tab"]').forEach(function (btn) {
+        btn.addEventListener('shown.bs.tab', function (e) {
+            setBandLabel(parseInt(e.target.dataset.idx, 10) || 0);
+        });
+    });
+
+    window.printBand = function (idx) {
+        var btn = document.getElementById('tabbtn-' + idx);
+        if (btn) { new bootstrap.Tab(btn).show(); }
+        setBandLabel(idx);
+        setTimeout(function () { window.print(); }, 350);
+    };
+
+    var modal = document.getElementById('reminderModal');
+    if (modal) {
+        modal.addEventListener('show.bs.modal', function (e) {
+            var src = e.relatedTarget;
+            if (!src) return;
+            document.getElementById('rmExhibitor').value = src.dataset.exhibitor || '';
+            document.getElementById('rmName').textContent = src.dataset.name || '-';
+            document.getElementById('rmStands').textContent = src.dataset.stands || '-';
+            document.getElementById('rmTotal').textContent = src.dataset.total || '-';
+            document.getElementById('rmPaid').textContent = src.dataset.paid || '-';
+            document.getElementById('rmBalance').textContent = src.dataset.balance || '-';
+            document.getElementById('rmPct').textContent = src.dataset.pct || '-';
+            document.getElementById('rmEmail').value = src.dataset.email || '';
+            document.getElementById('rmSubject').value = src.dataset.subject || '';
+            document.getElementById('rmMessage').value = src.dataset.body || '';
+        });
+    }
+})();
+</script>
+{% endblock %}

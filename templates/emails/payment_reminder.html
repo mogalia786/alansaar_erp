@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Payment Reminder</title></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:30px 10px;">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+<tr><td style="background:#5B2C6F;padding:25px 30px;text-align:center;">
+<h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:2px;">AL ANSAAR FOUNDATION</h1>
+<p style="color:#D4AF37;margin:5px 0 0;font-size:13px;letter-spacing:1px;">PAYMENT REMINDER</p>
+</td></tr>
+<tr><td style="padding:30px;">
+{% for p in paragraphs %}
+<p style="margin:0 0 14px;line-height:1.6;">{{ p }}</p>
+{% endfor %}
+
+<p style="margin:22px 0 8px;color:#5B2C6F;font-size:13px;letter-spacing:1px;text-transform:uppercase;"><strong>Your Stand Booking{{ stands|length|pluralize }}</strong></p>
+<table width="100%" cellpadding="8" cellspacing="0" style="border-collapse:collapse;font-size:13px;border:1px solid #e7dcf0;">
+<tr style="background:#5B2C6F;color:#ffffff;text-align:left;">
+<td style="border:1px solid #e7dcf0;">Stand</td>
+<td style="border:1px solid #e7dcf0;">Section</td>
+<td style="border:1px solid #e7dcf0;">Size (m)</td>
+<td style="border:1px solid #e7dcf0;">Booking Ref</td>
+<td style="border:1px solid #e7dcf0;" align="right">Amount</td>
+</tr>
+{% for s in stands %}
+<tr>
+<td style="border:1px solid #e7dcf0;"><strong>{{ s.name }}</strong></td>
+<td style="border:1px solid #e7dcf0;">{{ s.section }}</td>
+<td style="border:1px solid #e7dcf0;">{{ s.size }}</td>
+<td style="border:1px solid #e7dcf0;">{{ s.ref }}</td>
+<td style="border:1px solid #e7dcf0;" align="right">R{{ s.total|floatformat:2 }}</td>
+</tr>
+{% endfor %}
+</table>
+
+<table width="100%" cellpadding="8" cellspacing="0" style="background:#f8f4fc;border-radius:6px;margin:18px 0;font-size:13px;">
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Total stand booking value</strong></td><td align="right">R{{ total_value|floatformat:2 }}</td></tr>
+<tr><td style="border-bottom:1px solid #e0d4ed;"><strong>Amount paid to date</strong></td><td align="right" style="color:#198754;">R{{ amount_paid|floatformat:2 }}</td></tr>
+<tr><td><strong>Outstanding balance ({{ pct_paid }}% paid)</strong></td><td align="right"><strong style="color:#dc3545;font-size:16px;">R{{ balance|floatformat:2 }}</strong></td></tr>
+</table>
+
+<p style="margin:0 0 14px;line-height:1.6;">If you have already settled this amount, please disregard this notice &mdash; kindly allow a short period for processing to reflect on your account.</p>
+{% if site_url %}
+<p style="margin:0 0 6px;"><a href="{{ site_url }}/erp/invoices/" style="display:inline-block;background:#5B2C6F;color:#ffffff;padding:12px 30px;border-radius:6px;text-decoration:none;font-weight:bold;">View Your Invoices</a></p>
+{% endif %}
+</td></tr>
+<tr><td style="background:#f8f4fc;padding:20px 30px;text-align:center;border-top:2px solid #5B2C6F;font-size:12px;color:#888;">
+<p style="margin:0;">Al Ansaar Foundation &bull; Durban, South Africa</p>
+<p style="margin:5px 0 0;">This is an automated reminder regarding your stand booking for {{ event.name }}.</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>
