@@ -12,45 +12,29 @@
     .stands-list { line-height:1.5; }
     .stands-list .stall-chip { display:inline-block; background:#f1e9f6; color:#5B2C6F; border:1px solid #e0d4ed; border-radius:4px; padding:1px 6px; font-weight:600; font-size:11px; }
     .stands-list .ref-chip { font-size:10px; color:#888; }
-    .print-head { display:none; }
     .email-summary { background:#f8f4fc; border:1px solid #e7dcf0; border-radius:8px; padding:12px 14px; font-size:13px; }
     .email-summary .row-line { display:flex; justify-content:space-between; padding:3px 0; }
     @media print {
         @page { size: landscape; margin: 10mm; }
-        .print-head { display:block !important; }
-        .payment-tabs, .navbar { display:none !important; }
+        /* Print is identical to the screen report - only active tab shows */
         .tab-content > .tab-pane { display:none !important; }
         .tab-content > .tab-pane.active { display:block !important; opacity:1 !important; }
         .band-table { font-size:10px !important; }
         .band-table thead { display:table-header-group; }
         .band-table th { background:#5B2C6F !important; color:#fff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-        .col-action, .col-action-th { display:none !important; }
         .card { box-shadow:none !important; border:1px solid #ddd !important; }
         .main-content { padding:0 !important; }
-        .stall-chip { border:1px solid #ccc !important; }
+        .stall-chip { border:1px solid #ccc !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .payment-tabs .nav-link.active { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        .stat-card, .progress { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     }
 </style>
 {% endblock %}
 {% block content %}
 
-<!-- Print-only letterhead -->
-<div class="print-head">
-    <div class="d-flex justify-content-between align-items-end border-bottom pb-2 mb-3" style="border-color:#5B2C6F !important;">
-        <div>
-            <h2 class="mb-0" style="color:#5B2C6F;font-weight:700;letter-spacing:2px;font-size:22px;">AL ANSAAR FOUNDATION</h2>
-            <div style="color:#D4AF37;letter-spacing:3px;font-size:11px;font-weight:600;">PAYMENT STATUS REPORT</div>
-        </div>
-        <div class="text-end" style="font-size:11px;line-height:1.7;">
-            <div><strong>Event:</strong> {{ active_event.name }}</div>
-            <div><strong>Payment Band:</strong> <span id="printBand">&nbsp;</span></div>
-            <div><strong>Report Date:</strong> {{ today|date:"d F Y" }}</div>
-        </div>
-    </div>
-</div>
-
-<div class="d-flex justify-content-between align-items-center mb-3 no-print">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="fw-bold mb-0"><i class="bi bi-credit-card"></i> Payment Status Report</h3>
-    <button onclick="window.print()" class="btn btn-purple btn-sm"><i class="bi bi-printer"></i> Print</button>
+    <button onclick="window.print()" class="btn btn-purple btn-sm no-print"><i class="bi bi-printer"></i> Print</button>
 </div>
 
 <div class="card mb-4 no-print">
@@ -123,7 +107,7 @@
 </div>
 
 <!-- Band tabs -->
-<ul class="nav nav-tabs payment-tabs no-print" id="bandTabs" role="tablist">
+<ul class="nav nav-tabs payment-tabs" id="bandTabs" role="tablist">
     {% for b in buckets %}
     <li class="nav-item" role="presentation">
         <button class="nav-link {% if b.index == active_tab %}active{% endif %}" id="tabbtn-{{ b.index }}"
@@ -137,16 +121,13 @@
 <div class="tab-content" id="bandTabContent">
 {% for b in buckets %}
 <div class="tab-pane fade show {% if b.index == active_tab %}active{% endif %}" id="tab-{{ b.index }}" role="tabpanel">
-    <div class="d-flex justify-content-between align-items-center mb-2 no-print">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <div class="text-muted" style="font-size:12px;">
             <strong class="text-purple">{{ b.label }}</strong> &bull;
             {{ b.items|length }} exhibitor{{ b.items|length|pluralize }} &bull;
-            {{ b.stands }} stand{{ b.stands|pluralize }} &bull;
-            Value <strong>R{{ b.total|floatformat:2 }}</strong> &bull;
-            Paid <strong class="text-success">R{{ b.paid|floatformat:2 }}</strong> &bull;
-            Outstanding <strong class="text-danger">R{{ b.balance|floatformat:2 }}</strong>
+            {{ b.stands }} stand{{ b.stands|pluralize }}
         </div>
-        <button type="button" class="btn btn-purple btn-sm" onclick="printBand({{ b.index }})">
+        <button type="button" class="btn btn-purple btn-sm no-print" onclick="printBand({{ b.index }})">
             <i class="bi bi-printer"></i> Print This Tab
         </button>
     </div>
@@ -219,21 +200,6 @@
                     <tr><td colspan="10" class="text-center text-muted py-4">No exhibitors fall within this payment band.</td></tr>
                     {% endfor %}
                     </tbody>
-                    {% if b.items %}
-                    <tfoot class="fw-bold table-light">
-                        <tr>
-                            <td class="text-center">{{ b.items|length }}</td>
-                            <td>Band Totals</td>
-                            <td>{{ b.stands }} stands</td>
-                            <td></td>
-                            <td class="text-end">-</td>
-                            <td class="text-end">R{{ b.total|floatformat:2 }}</td>
-                            <td class="text-end text-success">R{{ b.paid|floatformat:2 }}</td>
-                            <td class="text-end text-danger">R{{ b.balance|floatformat:2 }}</td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tfoot>
-                    {% endif %}
                 </table>
             </div>
         </div>
@@ -292,26 +258,10 @@
 {% block extra_scripts %}
 <script>
 (function () {
-    var BAND_LABELS = [{% for b in buckets %}"{{ b.label }}"{% if not forloop.last %},{% endif %}{% endfor %}];
-    var printBandEl = document.getElementById('printBand');
-    var activeIdx = {{ active_tab }};
-
-    function setBandLabel(idx) {
-        activeIdx = idx;
-        if (printBandEl) printBandEl.textContent = BAND_LABELS[idx] || '';
-    }
-    setBandLabel(activeIdx);
-
-    document.querySelectorAll('#bandTabs button[data-bs-toggle="tab"]').forEach(function (btn) {
-        btn.addEventListener('shown.bs.tab', function (e) {
-            setBandLabel(parseInt(e.target.dataset.idx, 10) || 0);
-        });
-    });
-
+    // Activate the band first, then print - so the printout matches the tab on screen
     window.printBand = function (idx) {
         var btn = document.getElementById('tabbtn-' + idx);
         if (btn) { new bootstrap.Tab(btn).show(); }
-        setBandLabel(idx);
         setTimeout(function () { window.print(); }, 350);
     };
 
