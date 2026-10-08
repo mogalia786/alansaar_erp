@@ -1599,7 +1599,7 @@ def _default_reminder_body(row, event):
     )
 
 
-@erp_section_required('booking_reports')
+@erp_section_required('payment_reports')
 def erp_payment_status_report(request):
     events = Event.objects.order_by('start_date')
     active_event = events.first()
@@ -1660,7 +1660,7 @@ def erp_payment_status_report(request):
     })
 
 
-@erp_section_required('booking_reports')
+@erp_section_required('payment_reports')
 def send_payment_reminder(request):
     from django.urls import reverse
     from invoices.models import PaymentReminder
