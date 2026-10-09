@@ -10,7 +10,6 @@ urlpatterns = [
     path('bookings/<int:pk>/add-accessory/', views.add_accessory, name='add_accessory'),
     path('bookings/<int:pk>/cancel/', views.cancel_booking, name='cancel_booking'),
     path('bookings/stand-swap/', views.stand_swap_request, name='stand_swap_request'),
-    path('bookings/<int:pk>/request-discount/', views.request_discount, name='request_discount'),
     path('bookings/<int:pk>/request-stall-transfer/', views.request_stall_transfer, name='request_stall_transfer'),
     path('bookings/<int:pk>/thank-you/', views.thank_you, name='thank_you'),
     path('bookings/<int:pk>/acknowledge/', views.thank_you_update, name='thank_you_update'),

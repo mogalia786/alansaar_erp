@@ -230,35 +230,6 @@
                         <i class="bi bi-x-circle"></i> Cancel Booking
                     </a>
                     {% endif %}
-                    {% if booking.status == 'pending' or booking.status == 'approved' %}
-                    <button class="btn btn-outline-warning w-100 mb-2" data-bs-toggle="collapse" data-bs-target="#discountForm">
-                        <i class="bi bi-percent"></i> Request Discount
-                    </button>
-                    <div class="collapse {% if form_errors %}show{% endif %}" id="discountForm">
-                        <form method="POST" action="{% url 'request_discount' booking.id %}">
-                            {% csrf_token %}
-                            <div class="mb-2">
-                                <label class="form-label small fw-bold">Discount %</label>
-                                <input type="number" class="form-control form-control-sm" name="discount_percent" min="1" max="100" step="0.01" required>
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label small fw-bold">Reason</label>
-                                <textarea class="form-control form-control-sm" name="reason" rows="2" required></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-warning btn-sm w-100">Submit Discount Request</button>
-                        </form>
-                    </div>
-                    {% endif %}
-                    {% with pending_dr=booking.discount_requests.all %}
-                    {% for dr in pending_dr %}
-                    <div class="mt-2 p-2 border rounded small">
-                        <strong>Discount {{ dr.discount_percent }}%</strong>
-                        <span class="badge bg-{% if dr.status == 'pending' %}warning{% elif dr.status == 'approved_by_first' %}info{% elif dr.status == 'approved' %}success{% else %}danger{% endif %}">
-                            {{ dr.get_status_display }}
-                        </span>
-                    </div>
-                    {% endfor %}
-                    {% endwith %}
                 </div>
             </div>
 
