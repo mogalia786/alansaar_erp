@@ -1,0 +1,86 @@
+{% extends 'portal/base.html' %}
+{% block title %}Apply Discount - {{ invoice.invoice_number }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="fw-bold mb-0"><i class="bi bi-percent"></i> Apply Discount</h3>
+        <small class="text-muted">{{ invoice.invoice_number }} &bull; {{ invoice.exhibitor.company_name }}</small>
+    </div>
+    <a href="{% url 'erp:invoice_detail' invoice.pk %}" class="btn btn-purple btn-sm"><i class="bi bi-arrow-left"></i> Back to Invoice</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header bg-purple text-white"><h6 class="mb-0">Discount Application</h6></div>
+            <div class="card-body">
+                <form method="post" action="{% url 'erp:apply_discount' invoice.pk %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Discount %</label>
+                        <input type="number" name="discount_percent" class="form-control" min="0" max="100" step="0.01"
+                               value="{{ invoice.discount_percent|default_if_none:'' }}" required>
+                        <div class="form-text">
+                            Applied to the total <strong>stand price</strong> on this invoice
+                            ({{ lines|length }} stand{{ lines|length|pluralize }}, R{{ stand_base|floatformat:2 }}).
+                            Excludes electricity deposit, accessories and VAT.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Date Applied</label>
+                        <input type="date" name="discount_date" class="form-control"
+                               value="{% if invoice.discount_date %}{{ invoice.discount_date|date:'Y-m-d' }}{% else %}{{ today|date:'Y-m-d' }}{% endif %}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Approved By</label>
+                        <input type="text" name="approved_by" class="form-control" maxlength="150"
+                               value="{{ invoice.discount_approved_by }}" placeholder="Name of person who approved">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Motivation <span class="text-muted fw-normal">(optional)</span></label>
+                        <textarea name="motivation" class="form-control" rows="3">{{ invoice.discount_motivation }}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Apply Discount to Invoice</button>
+                    {% if invoice.discount_percent > 0 %}
+                    <button type="submit" name="action" value="remove" class="btn btn-outline-danger"
+                            onclick="return confirm('Remove the discount from this invoice?');">
+                        <i class="bi bi-x-lg"></i> Remove Discount
+                    </button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="card mb-3">
+            <div class="card-header bg-purple text-white"><h6 class="mb-0">Calculation Preview</h6></div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><td>Total stand price</td><td class="text-end">R{{ stand_base|floatformat:2 }}</td></tr>
+                    <tr><td>Invoice total (current)</td><td class="text-end">R{{ invoice.amount_incl|floatformat:2 }}</td></tr>
+                    <tr><td>Balance due (current)</td><td class="text-end">R{{ invoice.balance_due|floatformat:2 }}</td></tr>
+                    {% if invoice.discount_amount > 0 %}
+                    <tr class="text-success fw-bold"><td>Discount ({{ invoice.discount_percent }}%)</td><td class="text-end">-R{{ invoice.discount_amount|floatformat:2 }}</td></tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header bg-purple text-white"><h6 class="mb-0">Stands on this Invoice</h6></div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light"><tr><th>Stand</th><th class="text-end">Stand Price</th></tr></thead>
+                    <tbody>
+                        {% for l in lines %}
+                        <tr><td>{{ l.booking.stall.name }}</td><td class="text-end">R{{ l.booking.stall_price|floatformat:2 }}</td></tr>
+                        {% empty %}
+                        <tr><td colspan="2" class="text-center text-muted py-3">No stands</td></tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot><tr class="fw-bold"><td>Total</td><td class="text-end">R{{ stand_base|floatformat:2 }}</td></tr></tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

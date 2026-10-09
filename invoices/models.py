@@ -26,6 +26,13 @@ class Invoice(models.Model):
     issue_date = models.DateField()
     due_date = models.DateField()
     paid_date = models.DateField(null=True, blank=True)
+    # Manual staff-applied discount. Applied to the total stand price on the invoice
+    # (excluding electricity deposit, accessories and VAT), then the invoice is recalculated.
+    discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="Manual discount percentage applied to the total stand price")
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Computed discount amount (stand price x percent)")
+    discount_date = models.DateField(null=True, blank=True, help_text="Date the discount was applied")
+    discount_approved_by = models.CharField(max_length=150, blank=True, help_text="Who approved the discount (free text)")
+    discount_motivation = models.TextField(blank=True, help_text="Motivation for the discount (optional)")
     notes = models.TextField(blank=True)
     pdf_file = models.FileField(upload_to='invoices/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -12,10 +12,23 @@ from django.db.models import Sum, Q
 from notifications.utils import send_invoice_email, send_payment_received
 
 
-def booking_amount_incl(booking):
+def _manual_discount(stall_price, invoice):
+    """Manual staff-applied discount for one stand: a percentage of the stand price
+    only (excludes electricity deposit, accessories and VAT)."""
+    pct = (invoice.discount_percent or Decimal('0')) if invoice is not None else Decimal('0')
+    if not pct:
+        return Decimal('0')
+    return (Decimal(stall_price or 0) * pct / Decimal('100')).quantize(Decimal('0.01'))
+
+
+def booking_amount_incl(booking, invoice=None):
     elec_dep = booking.electricity_deposit if booking.requires_power else Decimal('0')
     amount_incl, vat_amount = booking_totals(booking.stall_price, elec_dep, booking.accessories_total, 0)
-    return amount_incl - (booking.early_payment_discount or Decimal('0')), vat_amount
+    if invoice is None:
+        line = getattr(booking, 'invoice_line', None)
+        invoice = line.invoice if line is not None else None
+    discount = (booking.early_payment_discount or Decimal('0')) + _manual_discount(booking.stall_price, invoice)
+    return amount_incl - discount, vat_amount
 
 
 # Early full-payment discounts: 5% of stand price if the stand is fully paid by
@@ -100,7 +113,8 @@ def evaluate_invoice_discounts(invoice):
                 discount = (stall * Decimal('0.025')).quantize(Decimal('0.01')); tier = '2.5'
         b.early_payment_discount = discount
         b.early_payment_tier = tier
-        b.total_amount = (b.subtotal or Decimal('0')) - discount
+        manual = _manual_discount(b.stall_price, invoice)
+        b.total_amount = (b.subtotal or Decimal('0')) - discount - manual
         b.balance_due = b.total_amount - (b.amount_paid or Decimal('0'))
         b.save(update_fields=['early_payment_discount', 'early_payment_tier', 'total_amount', 'balance_due'])
         results[b.id] = discount
@@ -126,7 +140,7 @@ def _set_line(inv, booking):
         line.invoice = inv
         line.save(update_fields=['invoice'])
         refresh_invoice(old_inv)
-    amount_incl, vat = booking_amount_incl(booking)
+    amount_incl, vat = booking_amount_incl(booking, inv)
     line.description = _stall_description(booking)
     line.amount_excl = amount_incl - vat
     line.vat_amount = vat
@@ -147,6 +161,10 @@ def refresh_invoice(inv):
     inv.amount_incl = incl
     inv.amount_paid = paid
     inv.balance_due = incl - paid
+    inv.discount_amount = sum(
+        (_manual_discount(l.booking.stall_price, inv) for l in lines if l.booking),
+        Decimal('0'),
+    )
     if not lines:
         inv.status = 'draft'
         inv.paid_date = None
@@ -227,7 +245,7 @@ def update_invoice_from_booking(booking):
             line.amount_incl = Decimal('0')
             line.save(update_fields=['description', 'amount_excl', 'vat_amount', 'amount_incl'])
         return refresh_invoice(line.invoice)
-    amount_incl, vat = booking_amount_incl(booking)
+    amount_incl, vat = booking_amount_incl(booking, line.invoice)
     line.description = _stall_description(booking)
     line.amount_excl = amount_incl - vat
     line.vat_amount = vat

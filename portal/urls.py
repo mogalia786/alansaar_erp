@@ -24,6 +24,7 @@ urlpatterns = [
     path('refunds/<int:pk>/mark-refunded/', views.erp_mark_refund, name='mark_refund'),
     path('invoices/', views.erp_invoice_list, name='invoice_list'),
     path('invoices/<int:pk>/', views.erp_invoice_detail, name='invoice_detail'),
+    path('invoices/<int:pk>/apply-discount/', views.erp_apply_discount, name='apply_discount'),
     path('invoices/<int:invoice_id>/remove-accessory/<int:accessory_id>/', views.remove_accessory, name='remove_accessory'),
     path('invoices/create/<int:booking_id>/', views.create_invoice, name='create_invoice'),
     path('payments/', views.erp_payment_list, name='payment_list'),

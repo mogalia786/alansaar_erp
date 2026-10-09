@@ -12,6 +12,9 @@
         <a href="{% url 'erp:booking_detail' booking.id %}" class="btn btn-purple btn-sm"><i class="bi bi-arrow-left"></i> Back to Booking</a>
         {% endif %}
         <a href="{% url 'erp:statement' invoice.exhibitor.id %}" class="btn btn-gold btn-sm"><i class="bi bi-journal-text"></i> Full Statement</a>
+        {% if can_apply_discount %}
+        <a href="{% url 'erp:apply_discount' invoice.pk %}" class="btn btn-outline-success btn-sm"><i class="bi bi-percent"></i> Apply Discount</a>
+        {% endif %}
         <a href="{% url 'print_invoice' invoice.pk %}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="bi bi-printer"></i> Print Invoice</a>
     </div>
 </div>
@@ -109,11 +112,28 @@
                     {% if invoice.total_early_discount > 0 %}
                     <tr class="text-success"><td>Early Payment Discount</td><td class="text-end">-R{{ invoice.total_early_discount|floatformat:2 }}</td></tr>
                     {% endif %}
+                    {% if invoice.discount_amount > 0 %}
+                    <tr class="text-success"><td>Discount ({{ invoice.discount_percent }}% on stand price)</td><td class="text-end">-R{{ invoice.discount_amount|floatformat:2 }}</td></tr>
+                    {% endif %}
                     <tr><td>Total Paid</td><td class="text-end text-success">R{{ verified_total|floatformat:2 }}</td></tr>
                     <tr class="fw-bold"><td>Balance Due</td><td class="text-end text-danger">R{{ invoice.balance_due|floatformat:2 }}</td></tr>
                 </table>
             </div>
         </div>
+        {% if invoice.discount_percent > 0 %}
+        <div class="card mb-3 border-success">
+            <div class="card-header bg-success text-white"><h6 class="mb-0">Discount Applied</h6></div>
+            <div class="card-body small">
+                <p class="mb-1"><strong>{{ invoice.discount_percent }}%</strong> on stand price = <strong>R{{ invoice.discount_amount|floatformat:2 }}</strong></p>
+                <p class="mb-1"><strong>Date applied:</strong> {{ invoice.discount_date|date:"d M Y"|default:"-" }}</p>
+                <p class="mb-1"><strong>Approved by:</strong> {{ invoice.discount_approved_by|default:"-" }}</p>
+                <p class="mb-0"><strong>Motivation:</strong> {{ invoice.discount_motivation|default:"-" }}</p>
+                {% if can_apply_discount %}
+                <a href="{% url 'erp:apply_discount' invoice.pk %}" class="btn btn-sm btn-outline-success mt-2"><i class="bi bi-pencil"></i> Edit / Remove</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
         {% if booking %}
         <div class="card mb-3">
             <div class="card-header bg-purple text-white"><h6 class="mb-0">Booking Info</h6></div>
