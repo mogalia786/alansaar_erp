@@ -33,7 +33,7 @@
                     <table class="table table-bordered">
                         <thead class="table-light"><tr><th>Description</th><th class="text-end">Amount</th></tr></thead>
                         <tbody>
-                            {% for line in invoice.invoice_lines.all %}
+                            {% for line in invoice.billable_lines.all %}
                             <tr>
                                 <td>{{ line.description|default:line.booking.stall.name }}{% if line.booking %}<br><span class="text-muted small">Booking {{ line.booking.booking_reference }}</span>{% endif %}</td>
                                 <td class="text-end">R{{ line.amount_incl|floatformat:2 }}</td>

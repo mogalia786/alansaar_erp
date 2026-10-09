@@ -646,7 +646,7 @@ def erp_invoice_detail(request, pk):
     invoice.refresh_from_db()
     booking = invoice.display_booking
     payments = invoice.payments.all().select_related('invoice').order_by('payment_date')
-    lines = invoice.invoice_lines.all()
+    lines = invoice.billable_lines.all()
     verified_total = payments.filter(status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
     can_remove_accessory = request.user.user_type in ('admin', 'superadmin', 'finance')
     return render(request, 'portal/invoice_detail.html', {

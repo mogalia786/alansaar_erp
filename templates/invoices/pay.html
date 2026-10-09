@@ -27,7 +27,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Payment For (Stand) <span class="text-danger">*</span></label>
                             <select name="booking_id" class="form-select" required>
-                                {% for l in invoice.invoice_lines.all %}
+                                {% for l in invoice.billable_lines.all %}
                                 <option value="{{ l.booking.id }}">Stall {{ l.booking.stall.name }}{% if l.booking.stall.zone %} - {{ l.booking.stall.zone.name }}{% endif %} ({{ l.booking.booking_reference }})</option>
                                 {% endfor %}
                             </select>

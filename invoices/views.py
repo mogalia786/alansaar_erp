@@ -132,7 +132,7 @@ def _set_line(inv, booking):
 
 def refresh_invoice(inv):
     """Recompute a consolidated invoice from its lines + verified payments, then sync each line booking."""
-    lines = list(inv.invoice_lines.all())
+    lines = list(inv.billable_lines.select_related('booking').all())
     amount_excl = sum((l.amount_excl or 0) for l in lines)
     vat_amount = sum((l.vat_amount or 0) for l in lines)
     incl = sum((l.amount_incl or 0) for l in lines)
@@ -337,7 +337,7 @@ def account_statement(request):
     for inv in invoices:
         refresh_invoice(inv)
         inv.refresh_from_db()
-        lines = list(inv.invoice_lines.select_related('booking__stall', 'booking__event'))
+        lines = list(inv.billable_lines.select_related('booking__stall', 'booking__event'))
         total_invoiced += inv.amount_incl
         total_paid += inv.amount_paid
         rows.append({

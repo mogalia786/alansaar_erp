@@ -37,18 +37,35 @@ class Invoice(models.Model):
         return self.invoice_number
 
     @property
+    def billable_lines(self):
+        """Invoice lines excluding cancelled bookings (cancelled stands are not billed)."""
+        return self.invoice_lines.exclude(booking__status='cancelled')
+
+    @property
     def display_booking(self):
-        """First line's booking, falling back to booking for legacy invoices."""
-        return self.booking or self.invoice_lines.first().booking if self.invoice_lines.exists() else self.booking
+        """A live booking for the invoice: the primary booking, else the first
+        non-cancelled line's booking, falling back to any line for legacy rows."""
+        if self.booking and self.booking.status != 'cancelled':
+            return self.booking
+        line = self.billable_lines.select_related('booking').first()
+        if line is not None:
+            return line.booking
+        if self.booking:
+            return self.booking
+        first = self.invoice_lines.select_related('booking').first()
+        return first.booking if first is not None else None
 
     @property
     def line_count(self):
-        return self.invoice_lines.count()
+        return self.billable_lines.count()
 
     @property
     def total_early_discount(self):
         from decimal import Decimal
-        return sum((l.booking.early_payment_discount for l in self.invoice_lines.select_related('booking').all() if l.booking), Decimal('0'))
+        return sum((
+            (l.booking.early_payment_discount or Decimal('0'))
+            for l in self.billable_lines.select_related('booking').all() if l.booking
+        ), Decimal('0'))
 
 
 class InvoiceLine(models.Model):
