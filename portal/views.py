@@ -747,6 +747,10 @@ def verify_payment(request, pk):
             refresh_invoice(inv)
             if payment.booking_id:
                 evaluate_early_payment_discount(payment.booking)
+                # evaluate_invoice_discounts recalculates the discount on a separate
+                # Booking instance, so `payment.booking` is stale here; reload it so the
+                # invoice line is repriced with the freshly computed discount.
+                payment.booking.refresh_from_db()
                 from invoices.views import update_invoice_from_booking
                 update_invoice_from_booking(payment.booking)
             exhibitor = payment.invoice.exhibitor or (payment.booking.exhibitor if payment.booking else None)
@@ -847,6 +851,9 @@ def collect_cash(request, booking_id):
                 from invoices.views import refresh_invoice, evaluate_early_payment_discount, update_invoice_from_booking
                 refresh_invoice(inv)
                 evaluate_early_payment_discount(booking)
+                # The discount may have just been recalculated on a separate Booking
+                # instance; reload so the line is repriced with the stored discount.
+                booking.refresh_from_db()
                 update_invoice_from_booking(booking)
                 receipt = Receipt.objects.create(
                     receipt_number=payment.receipt_number,
