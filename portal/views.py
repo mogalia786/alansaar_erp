@@ -936,7 +936,7 @@ def delete_payment(request, pk):
             from invoices.views import refresh_invoice, evaluate_invoice_discounts, update_invoice_from_booking
             refresh_invoice(invoice)
             evaluate_invoice_discounts(invoice)
-            for line in invoice.invoice_lines.select_related('booking'):
+            for line in invoice.billable_lines.select_related('booking'):
                 update_invoice_from_booking(line.booking)
             invoice.refresh_from_db()
             _recalculate_ledger_balances(exhibitor)

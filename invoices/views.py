@@ -23,6 +23,11 @@ def booking_amount_incl(booking):
 EARLY_5_DEADLINE = __import__('datetime').date(2026, 9, 30)
 EARLY_25_DEADLINE = __import__('datetime').date(2027, 10, 15)
 
+# Coverage is measured against the stand price; allow a small rounding tolerance
+# so a stand paid the discounted amount rounded to the nearest rand (e.g. R44 911
+# instead of R44 911.25) still qualifies for the discount.
+DISCOUNT_TOLERANCE = Decimal('1.00')
+
 
 def evaluate_early_payment_discount(booking):
     """Assess tiered early-payment discount for a booking based on verified
@@ -58,7 +63,7 @@ def evaluate_invoice_discounts(invoice):
             untagged.append(p)
     from datetime import timedelta
     results = {}
-    for line in invoice.invoice_lines.select_related('booking').all():
+    for line in invoice.billable_lines.select_related('booking').all():
         b = line.booking
         if b is None:
             continue
@@ -76,9 +81,9 @@ def evaluate_invoice_discounts(invoice):
             covered += p.amount
             if p.booking_id is None:
                 consumed.append(p)
-            if coverage_95_date is None and covered >= stall * Decimal('0.95'):
+            if coverage_95_date is None and covered >= stall * Decimal('0.95') - DISCOUNT_TOLERANCE:
                 coverage_95_date = p.payment_date.date() if p.payment_date else None
-            if coverage_975_date is None and covered >= stall * Decimal('0.975'):
+            if coverage_975_date is None and covered >= stall * Decimal('0.975') - DISCOUNT_TOLERANCE:
                 coverage_975_date = p.payment_date.date() if p.payment_date else None
             if coverage_95_date is not None and coverage_975_date is not None:
                 break
@@ -211,6 +216,17 @@ def update_invoice_from_booking(booking):
     line = InvoiceLine.objects.filter(booking=booking).first()
     if line is None:
         return None
+    if booking.status == 'cancelled':
+        # Cancelled stands are not billed: never re-price their line, keep it zeroed
+        # and labelled so a payment edit/recalc cannot resurrect the charge.
+        if line.amount_incl or line.amount_excl or line.vat_amount:
+            if not line.description.startswith('CANCELLED -'):
+                line.description = f"CANCELLED - {line.description}"
+            line.amount_excl = Decimal('0')
+            line.vat_amount = Decimal('0')
+            line.amount_incl = Decimal('0')
+            line.save(update_fields=['description', 'amount_excl', 'vat_amount', 'amount_incl'])
+        return refresh_invoice(line.invoice)
     amount_incl, vat = booking_amount_incl(booking)
     line.description = _stall_description(booking)
     line.amount_excl = amount_incl - vat
