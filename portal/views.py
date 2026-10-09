@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Sum, Count, Q
+from django.db import transaction
 from events.models import Event, FloorPlan, FloorPlanSection, Zone, Stall, AccessoryType
 import re, json, os
 from bookings.models import Booking, DiscountRequest
@@ -24,6 +25,9 @@ from notifications.utils import (
     send_invoice_email
 )
 from accounting.auto_post import auto_post_invoice, auto_post_payment
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 def is_staff_user(user):
@@ -824,47 +828,58 @@ def collect_cash(request, booking_id):
         from invoices.models import InvoiceLine
         line = InvoiceLine.objects.filter(booking=booking).first()
         inv = line.invoice if line else booking.invoices.first()
-        payment = Payment.objects.create(
-            invoice=invoice,
-            booking=booking,
-            amount=amount,
-            payment_method=method,
-            reference_number=ref,
-            status='verified',
-            verified_by=request.user,
-            verified_at=timezone.now(),
-            payment_date=pay_date,
-            notes=notes,
-        )
-        payment.receipt_number = f"RCT-{uuid.uuid4().hex[:8].upper()}"
-        payment.save()
-        from invoices.views import refresh_invoice, evaluate_early_payment_discount, update_invoice_from_booking
-        refresh_invoice(inv)
-        evaluate_early_payment_discount(booking)
-        update_invoice_from_booking(booking)
-        receipt = Receipt.objects.create(
-            receipt_number=payment.receipt_number,
-            payment=payment,
-            exhibitor=inv.exhibitor,
-            amount=payment.amount,
-            payment_method='cash',
-            reference_number=ref,
-            issue_date=pay_date.date(),
-            notes=notes,
-        )
-        auth_booking = inv.display_booking
-        if auth_booking is not None:
-            LedgerEntry.objects.create(
-                exhibitor=inv.exhibitor,
-                booking=auth_booking,
-                entry_type='payment',
-                description=f'Cash payment - {invoice.invoice_number}',
-                reference=receipt.receipt_number,
-                debit=0, credit=payment.amount,
-                balance=inv.balance_due,
-                entry_date=pay_date.date(),
+        try:
+            with transaction.atomic():
+                payment = Payment.objects.create(
+                    invoice=invoice,
+                    booking=booking,
+                    amount=amount,
+                    payment_method=method,
+                    reference_number=ref,
+                    status='verified',
+                    verified_by=request.user,
+                    verified_at=timezone.now(),
+                    payment_date=pay_date,
+                    notes=notes,
+                )
+                payment.receipt_number = f"RCT-{uuid.uuid4().hex[:8].upper()}"
+                payment.save()
+                from invoices.views import refresh_invoice, evaluate_early_payment_discount, update_invoice_from_booking
+                refresh_invoice(inv)
+                evaluate_early_payment_discount(booking)
+                update_invoice_from_booking(booking)
+                receipt = Receipt.objects.create(
+                    receipt_number=payment.receipt_number,
+                    payment=payment,
+                    exhibitor=inv.exhibitor,
+                    amount=payment.amount,
+                    payment_method='cash',
+                    reference_number=ref,
+                    issue_date=pay_date.date(),
+                    notes=notes,
+                )
+                auth_booking = inv.display_booking
+                if auth_booking is not None:
+                    LedgerEntry.objects.create(
+                        exhibitor=inv.exhibitor,
+                        booking=auth_booking,
+                        entry_type='payment',
+                        description=f'Cash payment - {invoice.invoice_number}',
+                        reference=receipt.receipt_number,
+                        debit=0, credit=payment.amount,
+                        balance=inv.balance_due,
+                        entry_date=pay_date.date(),
+                    )
+                auto_post_payment(payment, created_by=request.user)
+        except Exception:
+            logger.exception('Failed to record payment for booking %s', booking_id)
+            messages.error(
+                request,
+                'The payment could not be recorded due to a system error. '
+                'Nothing was saved - please try again or contact support.',
             )
-        auto_post_payment(payment, created_by=request.user)
+            return redirect('erp:collect_cash', booking_id=booking_id)
+        # Only send the confirmation email after the payment has committed.
         send_payment_verified_email(payment, receipt)
         messages.success(request, f'Cash payment of R{amount:.2f} recorded. Receipt: {receipt.receipt_number}')
         return redirect('erp:booking_detail', pk=booking_id)
@@ -908,21 +923,31 @@ def delete_payment(request, pk):
     payment_amount = payment.amount
     exhibitor = invoice.exhibitor
 
-    # Reverse the auto-posted accounting entry and the ledger entry for this payment.
-    if receipt_number:
-        from accounting.models import JournalEntry
-        JournalEntry.objects.filter(description__startswith=f"Payment {receipt_number} -").delete()
-        LedgerEntry.objects.filter(entry_type='payment', reference=receipt_number).delete()
-    payment.delete()  # cascades the linked Receipt
+    try:
+        with transaction.atomic():
+            # Reverse the auto-posted accounting entry and the ledger entry for this payment.
+            if receipt_number:
+                from accounting.models import JournalEntry
+                JournalEntry.objects.filter(description__startswith=f"Payment {receipt_number} -").delete()
+                LedgerEntry.objects.filter(entry_type='payment', reference=receipt_number).delete()
+            payment.delete()  # cascades the linked Receipt
 
-    # Recompute the invoice, re-evaluate early-payment discounts, then re-sync lines.
-    from invoices.views import refresh_invoice, evaluate_invoice_discounts, update_invoice_from_booking
-    refresh_invoice(invoice)
-    evaluate_invoice_discounts(invoice)
-    for line in invoice.invoice_lines.select_related('booking'):
-        update_invoice_from_booking(line.booking)
-    invoice.refresh_from_db()
-    _recalculate_ledger_balances(exhibitor)
+            # Recompute the invoice, re-evaluate early-payment discounts, then re-sync lines.
+            from invoices.views import refresh_invoice, evaluate_invoice_discounts, update_invoice_from_booking
+            refresh_invoice(invoice)
+            evaluate_invoice_discounts(invoice)
+            for line in invoice.invoice_lines.select_related('booking'):
+                update_invoice_from_booking(line.booking)
+            invoice.refresh_from_db()
+            _recalculate_ledger_balances(exhibitor)
+    except Exception:
+        logger.exception('Failed to delete payment %s', pk)
+        messages.error(
+            request,
+            'The payment could not be deleted due to a system error. '
+            'Nothing was changed - please try again or contact support.',
+        )
+        return redirect('erp:invoice_detail', pk=invoice.pk)
 
     messages.success(
         request,
