@@ -792,6 +792,19 @@ def collect_cash(request, booking_id):
         amount = Decimal(request.POST.get('amount', '0'))
         ref = request.POST.get('reference_number', booking.stall.name)
         method_raw = request.POST.get('payment_method', 'cash').lower()
+        # Payment date (defaults to now). Allows admins to backdate a late-captured
+        # payment so the early-payment discount is evaluated against the real date.
+        from datetime import datetime as _dt
+        pay_date = timezone.now()
+        date_raw = request.POST.get('payment_date', '').strip()
+        if date_raw:
+            try:
+                chosen = _dt.strptime(date_raw, '%Y-%m-%d').date()
+                pay_date = timezone.now().replace(
+                    year=chosen.year, month=chosen.month, day=chosen.day
+                )
+            except ValueError:
+                pay_date = timezone.now()
         if method_raw == 'eft':
             method = 'eft'
             method_note = 'EFT'
@@ -820,6 +833,7 @@ def collect_cash(request, booking_id):
             status='verified',
             verified_by=request.user,
             verified_at=timezone.now(),
+            payment_date=pay_date,
             notes=notes,
         )
         payment.receipt_number = f"RCT-{uuid.uuid4().hex[:8].upper()}"
@@ -835,7 +849,7 @@ def collect_cash(request, booking_id):
             amount=payment.amount,
             payment_method='cash',
             reference_number=ref,
-            issue_date=timezone.now().date(),
+            issue_date=pay_date.date(),
             notes=notes,
         )
         auth_booking = inv.display_booking
@@ -848,7 +862,7 @@ def collect_cash(request, booking_id):
                 reference=receipt.receipt_number,
                 debit=0, credit=payment.amount,
                 balance=inv.balance_due,
-                entry_date=timezone.now().date(),
+                entry_date=pay_date.date(),
             )
         auto_post_payment(payment, created_by=request.user)
         send_payment_verified_email(payment, receipt)
@@ -863,8 +877,59 @@ def collect_cash(request, booking_id):
         'invoice': invoice,
         'balance_due': invoice.balance_due,
         'verified_total': invoice.amount_paid,
+        'today': timezone.localdate(),
     }
     return render(request, 'portal/collect_cash.html', context)
+
+
+def _recalculate_ledger_balances(exhibitor):
+    """Recompute the running balance column for an exhibitor's ledger entries."""
+    running = Decimal('0')
+    for entry in LedgerEntry.objects.filter(exhibitor=exhibitor).order_by('entry_date', 'created_at', 'id'):
+        running += (entry.debit or Decimal('0')) - (entry.credit or Decimal('0'))
+        if entry.balance != running:
+            entry.balance = running
+            entry.save(update_fields=['balance'])
+
+
+@erp_section_required('payments')
+def delete_payment(request, pk):
+    """Delete a captured/verified payment and fully recalculate the invoice so it
+    can be recaptured with the correct (e.g. backdated) payment date."""
+    payment = get_object_or_404(Payment, pk=pk)
+    invoice = payment.invoice
+    if request.method != 'POST':
+        return redirect('erp:invoice_detail', pk=invoice.pk)
+    if not request.user.has_erp_permission('payments', 'delete'):
+        messages.error(request, 'Access denied: you do not have permission to delete payments.')
+        return redirect('erp:invoice_detail', pk=invoice.pk)
+
+    receipt_number = payment.receipt_number
+    payment_amount = payment.amount
+    exhibitor = invoice.exhibitor
+
+    # Reverse the auto-posted accounting entry and the ledger entry for this payment.
+    if receipt_number:
+        from accounting.models import JournalEntry
+        JournalEntry.objects.filter(description__startswith=f"Payment {receipt_number} -").delete()
+        LedgerEntry.objects.filter(entry_type='payment', reference=receipt_number).delete()
+    payment.delete()  # cascades the linked Receipt
+
+    # Recompute the invoice, re-evaluate early-payment discounts, then re-sync lines.
+    from invoices.views import refresh_invoice, evaluate_invoice_discounts, update_invoice_from_booking
+    refresh_invoice(invoice)
+    evaluate_invoice_discounts(invoice)
+    for line in invoice.invoice_lines.select_related('booking'):
+        update_invoice_from_booking(line.booking)
+    invoice.refresh_from_db()
+    _recalculate_ledger_balances(exhibitor)
+
+    messages.success(
+        request,
+        f'Payment of R{payment_amount:,.2f} deleted. Invoice {invoice.invoice_number} '
+        f'has been recalculated — you can now recapture it with the correct date.'
+    )
+    return redirect('erp:invoice_detail', pk=invoice.pk)
 
 
 @erp_section_required('payments')

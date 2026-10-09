@@ -43,6 +43,12 @@
                         <div class="form-text">Maximum: R{{ balance_due|floatformat:2 }}</div>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label fw-bold">Date of Payment <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" name="payment_date"
+                               value="{{ today|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}" required>
+                        <div class="form-text">Defaults to today. Backdate this if the payment was actually received earlier — early-payment discounts are calculated from this date.</div>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label fw-bold">Reference / Stall Name</label>
                         <input type="text" class="form-control" name="reference_number"
                                value="{{ booking.stall.name }}" maxlength="100">

@@ -28,6 +28,7 @@ urlpatterns = [
     path('invoices/create/<int:booking_id>/', views.create_invoice, name='create_invoice'),
     path('payments/', views.erp_payment_list, name='payment_list'),
     path('payments/<int:pk>/verify/', views.verify_payment, name='verify_payment'),
+    path('payments/<int:pk>/delete/', views.delete_payment, name='delete_payment'),
     path('bookings/<int:booking_id>/collect-cash/', views.collect_cash, name='collect_cash'),
     path('bookings/<int:booking_id>/print-payments/', views.print_payments_receipt, name='print_payments_receipt'),
     path('exhibitors/', views.erp_exhibitor_list, name='exhibitor_list'),

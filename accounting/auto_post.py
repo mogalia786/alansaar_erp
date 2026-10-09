@@ -175,7 +175,9 @@ def auto_post_payment(payment, created_by=None):
     entry_number = f"PAY-{timezone.now().strftime('%Y%m')}-{last_num + 1:04d}"
 
     inv = payment.invoice
-    date = payment.verified_at.date() if payment.verified_at else timezone.now().date()
+    date = payment.payment_date.date() if payment.payment_date else (
+        payment.verified_at.date() if payment.verified_at else timezone.now().date()
+    )
 
     je = JournalEntry.objects.create(
         entry_number=entry_number,

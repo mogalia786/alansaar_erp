@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 from decimal import Decimal
 
 
@@ -86,7 +87,7 @@ class Payment(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     verified_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='verified_payments')
     verified_at = models.DateTimeField(null=True, blank=True)
-    payment_date = models.DateTimeField(auto_now_add=True)
+    payment_date = models.DateTimeField(default=timezone.now, help_text="Date the payment was made (drives early-payment discount eligibility)")
     notes = models.TextField(blank=True)
     receipt_number = models.CharField(max_length=30, blank=True)
 
