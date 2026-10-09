@@ -91,8 +91,8 @@ def create_journal_entry(request):
         if form.is_valid():
             je = form.save(commit=False)
             je.created_by = request.user
-            last_num = JournalEntry.objects.count()
-            je.entry_number = f"JE-{timezone.now().strftime('%Y%m')}-{last_num + 1:04d}"
+            from .auto_post import _next_entry_number
+            je.entry_number = _next_entry_number('JE')
             je.save()
             messages.success(request, f'Journal entry {je.entry_number} created. Add lines below.')
             return redirect('accounting:journal_entries')

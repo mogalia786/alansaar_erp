@@ -1,6 +1,50 @@
 from django.utils import timezone
+from django.db import IntegrityError, transaction
 from decimal import Decimal
 from .models import Account, JournalEntry, JournalLine
+
+
+def _next_entry_number(prefix):
+    """Return a unique journal entry number like 'PAY-202610-0007'.
+
+    Uses the highest existing suffix for this prefix+month instead of a row
+    count, so deleting entries can never cause a duplicate-key collision.
+    """
+    ym = timezone.now().strftime('%Y%m')
+    base = f"{prefix}-{ym}-"
+    highest = 0
+    existing = JournalEntry.objects.filter(
+        entry_number__startswith=base
+    ).values_list('entry_number', flat=True)
+    for number in existing:
+        suffix = number[len(base):]
+        if suffix.isdigit():
+            highest = max(highest, int(suffix))
+    return f"{base}{highest + 1:04d}"
+
+
+def _create_journal_entry(prefix, date, description, created_by=None):
+    """Create a journal entry with a collision-proof number, retrying on the
+    rare race where a duplicate number is generated concurrently."""
+    for _ in range(5):
+        try:
+            with transaction.atomic():
+                return JournalEntry.objects.create(
+                    entry_number=_next_entry_number(prefix),
+                    date=date,
+                    description=description,
+                    is_posted=True,
+                    created_by=created_by,
+                )
+        except IntegrityError:
+            continue
+    return JournalEntry.objects.create(
+        entry_number=_next_entry_number(prefix),
+        date=date,
+        description=description,
+        is_posted=True,
+        created_by=created_by,
+    )
 
 
 def auto_post_expense(expense, created_by=None):
@@ -9,13 +53,11 @@ def auto_post_expense(expense, created_by=None):
     acc_ap = Account.objects.filter(code='2000').first()
     if not all([acc_expense, acc_vat, acc_ap]):
         return
-    last_num = JournalEntry.objects.count()
-    entry_number = f"EXP-{timezone.now().strftime('%Y%m')}-{last_num + 1:04d}"
-    je = JournalEntry.objects.create(
-        entry_number=entry_number,
-        date=expense.expense_date,
-        description=f"Expense - {expense.description[:50]}",
-        is_posted=True, created_by=created_by,
+    je = _create_journal_entry(
+        'EXP',
+        expense.expense_date,
+        f"Expense - {expense.description[:50]}",
+        created_by=created_by,
     )
     JournalLine.objects.create(
         journal_entry=je, account=acc_expense,
@@ -40,13 +82,11 @@ def auto_post_expense_payment(expense, amount, created_by=None):
     acc_ap = Account.objects.filter(code='2000').first()
     if not all([acc_bank, acc_ap]):
         return
-    last_num = JournalEntry.objects.count()
-    entry_number = f"EPAY-{timezone.now().strftime('%Y%m')}-{last_num + 1:04d}"
-    je = JournalEntry.objects.create(
-        entry_number=entry_number,
-        date=timezone.now().date(),
-        description=f"Expense payment - {expense.description[:50]}",
-        is_posted=True, created_by=created_by,
+    je = _create_journal_entry(
+        'EPAY',
+        timezone.now().date(),
+        f"Expense payment - {expense.description[:50]}",
+        created_by=created_by,
     )
     JournalLine.objects.create(
         journal_entry=je, account=acc_ap,
@@ -73,14 +113,10 @@ def auto_post_invoice(invoice, created_by=None):
         invoice.invoice_lines.first().booking.booking_reference if invoice.invoice_lines.exists() else invoice.invoice_number
     )
 
-    last_num = JournalEntry.objects.count()
-    entry_number = f"INV-{timezone.now().strftime('%Y%m')}-{last_num + 1:04d}"
-
-    je = JournalEntry.objects.create(
-        entry_number=entry_number,
-        date=invoice.issue_date,
-        description=f"Invoice {invoice.invoice_number} - {invoice.exhibitor.company_name}",
-        is_posted=True,
+    je = _create_journal_entry(
+        'INV',
+        invoice.issue_date,
+        f"Invoice {invoice.invoice_number} - {invoice.exhibitor.company_name}",
         created_by=created_by,
     )
 
@@ -109,13 +145,11 @@ def auto_post_discount(booking, discount_amount, created_by=None):
     acc_income = Account.objects.filter(code='4000').first()
     if not all([acc_discount, acc_income]):
         return
-    last_num = JournalEntry.objects.count()
-    entry_number = f"DSC-{timezone.now().strftime('%Y%m')}-{last_num + 1:04d}"
-    je = JournalEntry.objects.create(
-        entry_number=entry_number,
-        date=timezone.now().date(),
-        description=f"Discount approved - {booking.booking_reference} - R{discount_amount}",
-        is_posted=True, created_by=created_by,
+    je = _create_journal_entry(
+        'DSC',
+        timezone.now().date(),
+        f"Discount approved - {booking.booking_reference} - R{discount_amount}",
+        created_by=created_by,
     )
     JournalLine.objects.create(
         journal_entry=je, account=acc_discount,
@@ -137,13 +171,11 @@ def auto_post_accepted_quotation(quotation, expense, created_by=None):
     if not all([acc_expense, acc_vat, acc_ap]):
         return
     provider_name = quotation.provider.company_name if quotation.provider else (quotation.submitter_company_name or 'Unknown')
-    last_num = JournalEntry.objects.count()
-    entry_number = f"ACC-{timezone.now().strftime('%Y%m')}-{last_num + 1:04d}"
-    je = JournalEntry.objects.create(
-        entry_number=entry_number,
-        date=timezone.now().date(),
-        description=f"Accepted Quotation {quotation.quotation_number} - {provider_name}",
-        is_posted=True, created_by=created_by,
+    je = _create_journal_entry(
+        'ACC',
+        timezone.now().date(),
+        f"Accepted Quotation {quotation.quotation_number} - {provider_name}",
+        created_by=created_by,
     )
     JournalLine.objects.create(
         journal_entry=je, account=acc_expense,
@@ -171,19 +203,15 @@ def auto_post_payment(payment, created_by=None):
     if not all([acc_bank, acc_receivables]):
         return
 
-    last_num = JournalEntry.objects.count()
-    entry_number = f"PAY-{timezone.now().strftime('%Y%m')}-{last_num + 1:04d}"
-
     inv = payment.invoice
     date = payment.payment_date.date() if payment.payment_date else (
         payment.verified_at.date() if payment.verified_at else timezone.now().date()
     )
 
-    je = JournalEntry.objects.create(
-        entry_number=entry_number,
-        date=date,
-        description=f"Payment {payment.receipt_number} - {inv.invoice_number}",
-        is_posted=True,
+    je = _create_journal_entry(
+        'PAY',
+        date,
+        f"Payment {payment.receipt_number} - {inv.invoice_number}",
         created_by=created_by,
     )
 
@@ -211,13 +239,10 @@ def auto_post_gate_taking(gate_taking, created_by=None):
     if not all([acc_bank, acc_income]):
         return
 
-    last_num = JournalEntry.objects.count()
-    entry_number = f"GATE-{timezone.now().strftime('%Y%m')}-{last_num + 1:04d}"
-    je = JournalEntry.objects.create(
-        entry_number=entry_number,
-        date=gate_taking.date,
-        description=f"Daily Gate Takings - {gate_taking.date}",
-        is_posted=True,
+    je = _create_journal_entry(
+        'GATE',
+        gate_taking.date,
+        f"Daily Gate Takings - {gate_taking.date}",
         created_by=created_by,
     )
 
