@@ -516,11 +516,19 @@ def erp_cancel_booking(request, pk):
     # fall back to the booking's own allocated paid amount for legacy rows
     attributed = Payment.objects.filter(booking=booking, status='verified').aggregate(s=Sum('amount'))['s'] or Decimal('0')
     paid_to_stand = attributed if attributed > 0 else booking.amount_paid
-    # 1. release the stall
+    # 1. cancel the booking FIRST so the invoice refresh below excludes it and
+    #    cannot re-confirm the stall we are about to release.
+    booking.status = 'cancelled'
+    booking.payment_status = 'unpaid'
+    booking.amount_paid = Decimal('0')
+    booking.balance_due = Decimal('0')
+    booking.admin_notes = (booking.admin_notes or '') + f"\n[Cancelled by ERP {request.user.username} on {timezone.now():%Y-%m-%d}. Refund due: R{paid_to_stand}]"
+    booking.save()
+    # 2. release the stall
     if booking.stall:
         booking.stall.status = 'available'
         booking.stall.save()
-    # 2. zero out the invoice line for this booking and refresh the invoice
+    # 3. zero out the invoice line for this booking and refresh the invoice
     line = getattr(booking, 'invoice_line', None)
     inv = line.invoice if line is not None else booking.invoices.first()
     if line is not None:
@@ -531,7 +539,7 @@ def erp_cancel_booking(request, pk):
         line.save()
     if inv is not None:
         refresh_invoice(inv)
-    # 3. record refund due (what they paid toward this stand)
+    # 4. record refund due (what they paid toward this stand)
     if paid_to_stand > 0:
         Refund.objects.create(
             booking=booking, amount=paid_to_stand, status='pending',
@@ -545,13 +553,6 @@ def erp_cancel_booking(request, pk):
             reference=booking.booking_reference, debit=0, credit=paid_to_stand,
             balance=0, entry_date=timezone.now().date(),
         )
-    # 4. cancel the booking
-    booking.status = 'cancelled'
-    booking.payment_status = 'unpaid'
-    booking.amount_paid = Decimal('0')
-    booking.balance_due = Decimal('0')
-    booking.admin_notes = (booking.admin_notes or '') + f"\n[Cancelled by ERP {request.user.username} on {timezone.now():%Y-%m-%d}. Refund due: R{paid_to_stand}]"
-    booking.save()
     messages.success(request, f'Booking cancelled. Stand released. Refund due to exhibitor: R{paid_to_stand}.')
     return redirect('erp:booking_detail', pk=pk)
 

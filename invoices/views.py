@@ -181,10 +181,15 @@ def refresh_invoice(inv):
     remaining = paid
     for l in lines:
         b = l.booking
+        # Never (re)confirm a cancelled/rejected booking or its stall. A zeroed
+        # line would otherwise satisfy `alloc >= amount_incl` (0 >= 0) and
+        # resurrect the stand.
+        if b.status in ('cancelled', 'rejected'):
+            continue
         alloc = min(l.amount_incl, remaining) if remaining > 0 else Decimal('0')
         b.amount_paid = alloc
         b.balance_due = l.amount_incl - alloc
-        if alloc >= l.amount_incl:
+        if l.amount_incl and alloc >= l.amount_incl:
             b.payment_status = 'paid'
             if b.status in ('pending', 'approved'):
                 b.status = 'confirmed'
