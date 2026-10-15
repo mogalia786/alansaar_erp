@@ -1678,6 +1678,150 @@ def erp_all_bookings_report(request):
     })
 
 
+@erp_section_required('booking_reports')
+def erp_stands_products_report(request):
+    """Stands & Products Report.
+
+    A professional, printable directory of every stand for an event: who is on
+    it, what they are selling/promoting, their contact details, the stand size,
+    requirements and the money position for that stand.
+    """
+    from django.core.exceptions import ObjectDoesNotExist
+    from invoices.views import refresh_invoice
+
+    events = Event.objects.order_by('start_date')
+    active_event = events.first()
+    event_id = request.GET.get('event_id')
+    section_id = request.GET.get('section_id', '')
+    q = request.GET.get('q', '').strip()
+    if event_id:
+        active_event = events.filter(pk=event_id).first() or active_event
+    if not active_event:
+        return render(request, 'portal/stands_products_report.html', {
+            'events': [], 'sections': [], 'active_event': None,
+            'active_section': None, 'all_sections': True, 'rows': [],
+            'totals': None, 'q': q,
+        })
+
+    sections = list(active_event.floor_plan_sections.all().order_by('display_order', 'name'))
+    active_section = None
+    all_sections = section_id == '' or section_id == 'all'
+    if not all_sections:
+        try:
+            active_section = next((s for s in sections if str(s.pk) == str(section_id)), None)
+        except (ObjectDoesNotExist, ValueError):
+            active_section = None
+        if active_section is None:
+            all_sections = True
+
+    qs = (Booking.objects
+          .filter(event=active_event, stall__isnull=False)
+          .exclude(status__in=['cancelled', 'rejected'])
+          .select_related('exhibitor', 'stall', 'stall__section', 'stall__zone'))
+    if not all_sections and active_section:
+        qs = qs.filter(stall__section=active_section)
+    if q:
+        qs = qs.filter(
+            Q(stall__name__icontains=q) |
+            Q(fascia_name__icontains=q) |
+            Q(products_description__icontains=q) |
+            Q(exhibitor__company_name__icontains=q) |
+            Q(exhibitor__first_name__icontains=q) |
+            Q(exhibitor__last_name__icontains=q) |
+            Q(exhibitor__email__icontains=q)
+        )
+
+    # Make sure each stand's paid/balance reflects the payment actually made for
+    # it (payments are tagged to a stand) rather than a stale line-order split.
+    invoice_ids = [
+        i for i in qs.values_list('invoice_line__invoice_id', flat=True).distinct() if i
+    ]
+    for inv in Invoice.objects.filter(id__in=invoice_ids):
+        try:
+            refresh_invoice(inv)
+        except Exception:
+            logger.exception('Stands & Products report: could not refresh invoice %s', inv.pk)
+
+    rows = []
+    totals = {
+        'count': 0,
+        'exhibitors': set(),
+        'stall_price': Decimal('0'),
+        'due': Decimal('0'),
+        'paid': Decimal('0'),
+        'balance': Decimal('0'),
+    }
+    for bk in qs.order_by('stall__section__display_order', 'stall__name'):
+        stall = bk.stall
+        u = bk.exhibitor
+        w = (Decimal(stall.width or 0) / Decimal('1000')).quantize(Decimal('0.1'))
+        h = (Decimal(stall.height or 0) / Decimal('1000')).quantize(Decimal('0.1'))
+        requirements = []
+        if bk.requires_power:
+            requirements.append('Power')
+        if bk.requires_water:
+            requirements.append('Water')
+        if bk.require_stand_build:
+            requirements.append('Stand Build')
+        if bk.require_carpet:
+            requirements.append('Carpet')
+        if bk.require_floor_mat:
+            requirements.append('Floor Mat')
+        if bk.require_extra_plugs:
+            requirements.append('Extra Plugs')
+        if bk.require_extra_lights:
+            requirements.append('Extra Lights')
+        rows.append({
+            'booking': bk,
+            'section_name': stall.section.name if stall.section else '-',
+            'stall_name': stall.name if stall else '-',
+            'size': f"{w} x {h}",
+            'exhibitor': u.company_name or u.get_full_name() or u.username,
+            'contact': u.get_full_name() or u.username,
+            'email': u.email or '-',
+            'phone': u.phone or '-',
+            'products': bk.products_description.strip() if bk.products_description else '-',
+            'fascia': bk.fascia_name or '-',
+            'requirements': ', '.join(requirements) if requirements else '-',
+            'booking_status': bk.get_status_display(),
+            'payment_status': bk.get_payment_status_display(),
+            'stall_price': bk.stall_price,
+            'due': bk.total_amount,
+            'paid': bk.amount_paid,
+            'balance': bk.balance_due,
+        })
+        totals['count'] += 1
+        totals['exhibitors'].add(u.pk)
+        totals['stall_price'] += bk.stall_price
+        totals['due'] += bk.total_amount
+        totals['paid'] += bk.amount_paid
+        totals['balance'] += bk.balance_due
+    totals['exhibitors'] = len(totals['exhibitors'])
+
+    # Per-section breakdown for the summary strip.
+    section_breakdown = {}
+    for r in rows:
+        key = r['section_name']
+        sb = section_breakdown.setdefault(key, {'name': key, 'stands': 0, 'due': Decimal('0'), 'paid': Decimal('0'), 'balance': Decimal('0')})
+        sb['stands'] += 1
+        sb['due'] += r['due']
+        sb['paid'] += r['paid']
+        sb['balance'] += r['balance']
+    section_breakdown = sorted(section_breakdown.values(), key=lambda x: x['name'])
+
+    return render(request, 'portal/stands_products_report.html', {
+        'events': events,
+        'sections': sections,
+        'active_event': active_event,
+        'active_section': active_section if not all_sections else None,
+        'all_sections': all_sections,
+        'rows': rows,
+        'totals': totals,
+        'section_breakdown': section_breakdown,
+        'q': q,
+    })
+
+
 PAYMENT_BAND_COUNT = 10
 
 # Bookings that actually hold a stand (matches the statuses used by the

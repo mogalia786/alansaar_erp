@@ -178,7 +178,53 @@ def refresh_invoice(inv):
         inv.status = 'sent'
         inv.paid_date = None
     inv.save()
-    remaining = paid
+
+    # Allocate the verified payments to individual stands so each stand's
+    # paid/balance reflects the payment the exhibitor actually made for it.
+    #   * payments tagged to a booking fund THAT booking only;
+    #   * untagged payments (booking is NULL) are spread across the invoice's
+    #     stands in line order;
+    #   * any amount exceeding a stand's line total spills over to be spread
+    #     across the remaining stands (kept as an account credit otherwise).
+    # Previously the whole invoice total was consumed purely in line order,
+    # which stamped a payment onto the wrong stand (e.g. an exhibitor with
+    # stands 1/2/3 paying for stand 1 saw it land on whichever stand happened
+    # to be billed first).
+    line_ids = {l.booking_id for l in lines}
+    tagged = {}
+    pool = Decimal('0')
+    for p in inv.payments.filter(status='verified'):
+        amt = p.amount or Decimal('0')
+        if p.booking_id and p.booking_id in line_ids:
+            tagged[p.booking_id] = tagged.get(p.booking_id, Decimal('0')) + amt
+        else:
+            pool += amt
+
+    allocations = {}
+    # Pass 1 - apply tagged amounts, capped at the line total; overflow to pool.
+    for l in lines:
+        b = l.booking
+        if b is None or b.status in ('cancelled', 'rejected'):
+            continue
+        want = tagged.get(b.id, Decimal('0'))
+        if want > l.amount_incl:
+            pool += want - l.amount_incl
+            want = l.amount_incl
+        allocations[b.id] = want
+    # Pass 2 - spread the remaining pool across stands (line order).
+    remaining = pool
+    for l in lines:
+        b = l.booking
+        if b is None or b.status in ('cancelled', 'rejected'):
+            continue
+        alloc = allocations.get(b.id, Decimal('0'))
+        room = l.amount_incl - alloc
+        if remaining > 0 and room > 0:
+            take = min(room, remaining)
+            alloc += take
+            remaining -= take
+        allocations[b.id] = alloc
+
     for l in lines:
         b = l.booking
         # Never (re)confirm a cancelled/rejected booking or its stall. A zeroed
@@ -186,7 +232,7 @@ def refresh_invoice(inv):
         # resurrect the stand.
         if b.status in ('cancelled', 'rejected'):
             continue
-        alloc = min(l.amount_incl, remaining) if remaining > 0 else Decimal('0')
+        alloc = allocations.get(b.id, Decimal('0'))
         b.amount_paid = alloc
         b.balance_due = l.amount_incl - alloc
         if l.amount_incl and alloc >= l.amount_incl:
@@ -202,7 +248,6 @@ def refresh_invoice(inv):
         else:
             b.payment_status = 'unpaid'
         b.save(update_fields=['amount_paid', 'balance_due', 'payment_status', 'status', 'confirmed_date'])
-        remaining = max(remaining - l.amount_incl, Decimal('0'))
     return inv
 
 

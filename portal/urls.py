@@ -53,6 +53,7 @@ urlpatterns = [
     path('reports/', views.erp_reports, name='reports'),
     path('reports/bookings/stall-bookings-summary/', views.erp_stall_bookings_summary_report, name='stall_bookings_summary_report'),
     path('reports/bookings/all-bookings/', views.erp_all_bookings_report, name='all_bookings_report'),
+    path('reports/bookings/stands-products/', views.erp_stands_products_report, name='stands_products_report'),
     path('reports/bookings/payment-status/', views.erp_payment_status_report, name='payment_status_report'),
     path('reports/bookings/payment-status/send-reminder/', views.send_payment_reminder, name='send_payment_reminder'),
     path('expenses/', views.erp_expense_list, name='expense_list'),

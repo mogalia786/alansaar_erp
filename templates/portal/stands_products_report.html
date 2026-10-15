@@ -1,0 +1,171 @@
+{% extends 'portal/base.html' %}
+{% block title %}Stands &amp; Products Report - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <h3 class="fw-bold mb-0"><i class="bi bi-shop"></i> Stands &amp; Products Report</h3>
+    <div>
+        <button onclick="window.print()" class="btn btn-purple btn-sm"><i class="bi bi-printer"></i> Print</button>
+    </div>
+</div>
+
+<div class="card mb-4 no-print">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label small mb-1">Event</label>
+                <select name="event_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    {% for ev in events %}
+                    <option value="{{ ev.pk }}" {% if active_event and ev.pk == active_event.pk %}selected{% endif %}>{{ ev.name }} ({{ ev.start_date|date:"Y" }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-1">Section</label>
+                <select name="section_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="all">All Sections</option>
+                    {% for s in sections %}
+                    <option value="{{ s.pk }}" {% if active_section and s.pk == active_section.pk %}selected{% endif %}>{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label small mb-1">Search</label>
+                <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Stall, exhibitor or product...">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-purple btn-sm"><i class="bi bi-search"></i> Apply</button>
+                <a href="{% url 'erp:stands_products_report' %}" class="btn btn-outline-secondary btn-sm">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if not active_event %}
+<div class="alert alert-info">No events found.</div>
+{% else %}
+
+<div class="d-none d-print-block mb-3">
+    <h3 style="color:#5B2C6F;margin:0;">Stands &amp; Products Report</h3>
+    <div class="text-muted">{{ active_event.name }} &bull; {% if active_section %}{{ active_section.name }}{% else %}All Sections{% endif %} &bull; Generated {% now "d F Y" %}</div>
+</div>
+
+<div class="d-flex align-items-center gap-2 mb-3 no-print">
+    <h5 class="mb-0 text-purple fw-bold">
+        {% if active_section %}{{ active_section.name }}{% else %}All Sections{% endif %}
+        <span class="text-muted fw-normal">- {{ active_event.name }}</span>
+    </h5>
+</div>
+
+<div class="row g-3 mb-4 no-print">
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-primary"><div class="h4 mb-0">{{ totals.count }}</div><div class="text-muted small">Stands</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-dark"><div class="h4 mb-0">{{ totals.exhibitors }}</div><div class="text-muted small">Exhibitors</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-success"><div class="h4 mb-0">R{{ totals.paid|floatformat:2 }}</div><div class="text-muted small">Received</div></div></div>
+    <div class="col-md-3"><div class="card stat-card p-3 border-start border-4 border-danger"><div class="h4 mb-0">R{{ totals.balance|floatformat:2 }}</div><div class="text-muted small">Outstanding</div></div></div>
+</div>
+
+{% if section_breakdown %}
+<div class="card mb-4">
+    <div class="card-header bg-purple text-white"><h6 class="mb-0"><i class="bi bi-clipboard-data"></i> Section Summary</h6></div>
+    <div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-bordered mb-0 align-middle" style="font-size:12px;">
+        <thead class="table-purple">
+            <tr>
+                <th>Section</th>
+                <th class="text-center">Stands</th>
+                <th class="text-end">Total Due</th>
+                <th class="text-end">Paid</th>
+                <th class="text-end">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for s in section_breakdown %}
+            <tr>
+                <td><strong>{{ s.name }}</strong></td>
+                <td class="text-center">{{ s.stands }}</td>
+                <td class="text-end">R{{ s.due|floatformat:2 }}</td>
+                <td class="text-end text-success">R{{ s.paid|floatformat:2 }}</td>
+                <td class="text-end text-danger">R{{ s.balance|floatformat:2 }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot class="fw-bold table-light">
+            <tr>
+                <td>Total</td>
+                <td class="text-center">{{ totals.count }}</td>
+                <td class="text-end">R{{ totals.due|floatformat:2 }}</td>
+                <td class="text-end text-success">R{{ totals.paid|floatformat:2 }}</td>
+                <td class="text-end text-danger">R{{ totals.balance|floatformat:2 }}</td>
+            </tr>
+        </tfoot>
+    </table></div></div>
+</div>
+{% endif %}
+
+<div class="card mb-4">
+    <div class="card-header bg-purple text-white"><h6 class="mb-0"><i class="bi bi-shop"></i> Stand Directory - {{ active_event.name }}</h6></div>
+    <div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-bordered mb-0 align-middle" style="font-size:11.5px;">
+        <thead class="table-purple">
+            <tr>
+                <th style="width:32px;" class="text-center">No</th>
+                <th>Section</th>
+                <th>Stall</th>
+                <th class="text-center">Size (m)</th>
+                <th>Exhibitor</th>
+                <th>Contact</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Products / Services</th>
+                <th>Fascia</th>
+                <th>Requirements</th>
+                <th class="text-center">Booking</th>
+                <th class="text-center">Payment</th>
+                <th class="text-end">Total Due</th>
+                <th class="text-end">Paid</th>
+                <th class="text-end">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for r in rows %}
+            <tr>
+                <td class="text-center">{{ forloop.counter }}</td>
+                <td class="text-nowrap">{{ r.section_name }}</td>
+                <td><strong>{{ r.stall_name }}</strong></td>
+                <td class="text-center text-nowrap">{{ r.size }}</td>
+                <td>{{ r.exhibitor }}</td>
+                <td>{{ r.contact }}</td>
+                <td>{{ r.email }}</td>
+                <td class="text-nowrap">{{ r.phone }}</td>
+                <td style="min-width:220px;">{{ r.products }}</td>
+                <td>{{ r.fascia }}</td>
+                <td>{{ r.requirements }}</td>
+                <td class="text-center">{{ r.booking_status }}</td>
+                <td class="text-center">
+                    {% if r.payment_status == 'Paid in Full' %}<span class="badge bg-success">{{ r.payment_status }}</span>
+                    {% elif r.payment_status == 'Unpaid' %}<span class="badge bg-danger">{{ r.payment_status }}</span>
+                    {% else %}<span class="badge bg-warning text-dark">{{ r.payment_status }}</span>{% endif %}
+                </td>
+                <td class="text-end text-nowrap">R{{ r.due|floatformat:2 }}</td>
+                <td class="text-end text-nowrap text-success">R{{ r.paid|floatformat:2 }}</td>
+                <td class="text-end text-nowrap {% if r.balance > 0 %}text-danger fw-bold{% endif %}">R{{ r.balance|floatformat:2 }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="16" class="text-center text-muted py-4">No stands found for this event/section.</td></tr>
+        {% endfor %}
+        </tbody>
+        <tfoot class="fw-bold table-light">
+            <tr>
+                <td class="text-center">{{ totals.count }}</td>
+                <td colspan="12" class="text-end">Totals</td>
+                <td class="text-end text-nowrap">R{{ totals.due|floatformat:2 }}</td>
+                <td class="text-end text-nowrap text-success">R{{ totals.paid|floatformat:2 }}</td>
+                <td class="text-end text-nowrap text-danger">R{{ totals.balance|floatformat:2 }}</td>
+            </tr>
+        </tfoot>
+    </table></div></div>
+</div>
+
+<div class="text-muted small no-print">
+    <i class="bi bi-info-circle"></i> Showing stands for <strong>{{ active_event.name }}</strong>
+    {% if active_section %} in <strong>{{ active_section.name }}</strong>{% endif %}{% if q %} matching "<strong>{{ q }}</strong>"{% endif %}.
+</div>
+{% endif %}
+{% endblock %}
