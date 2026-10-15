@@ -1678,7 +1678,7 @@ def erp_all_bookings_report(request):
     })
 
 
-@erp_section_required('booking_reports')
+@erp_section_required('stands_products')
 def erp_stands_products_report(request):
     """Stands & Products Report.
 

@@ -37,9 +37,9 @@ class User(AbstractUser):
     def has_erp_permission(self, section, action='view'):
         if self.user_type in ('superadmin', 'admin'):
             return True
-        if self.user_type == 'director' and section in ('accounting', 'reports', 'booking_reports', 'payment_reports', 'expenses', 'rfq', 'gate_takings', 'debt_declarations', 'refunds', 'early_discounts', 'stall_changes'):
+        if self.user_type == 'director' and section in ('accounting', 'reports', 'booking_reports', 'payment_reports', 'stands_products', 'expenses', 'rfq', 'gate_takings', 'debt_declarations', 'refunds', 'early_discounts', 'stall_changes'):
             return True
-        if self.user_type == 'finance' and section in ('accounting', 'reports', 'booking_reports', 'payment_reports', 'invoices', 'payments', 'expenses', 'gate_takings', 'debt_declarations', 'refunds', 'early_discounts', 'stall_changes'):
+        if self.user_type == 'finance' and section in ('accounting', 'reports', 'booking_reports', 'payment_reports', 'stands_products', 'invoices', 'payments', 'expenses', 'gate_takings', 'debt_declarations', 'refunds', 'early_discounts', 'stall_changes'):
             return True
         if self.role:
             return self.role.permissions.filter(section=section, **{f'can_{action}': True}).exists()
@@ -77,6 +77,7 @@ class RolePermission(models.Model):
         ('reports', 'Reports'),
         ('booking_reports', 'Consolidated Bookings Reports'),
         ('payment_reports', 'Payment Status Report'),
+        ('stands_products', 'Stands & Products Report'),
         ('users', 'User Management'),
         ('stall_changes', 'Stand Changes'),
         ('refunds', 'Refunds'),
