@@ -42,7 +42,7 @@
                         <tr><td>Accessories</td><td class="text-end">R{{ booking.accessories_total|floatformat:2 }}</td></tr>
                         {% endif %}
                         {% if booking.electricity_deposit > 0 %}
-                        <tr><td>Electricity Deposit (refundable)</td><td class="text-end">R{{ booking.electricity_deposit|floatformat:2 }}</td></tr>
+                        <tr><td>Electricity Deposit</td><td class="text-end">R{{ booking.electricity_deposit|floatformat:2 }}</td></tr>
                         {% endif %}
                         <tr class="fw-bold"><td>Subtotal</td><td class="text-end">R{{ booking.subtotal|floatformat:2 }}</td></tr>
                         {% if booking.early_payment_discount > 0 %}
