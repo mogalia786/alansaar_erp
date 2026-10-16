@@ -65,6 +65,7 @@ class RolePermission(models.Model):
         ('events', 'Events'),
         ('floor_plan', 'Floor Plan'),
         ('bookings', 'Bookings'),
+        ('book_on_behalf', 'Book on Behalf'),
         ('invoices', 'Invoices'),
         ('payments', 'Payments'),
         ('exhibitors', 'Exhibitors'),

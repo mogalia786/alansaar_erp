@@ -635,7 +635,7 @@ def _book_on_behalf_events():
     return events
 
 
-@erp_section_required('bookings')
+@erp_section_required('book_on_behalf')
 def erp_book_on_behalf(request):
     """Step 1 - choose an event and the exhibitor to book for."""
     events = _book_on_behalf_events()
@@ -664,7 +664,7 @@ def erp_book_on_behalf(request):
     })
 
 
-@erp_section_required('bookings')
+@erp_section_required('book_on_behalf')
 def erp_book_on_behalf_stands(request, exhibitor_id):
     """Step 2 - pick an available stand for the chosen exhibitor."""
     exhibitor = get_object_or_404(
@@ -706,7 +706,7 @@ def erp_book_on_behalf_stands(request, exhibitor_id):
     })
 
 
-@erp_section_required('bookings')
+@erp_section_required('book_on_behalf')
 def erp_book_on_behalf_create(request, exhibitor_id):
     """Step 3 - create the booking exactly as the exhibitor flow would."""
     from django.urls import reverse
