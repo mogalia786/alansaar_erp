@@ -617,6 +617,188 @@ def confirm_booking(request, pk):
     return redirect('erp:booking_detail', pk=pk)
 
 
+# ---------------------------------------------------------------------------
+# Book on Behalf
+#
+# Lets an admin / organiser create a booking for a registered exhibitor who is
+# not able to do it themselves. It follows exactly the same procedure as the
+# public exhibitor flow, with one difference: instead of a floor plan the staff
+# member picks from a plain list of available stands.
+# ---------------------------------------------------------------------------
+
+def _book_on_behalf_events():
+    """Events that currently have at least one available stand (newest first)."""
+    events = (Event.objects.filter(stalls__status='available')
+              .distinct().order_by('-start_date'))
+    if not events.exists():
+        events = Event.objects.order_by('-start_date')
+    return events
+
+
+@erp_section_required('bookings')
+def erp_book_on_behalf(request):
+    """Step 1 - choose an event and the exhibitor to book for."""
+    events = _book_on_behalf_events()
+    event_id = request.GET.get('event_id')
+    active_event = None
+    if event_id:
+        active_event = events.filter(pk=event_id).first()
+    if active_event is None:
+        active_event = events.first()
+
+    q = request.GET.get('q', '').strip()
+    exhibitors = User.objects.filter(user_type='exhibitor', is_verified=True)
+    if q:
+        exhibitors = exhibitors.filter(
+            Q(company_name__icontains=q) | Q(email__icontains=q) |
+            Q(username__icontains=q) | Q(first_name__icontains=q) |
+            Q(last_name__icontains=q)
+        )
+    exhibitors = exhibitors.order_by('company_name', 'username')[:200]
+
+    return render(request, 'portal/book_on_behalf.html', {
+        'events': events,
+        'active_event': active_event,
+        'exhibitors': exhibitors,
+        'q': q,
+    })
+
+
+@erp_section_required('bookings')
+def erp_book_on_behalf_stands(request, exhibitor_id):
+    """Step 2 - pick an available stand for the chosen exhibitor."""
+    exhibitor = get_object_or_404(
+        User, pk=exhibitor_id, user_type='exhibitor', is_verified=True)
+    events = _book_on_behalf_events()
+    event_id = request.GET.get('event_id')
+    active_event = events.filter(pk=event_id).first() if event_id else None
+    if active_event is None:
+        active_event = events.first()
+    if active_event is None:
+        messages.error(request, 'There are no events with available stands.')
+        return redirect('erp:book_on_behalf')
+
+    stalls = (Stall.objects.filter(event=active_event, status='available')
+              .select_related('section', 'zone')
+              .order_by('section__display_order', 'zone__name', 'name'))
+
+    sections = list(active_event.floor_plan_sections.all().order_by('display_order', 'name'))
+    section_id = request.GET.get('section_id', '')
+    active_section = None
+    if section_id and section_id != 'all':
+        active_section = next((s for s in sections if str(s.pk) == str(section_id)), None)
+        if active_section:
+            stalls = stalls.filter(section=active_section)
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        stalls = stalls.filter(Q(name__icontains=q) | Q(zone__name__icontains=q))
+
+    return render(request, 'portal/book_on_behalf_stands.html', {
+        'exhibitor': exhibitor,
+        'events': events,
+        'active_event': active_event,
+        'sections': sections,
+        'active_section': active_section,
+        'stalls': stalls,
+        'q': q,
+        'available_count': stalls.count(),
+    })
+
+
+@erp_section_required('bookings')
+def erp_book_on_behalf_create(request, exhibitor_id):
+    """Step 3 - create the booking exactly as the exhibitor flow would."""
+    from django.urls import reverse
+    from decimal import Decimal
+    from bookings.pricing import booking_totals
+    import uuid
+
+    exhibitor = get_object_or_404(
+        User, pk=exhibitor_id, user_type='exhibitor', is_verified=True)
+    stands_url = reverse('erp:book_on_behalf_stands', args=[exhibitor.id])
+
+    if request.method != 'POST':
+        return redirect('erp:book_on_behalf_stands', exhibitor_id=exhibitor.id)
+
+    stall = get_object_or_404(
+        Stall.objects.select_related('event'), pk=request.POST.get('stall_id'))
+    event = stall.event
+
+    def back_with_error(msg):
+        messages.error(request, msg)
+        return redirect(f'{stands_url}?event_id={event.id}')
+
+    if stall.status != 'available':
+        return back_with_error(f'Stand {stall.name} is no longer available.')
+
+    products_description = request.POST.get('products_description', '').strip()
+    if not products_description:
+        return back_with_error(
+            'Please list the description of products to be sold or promoted before booking.')
+
+    ref = f"BK-{uuid.uuid4().hex[:8].upper()}"
+    requires_power = request.POST.get('requires_power') == 'on'
+    try:
+        power_amps = int(request.POST.get('power_amps') or 0)
+    except (TypeError, ValueError):
+        power_amps = 0
+    elec_dep = event.electricity_deposit if requires_power else Decimal('0')
+    subtotal, vat = booking_totals(
+        stall.total_price, elec_dep, Decimal('0'), float(event.vat_rate) / 100)
+
+    staff_name = request.user.get_full_name() or request.user.username
+    booking = None
+    with transaction.atomic():
+        # Re-check and reserve the stand atomically so two staff members cannot
+        # book the same stand at once.
+        reserved = Stall.objects.filter(pk=stall.pk, status='available').update(status='reserved')
+        if reserved:
+            booking = Booking.objects.create(
+                booking_reference=ref,
+                event=event,
+                exhibitor=exhibitor,
+                stall=stall,
+                stall_price=stall.total_price,
+                subtotal=subtotal,
+                vat_amount=vat,
+                total_amount=subtotal,
+                balance_due=subtotal,
+                electricity_deposit=elec_dep,
+                fascia_name=request.POST.get('fascia_name', '')[:28],
+                requires_power=requires_power,
+                power_amps=power_amps,
+                requires_water=request.POST.get('requires_water') == 'on',
+                require_stand_build=request.POST.get('require_stand_build') == 'on',
+                require_remove_side_walls=request.POST.get('require_remove_side_walls') == 'on',
+                require_floor_mat=request.POST.get('require_floor_mat') == 'on',
+                require_carpet=request.POST.get('require_carpet') == 'on',
+                require_extra_plugs=request.POST.get('require_extra_plugs') == 'on',
+                require_extra_lights=request.POST.get('require_extra_lights') == 'on',
+                special_requirements=request.POST.get('special_requirements', ''),
+                products_description=products_description,
+                side_wall_removal=request.POST.get('side_wall_removal', 'none'),
+                admin_notes=(
+                    f"[Booked on behalf of the exhibitor by {staff_name} "
+                    f"on {timezone.now():%Y-%m-%d %H:%M}]"
+                ),
+            )
+    if booking is None:
+        return back_with_error(f'Stand {stall.name} is no longer available.')
+
+    from notifications.utils import send_booking_received
+    try:
+        send_booking_received(booking)
+    except Exception:
+        logger.exception('Failed to send booking received email for %s', ref)
+
+    messages.success(
+        request,
+        f'Booking {ref} created for {exhibitor.company_name or exhibitor.username} '
+        f'on stand {stall.name}. Review and approve it to issue the invoice.')
+    return redirect('erp:booking_detail', pk=booking.pk)
+
+
 @erp_section_required('invoices')
 def erp_invoice_list(request):
     q = request.GET.get('q', '').strip()

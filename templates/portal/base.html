@@ -52,6 +52,7 @@
                 <a href="{% url 'erp:dashboard' %}" class="nav-link"><i class="bi bi-speedometer2"></i> Dashboard</a>
                 {% if request.user|has_perm:'events' %}<a href="{% url 'erp:event_list' %}" class="nav-link"><i class="bi bi-calendar-event"></i> Events</a>{% endif %}
                 {% if request.user|has_perm:'bookings' %}<a href="{% url 'erp:booking_list' %}" class="nav-link"><i class="bi bi-bag-check"></i> Bookings</a>{% endif %}
+                {% if request.user|has_perm:'bookings' %}<a href="{% url 'erp:book_on_behalf' %}" class="nav-link"><i class="bi bi-person-plus"></i> Book on Behalf</a>{% endif %}
                 {% if request.user|has_perm:'invoices' %}<a href="{% url 'erp:invoice_list' %}" class="nav-link"><i class="bi bi-file-text"></i> Invoices</a>{% endif %}
                 {% if request.user|has_perm:'payments' %}<a href="{% url 'erp:payment_list' %}" class="nav-link"><i class="bi bi-credit-card"></i> Payments</a>{% endif %}
                 <div class="nav-section">People</div>
@@ -111,6 +112,7 @@
                             <a href="{% url 'erp:dashboard' %}" class="d-block py-1">Dashboard</a>
                             {% if request.user|has_perm:'events' %}<a href="{% url 'erp:event_list' %}" class="d-block py-1">Events</a>{% endif %}
                             {% if request.user|has_perm:'bookings' %}<a href="{% url 'erp:booking_list' %}" class="d-block py-1">Bookings</a>{% endif %}
+                            {% if request.user|has_perm:'bookings' %}<a href="{% url 'erp:book_on_behalf' %}" class="d-block py-1">Book on Behalf</a>{% endif %}
                             {% if request.user|has_perm:'invoices' %}<a href="{% url 'erp:invoice_list' %}" class="d-block py-1">Invoices</a>{% endif %}
                             {% if request.user|has_perm:'payments' %}<a href="{% url 'erp:payment_list' %}" class="d-block py-1">Payments</a>{% endif %}
                             {% if request.user|has_perm:'exhibitors' %}<a href="{% url 'erp:exhibitor_list' %}" class="d-block py-1">Exhibitors</a>{% endif %}

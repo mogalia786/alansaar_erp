@@ -1,0 +1,87 @@
+{% extends 'portal/base.html' %}
+{% block title %}Book on Behalf - ERP{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h3 class="fw-bold mb-0"><i class="bi bi-person-plus"></i> Book on Behalf</h3>
+        <div class="text-muted small">Create a stand booking for an exhibitor who cannot do it themselves.</div>
+    </div>
+    <a href="{% url 'erp:booking_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back to Bookings</a>
+</div>
+
+<div class="alert alert-info d-flex align-items-start gap-2 py-2">
+    <i class="bi bi-info-circle mt-1"></i>
+    <div class="small">
+        <strong>Step 1 of 2.</strong> Choose the event and the exhibitor you are booking for.
+        On the next screen you will pick an available stand from a list and complete the booking on their behalf.
+    </div>
+</div>
+
+{% if not active_event %}
+<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> There are no events available. Please create an event with stands first.</div>
+{% else %}
+
+<div class="card mb-3">
+    <div class="card-body py-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small fw-bold mb-1">Event</label>
+                <select name="event_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    {% for ev in events %}
+                    <option value="{{ ev.pk }}" {% if ev.pk == active_event.pk %}selected{% endif %}>{{ ev.name }} ({{ ev.start_date|date:"Y" }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label small fw-bold mb-1">Find Exhibitor</label>
+                <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Company, contact, email or username...">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-purple btn-sm w-100"><i class="bi bi-search"></i> Search</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-people"></i> Registered Exhibitors</h6>
+        <span class="badge bg-light text-dark">{{ exhibitors|length }} shown</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-purple">
+                    <tr>
+                        <th>Company</th>
+                        <th>Contact</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th class="text-center">Bookings</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for ex in exhibitors %}
+                    <tr>
+                        <td><strong>{{ ex.company_name|default:ex.username }}</strong></td>
+                        <td>{{ ex.get_full_name|default:ex.username }}</td>
+                        <td>{{ ex.email|default:"-" }}</td>
+                        <td>{{ ex.phone|default:"-" }}</td>
+                        <td class="text-center">{{ ex.bookings.count }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'erp:book_on_behalf_stands' ex.id %}?event_id={{ active_event.pk }}" class="btn btn-sm btn-purple">
+                                <i class="bi bi-shop"></i> Select &amp; Book
+                            </a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">No authorised exhibitors found{% if q %} matching "{{ q }}"{% endif %}.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
