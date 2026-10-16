@@ -1240,7 +1240,7 @@ def approve_discount(request, pk):
     return redirect('erp:discount_list')
 
 
-@erp_section_required('stall_changes')
+@erp_section_required('swap_stands')
 def erp_swap_stall(request):
     from accounts.models import User
     from events.models import Stall

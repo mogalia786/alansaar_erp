@@ -37,9 +37,9 @@ class User(AbstractUser):
     def has_erp_permission(self, section, action='view'):
         if self.user_type in ('superadmin', 'admin'):
             return True
-        if self.user_type == 'director' and section in ('accounting', 'reports', 'booking_reports', 'payment_reports', 'stands_products', 'expenses', 'rfq', 'gate_takings', 'debt_declarations', 'refunds', 'early_discounts', 'stall_changes'):
+        if self.user_type == 'director' and section in ('accounting', 'reports', 'booking_reports', 'payment_reports', 'stands_products', 'expenses', 'rfq', 'gate_takings', 'debt_declarations', 'refunds', 'early_discounts', 'stall_changes', 'swap_stands'):
             return True
-        if self.user_type == 'finance' and section in ('accounting', 'reports', 'booking_reports', 'payment_reports', 'stands_products', 'invoices', 'payments', 'expenses', 'gate_takings', 'debt_declarations', 'refunds', 'early_discounts', 'stall_changes'):
+        if self.user_type == 'finance' and section in ('accounting', 'reports', 'booking_reports', 'payment_reports', 'stands_products', 'invoices', 'payments', 'expenses', 'gate_takings', 'debt_declarations', 'refunds', 'early_discounts', 'stall_changes', 'swap_stands'):
             return True
         if self.role:
             return self.role.permissions.filter(section=section, **{f'can_{action}': True}).exists()
@@ -80,6 +80,7 @@ class RolePermission(models.Model):
         ('stands_products', 'Stands & Products Report'),
         ('users', 'User Management'),
         ('stall_changes', 'Stand Changes'),
+        ('swap_stands', 'Swap Stands'),
         ('refunds', 'Refunds'),
         ('early_discounts', 'Early Discounts'),
     ]
