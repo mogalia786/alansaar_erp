@@ -21,7 +21,7 @@
     <td>{{ ex.get_full_name|default:ex.username }}</td>
     <td>{{ ex.email }}</td>
     <td>{{ ex.phone|default:"-" }}</td>
-    <td>{{ ex.bookings.count }}</td>
+    <td>{{ ex.active_bookings }}</td>
     <td>{{ ex.date_joined|date:"d M Y" }}</td>
     <td>
         <a href="{% url 'erp:statement' ex.id %}" class="btn btn-sm btn-outline-purple" target="_blank" title="Statement">

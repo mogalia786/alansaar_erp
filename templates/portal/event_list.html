@@ -14,7 +14,7 @@
         <td>{{ e.start_date|date:"d/m" }} - {{ e.end_date|date:"d/m/y" }}</td>
         <td><span class="badge bg-{% if e.status == 'published' %}success{% elif e.status == 'ongoing' %}info{% elif e.status == 'draft' %}secondary{% elif e.status == 'completed' %}dark{% else %}danger{% endif %}">{{ e.get_status_display }}</span></td>
         <td>{{ e.stalls.count }}</td>
-        <td>{{ e.bookings.count }}</td>
+        <td>{{ e.active_bookings }}</td>
         <td>
             <a href="{% url 'erp:event_detail' e.id %}" class="btn btn-sm btn-purple"><i class="bi bi-eye"></i></a>
             <a href="{% url 'erp:floor_plan' e.id %}" class="btn btn-sm btn-gold"><i class="bi bi-map"></i></a>

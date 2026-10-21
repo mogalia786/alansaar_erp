@@ -114,7 +114,7 @@ def erp_dashboard(request):
     gate_takings_total = (gt_agg['c'] or Decimal('0')) + (gt_agg['card'] or Decimal('0'))
     ctx = {
         'active_events': Event.objects.filter(status__in=['published', 'ongoing']).count(),
-        'total_bookings': Booking.objects.count(),
+        'total_bookings': Booking.objects.filter(status__in=Booking.ACTIVE_STATUSES).count(),
         'pending_bookings': Booking.objects.filter(status='pending').count(),
         'pending_payments': Payment.objects.filter(status='pending').count(),
         'unverified_exhibitors': User.objects.filter(user_type='exhibitor', is_verified=False).count(),
@@ -127,7 +127,12 @@ def erp_dashboard(request):
 
 @erp_section_required('events')
 def erp_event_list(request):
-    events = Event.objects.all().select_related('venue')
+    events = Event.objects.all().select_related('venue').annotate(
+        active_bookings=Count(
+            'bookings',
+            filter=Q(bookings__status__in=Booking.ACTIVE_STATUSES),
+        )
+    )
     return render(request, 'portal/event_list.html', {'events': events})
 
 
@@ -136,10 +141,12 @@ def erp_event_detail(request, event_id):
     event = get_object_or_404(Event.objects.select_related('venue'), pk=event_id)
     stalls = event.stalls.select_related('zone').all()
     stalls_available = stalls.filter(status='available').count()
+    active_bookings = event.bookings.filter(status__in=Booking.ACTIVE_STATUSES).count()
     floor_plan = getattr(event, 'floor_plan', None)
     zones = event.zones.all()
     return render(request, 'portal/event_detail.html', {
         'event': event, 'stalls': stalls, 'stalls_available': stalls_available,
+        'active_bookings': active_bookings,
         'floor_plan': floor_plan, 'zones': zones,
     })
 
@@ -654,7 +661,12 @@ def erp_book_on_behalf(request):
             Q(username__icontains=q) | Q(first_name__icontains=q) |
             Q(last_name__icontains=q)
         )
-    exhibitors = exhibitors.order_by('company_name', 'username')[:200]
+    exhibitors = exhibitors.annotate(
+        active_bookings=Count(
+            'bookings',
+            filter=Q(bookings__status__in=Booking.ACTIVE_STATUSES),
+        )
+    ).order_by('company_name', 'username')[:200]
 
     return render(request, 'portal/book_on_behalf.html', {
         'events': events,
@@ -1259,6 +1271,12 @@ def erp_exhibitor_list(request):
     q = request.GET.get('q')
     if q:
         exhibitors = exhibitors.filter(Q(company_name__icontains=q) | Q(email__icontains=q) | Q(username__icontains=q))
+    exhibitors = exhibitors.annotate(
+        active_bookings=Count(
+            'bookings',
+            filter=Q(bookings__status__in=Booking.ACTIVE_STATUSES),
+        )
+    )
     return render(request, 'portal/exhibitor_list.html', {
         'exhibitors': exhibitors,
         'verified_count': User.objects.filter(user_type='exhibitor', is_verified=True).count(),
@@ -1657,10 +1675,11 @@ def erp_reports(request):
     events = Event.objects.all()
     report_data = []
     for event in events:
-        total_bookings = event.bookings.count()
-        confirmed = event.bookings.filter(status='confirmed').count()
-        total_rev = event.bookings.aggregate(s=Sum('total_amount'))['s'] or 0
-        paid_rev = event.bookings.filter(payment_status='paid').aggregate(s=Sum('total_amount'))['s'] or 0
+        active = event.bookings.filter(status__in=Booking.ACTIVE_STATUSES)
+        total_bookings = active.count()
+        confirmed = active.filter(status='confirmed').count()
+        total_rev = active.aggregate(s=Sum('total_amount'))['s'] or 0
+        paid_rev = active.filter(payment_status='paid').aggregate(s=Sum('total_amount'))['s'] or 0
         report_data.append({
             'event': event,
             'total_bookings': total_bookings,
@@ -1678,7 +1697,7 @@ def build_section_summary(event):
     if not event:
         return []
     sections = list(event.floor_plan_sections.all().order_by('display_order', 'name'))
-    sold_statuses = ['pending', 'approved', 'confirmed', 'completed']
+    sold_statuses = Booking.ACTIVE_STATUSES
     summary = []
     for sec in sections:
         total_stalls = event.stalls.filter(section=sec).count()
@@ -1796,7 +1815,7 @@ def erp_all_bookings_report(request):
         if active_section is None:
             all_sections = True
 
-    base_qs = Booking.objects.filter(event=active_event)
+    base_qs = Booking.objects.filter(event=active_event, status__in=Booking.ACTIVE_STATUSES)
     if not all_sections:
         base_qs = base_qs.filter(stall__section=active_section)
 
@@ -2006,10 +2025,9 @@ def erp_stands_products_report(request):
 
 PAYMENT_BAND_COUNT = 10
 
-# Bookings that actually hold a stand (matches the statuses used by the
-# section summary report). Cancelled/rejected bookings are excluded because
-# the stand has been released and nothing is owed.
-ACTIVE_BOOKING_STATUSES = ('pending', 'approved', 'confirmed', 'completed')
+# Bookings that actually hold a stand. Cancelled/rejected bookings are excluded
+# because the stand has been released and nothing is owed.
+ACTIVE_BOOKING_STATUSES = Booking.ACTIVE_STATUSES
 
 
 def build_payment_status_rows(event):

@@ -75,7 +75,12 @@ def provider_dashboard(request):
     from events.models import Event
     from django.utils import timezone
     from django.db.models import Count
-    upcoming = Event.objects.filter(end_date__gte=timezone.now()).annotate(total_bookings=Count('bookings')).order_by('start_date')
+    upcoming = Event.objects.filter(end_date__gte=timezone.now()).annotate(
+        total_bookings=Count(
+            'bookings',
+            filter=models.Q(bookings__status__in=Booking.ACTIVE_STATUSES),
+        )
+    ).order_by('start_date')
     open_rfqs = RFQ.objects.filter(status='open', closing_date__gte=timezone.now()).select_related('category')
     my_quotations = Quotation.objects.filter(
         models.Q(provider=provider) | models.Q(submitter_email=provider.email)

@@ -18,6 +18,10 @@ class Booking(models.Model):
         ('partial', 'Partially Paid'),
         ('paid', 'Paid in Full'),
     ]
+    # Bookings that still hold a stand. Cancelled and rejected bookings release
+    # the stand, so they must be excluded from occupancy counts and revenue
+    # totals; otherwise "bookings" can exceed the number of stands.
+    ACTIVE_STATUSES = ('pending', 'approved', 'confirmed', 'completed')
     booking_reference = models.CharField(max_length=20, unique=True)
     event = models.ForeignKey('events.Event', on_delete=models.CASCADE, related_name='bookings')
     exhibitor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bookings')

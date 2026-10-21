@@ -68,7 +68,7 @@
                         <td>{{ ex.get_full_name|default:ex.username }}</td>
                         <td>{{ ex.email|default:"-" }}</td>
                         <td>{{ ex.phone|default:"-" }}</td>
-                        <td class="text-center">{{ ex.bookings.count }}</td>
+                        <td class="text-center">{{ ex.active_bookings }}</td>
                         <td class="text-end">
                             <a href="{% url 'erp:book_on_behalf_stands' ex.id %}?event_id={{ active_event.pk }}" class="btn btn-sm btn-purple">
                                 <i class="bi bi-shop"></i> Select &amp; Book
