@@ -112,13 +112,26 @@ def erp_dashboard(request):
     from accounting.models import GateTaking
     gt_agg = GateTaking.objects.aggregate(c=Sum('cash_amount'), card=Sum('card_amount'))
     gate_takings_total = (gt_agg['c'] or Decimal('0')) + (gt_agg['card'] or Decimal('0'))
+
+    # Use exactly the same basis as the Stall Bookings Summary and Payment
+    # Status reports (active bookings only, booking-level amounts) so the
+    # dashboard reconciles with them. Previously this summed Invoice.amount_paid
+    # (invoice-level cash, which includes overpayments/credits) and added gate
+    # takings, which never tied up with the reports.
+    active_bookings = Booking.objects.filter(status__in=Booking.ACTIVE_STATUSES)
+    billed_revenue = active_bookings.aggregate(s=Sum('total_amount'))['s'] or Decimal('0')
+    collected_revenue = active_bookings.aggregate(s=Sum('amount_paid'))['s'] or Decimal('0')
+    outstanding_revenue = billed_revenue - collected_revenue
+
     ctx = {
         'active_events': Event.objects.filter(status__in=['published', 'ongoing']).count(),
-        'total_bookings': Booking.objects.filter(status__in=Booking.ACTIVE_STATUSES).count(),
+        'total_bookings': active_bookings.count(),
         'pending_bookings': Booking.objects.filter(status='pending').count(),
         'pending_payments': Payment.objects.filter(status='pending').count(),
         'unverified_exhibitors': User.objects.filter(user_type='exhibitor', is_verified=False).count(),
-        'total_revenue': (Decimal(Invoice.objects.aggregate(s=Sum('amount_paid'))['s'] or 0) + gate_takings_total),
+        'billed_revenue': billed_revenue,
+        'collected_revenue': collected_revenue,
+        'outstanding_revenue': outstanding_revenue,
         'gate_takings_total': gate_takings_total,
         'recent_bookings': Booking.objects.select_related('exhibitor', 'event', 'stall').order_by('-booking_date')[:10],
     }
