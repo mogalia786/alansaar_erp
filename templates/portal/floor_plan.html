@@ -82,6 +82,14 @@
 .stall-el.edit-mode { cursor: move; }
 .stall-el.edit-mode:hover { outline: 3px solid var(--gold); outline-offset: 2px; }
 .stall-el.dragging { opacity: 0.7; z-index: 100; cursor: grabbing; }
+.stall-el .del-btn {
+    display: none; position: absolute; top: -10px; right: -10px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #dc3545; color: #fff; font-size: 13px; font-weight: 700;
+    line-height: 18px; text-align: center; cursor: pointer; z-index: 20;
+    box-shadow: 0 1px 4px rgba(0,0,0,.5); text-shadow: none;
+}
+.stall-el.edit-mode .del-btn { display: block; }
 
 .ctx-menu {
     position: fixed; z-index: 99999; background: #fff; border-radius: 10px;
@@ -266,6 +274,19 @@
             d.dataset.rot = s.rotation || 0;
             d.dataset.bp = s.price;
             if (s.rotation) d.style.transform = 'rotate(' + s.rotation + 'deg)';
+            if (editMode) {
+                var x = document.createElement('span');
+                x.className = 'del-btn';
+                x.innerHTML = '&times;';
+                x.title = 'Delete ' + s.name;
+                x.addEventListener('mousedown', function(ev){ ev.stopPropagation(); ev.preventDefault(); });
+                x.addEventListener('touchstart', function(ev){ ev.stopPropagation(); });
+                x.addEventListener('click', function(ev){
+                    ev.stopPropagation(); ev.preventDefault();
+                    deleteStall(d);
+                });
+                d.appendChild(x);
+            }
             inner.appendChild(d);
         });
     }
@@ -305,9 +326,7 @@
         var btn = document.getElementById('editToggle');
         btn.classList.toggle('active', editMode);
         btn.innerHTML = editMode ? '<i class="bi bi-pencil-square"></i> Editing' : '<i class="bi bi-pencil-square"></i> Edit Mode';
-        inner.querySelectorAll('.stall-el').forEach(function(el) {
-            el.classList.toggle('edit-mode', editMode);
-        });
+        layout();
         wrap.style.cursor = editMode ? 'default' : '';
     };
 
@@ -492,24 +511,69 @@
         });
     };
 
-    window.ctxDelete = function() {
-        if (!ctxStallEl) return;
+    function deleteStall(el) {
+        if (!el) return;
         document.getElementById('ctxMenu').classList.remove('show');
-        if (!confirm('Delete stall "' + ctxStallEl.dataset.n + '"?')) return;
-        var el = ctxStallEl;
-        fetch('/events/{{ event.id }}/stall/' + el.dataset.id + '/update/', {
+        if (!confirm('Delete stall "' + el.dataset.n + '"?')) return;
+        var id = el.dataset.id;
+        fetch('/events/{{ event.id }}/stall/' + id + '/update/', {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
             body: JSON.stringify({ delete: true })
-        }).then(function(r){return r.json();}).then(function(d){
-            if (d.ok) {
-                el.remove();
-                stalls = stalls.filter(function(s){ return s.id != el.dataset.id; });
-                document.getElementById('stall-count').textContent = stalls.length;
-                document.getElementById('avail-count').textContent = stalls.filter(function(s){return s.status==='available';}).length;
-            }
+        }).then(function(r){
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }).then(function(d){
+            if (!d.ok) { alert(d.error || 'Could not delete stall.'); return; }
+            el.remove();
+            stalls = stalls.filter(function(s){ return s.id != id; });
+            document.getElementById('stall-count').textContent = stalls.length;
+            document.getElementById('avail-count').textContent = stalls.filter(function(s){return s.status==='available';}).length;
+        }).catch(function(err){
+            alert('Failed to delete stall: ' + err.message);
         });
+    }
+
+    window.ctxDelete = function() {
+        if (!ctxStallEl) return;
+        deleteStall(ctxStallEl);
     };
+
+    function reuseStall(id, width, height, price, btn) {
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Moving...'; }
+        fetch('/events/{{ event.id }}/stall/' + id + '/update/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN},
+            body: JSON.stringify({
+                position_x: Math.round(VW / 2),
+                position_y: Math.round(VH / 2),
+                width: width, height: height, base_price: price
+            })
+        }).then(function(r){
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }).then(function(d){
+            if (!d.ok) { alert(d.error || 'Could not move the existing stand.'); return; }
+            var si = stalls.findIndex(function(s){ return s.id == d.id; });
+            var obj = {
+                id: d.id, name: d.name, x: d.x, y: d.y, w: d.w, h: d.h,
+                price: d.base_price,
+                status: (si !== -1 ? stalls[si].status : 'available'),
+                size_sqm: d.size_sqm, rotation: d.rotation || 0,
+                zone: '', is_corner: false, has_water: false,
+            };
+            if (si !== -1) stalls[si] = Object.assign(stalls[si], obj);
+            else stalls.push(obj);
+            document.getElementById('stall-count').textContent = stalls.length;
+            document.getElementById('avail-count').textContent = stalls.filter(function(s){return s.status==='available';}).length;
+            layout();
+            addStallModal.hide();
+        }).catch(function(err){
+            alert('Failed to move existing stand: ' + err.message);
+        }).finally(function(){
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-plus-lg"></i> Add Stall'; }
+        });
+    }
 
     var addStallModal = new bootstrap.Modal(document.getElementById('addStallModal'));
     window.showAddStallModal = function() {
@@ -559,6 +623,11 @@
                 wrap.scrollLeft = Math.max(0, stallPxX - wrap.clientWidth / 2);
                 wrap.scrollTop = Math.max(0, stallPxY - wrap.clientHeight / 2);
                 addStallModal.hide();
+            } else if (d.exists) {
+                if (confirm('Stall "' + name + '" already exists in this section (status: ' + d.status + ').\n\nMove that stand to this spot instead?')) {
+                    reuseStall(d.id, width, height, price, btn);
+                    return;
+                }
             } else {
                 alert('Error: ' + d.error);
             }

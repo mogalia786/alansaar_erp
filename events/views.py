@@ -3,6 +3,7 @@ from .models import Event, Stall, FloorPlanSection
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Q
 import os, re, json
 from decimal import Decimal
 from datetime import date
@@ -232,6 +233,27 @@ def stall_update(request, event_id, stall_id):
                 return JsonResponse({'ok': False, 'error': f'Stall "{new_name}" already exists in this section'})
             stall.name = new_name
     if data.get('delete'):
+        from bookings.models import Booking
+        active = stall.bookings.filter(status__in=Booking.ACTIVE_STATUSES)
+        if active.exists():
+            refs = ', '.join(active.values_list('booking_reference', flat=True)[:3])
+            return JsonResponse({
+                'ok': False,
+                'error': (f'Cannot delete stand "{stall.name}": it has active '
+                          f'booking(s) {refs}. Cancel or reject them first.'),
+            })
+        # A hard delete cascades through bookings, invoice lines, payments and
+        # refunds. Never wipe financial history just to clear a floor plan spot.
+        has_money = stall.bookings.filter(
+            Q(invoice_line__isnull=False) | Q(payments__isnull=False) |
+            Q(refunds__isnull=False) | Q(ledger_entries__isnull=False)
+        ).exists()
+        if has_money:
+            return JsonResponse({
+                'ok': False,
+                'error': (f'Cannot delete stand "{stall.name}": its bookings have '
+                          f'invoices/payments. Rename it or mark it blocked instead.'),
+            })
         stall.delete()
         return JsonResponse({'ok': True, 'deleted': True})
     if 'base_price' in data:
@@ -262,8 +284,17 @@ def stall_create(request, event_id):
     name = data.get('name', '').strip()
     if not name:
         return JsonResponse({'ok': False, 'error': 'Name is required'})
-    if section and Stall.objects.filter(section=section, name=name).exists():
-        return JsonResponse({'ok': False, 'error': f'Stall "{name}" already exists in this section'})
+    if section:
+        existing = Stall.objects.filter(section=section, name=name).first()
+        if existing:
+            return JsonResponse({
+                'ok': False,
+                'exists': True,
+                'id': existing.id,
+                'name': existing.name,
+                'status': existing.status,
+                'error': f'Stall "{name}" already exists in this section',
+            })
     scale = 1000 / float(section.scale_factor) if section else 1
     width_m = float(data.get('width', 3))
     height_m = float(data.get('height', 3))
