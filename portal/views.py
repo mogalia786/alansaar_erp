@@ -869,49 +869,79 @@ def erp_invoice_detail(request, pk):
 def erp_apply_discount(request, pk):
     """Apply (or remove) a manual discount to an invoice.
 
-    The discount is a percentage of the total STAND PRICE on the invoice
-    (sum of stall prices across all billable stands) and excludes electricity
-    deposits, accessories and VAT. Applying it reprices every line and
-    recalculates the invoice total and balance.
+    The discount can be entered as a percentage of the total STAND PRICE on the
+    invoice or as a Rand amount. Either way it applies to stand prices only and
+    excludes electricity deposits, accessories and VAT. Applying it reprices
+    every line and recalculates the invoice total and balance.
     """
     from datetime import datetime as _dt
     from decimal import InvalidOperation
-    from invoices.views import refresh_invoice, evaluate_invoice_discounts, update_invoice_from_booking
+    from invoices.views import (
+        refresh_invoice, evaluate_invoice_discounts, reprice_invoice_lines,
+    )
 
     invoice = get_object_or_404(Invoice, pk=pk)
     lines = list(invoice.billable_lines.select_related('booking', 'booking__stall'))
     stand_base = sum((Decimal(l.booking.stall_price or 0) for l in lines if l.booking), Decimal('0'))
 
     def _reprice_all():
-        for l in lines:
-            update_invoice_from_booking(l.booking)
         evaluate_invoice_discounts(invoice)
+        reprice_invoice_lines(invoice)
         refresh_invoice(invoice)
 
     if request.method == 'POST':
         if request.POST.get('action') == 'remove':
             with transaction.atomic():
+                invoice.discount_type = 'percent'
                 invoice.discount_percent = Decimal('0')
+                invoice.discount_fixed_amount = Decimal('0')
                 invoice.discount_amount = Decimal('0')
                 invoice.discount_date = None
                 invoice.discount_approved_by = ''
                 invoice.discount_motivation = ''
                 invoice.save(update_fields=[
-                    'discount_percent', 'discount_amount', 'discount_date',
-                    'discount_approved_by', 'discount_motivation',
+                    'discount_type', 'discount_percent', 'discount_fixed_amount',
+                    'discount_amount', 'discount_date', 'discount_approved_by',
+                    'discount_motivation',
                 ])
                 _reprice_all()
             messages.success(request, f'Discount removed from {invoice.invoice_number}.')
             return redirect('erp:invoice_detail', pk=invoice.pk)
 
-        try:
-            percent = Decimal((request.POST.get('discount_percent') or '').strip())
-        except (InvalidOperation, ValueError):
-            messages.error(request, 'Enter a valid discount percentage.')
-            return redirect('erp:apply_discount', pk=invoice.pk)
-        if percent < 0 or percent > 100:
-            messages.error(request, 'Discount percentage must be between 0 and 100.')
-            return redirect('erp:apply_discount', pk=invoice.pk)
+        discount_type = (request.POST.get('discount_type') or 'percent').strip()
+        if discount_type not in ('percent', 'amount'):
+            discount_type = 'percent'
+
+        if discount_type == 'amount':
+            try:
+                fixed_amount = Decimal((request.POST.get('discount_amount') or '').strip() or '0')
+            except (InvalidOperation, ValueError):
+                messages.error(request, 'Enter a valid Rand discount amount.')
+                return redirect('erp:apply_discount', pk=invoice.pk)
+            if fixed_amount < 0:
+                messages.error(request, 'Discount amount cannot be negative.')
+                return redirect('erp:apply_discount', pk=invoice.pk)
+            if fixed_amount > stand_base:
+                messages.error(
+                    request,
+                    f'Discount cannot exceed the total stand price on this invoice '
+                    f'(R{stand_base:,.2f}).',
+                )
+                return redirect('erp:apply_discount', pk=invoice.pk)
+            percent = (
+                (fixed_amount / stand_base * Decimal('100')).quantize(Decimal('0.01'))
+                if stand_base else Decimal('0')
+            )
+        else:
+            try:
+                percent = Decimal((request.POST.get('discount_percent') or '').strip())
+            except (InvalidOperation, ValueError):
+                messages.error(request, 'Enter a valid discount percentage.')
+                return redirect('erp:apply_discount', pk=invoice.pk)
+            if percent < 0 or percent > 100:
+                messages.error(request, 'Discount percentage must be between 0 and 100.')
+                return redirect('erp:apply_discount', pk=invoice.pk)
+            fixed_amount = Decimal('0')
 
         date_raw = (request.POST.get('discount_date') or '').strip()
         try:
@@ -923,20 +953,26 @@ def erp_apply_discount(request, pk):
         motivation = (request.POST.get('motivation') or '').strip()
 
         with transaction.atomic():
+            invoice.discount_type = discount_type
             invoice.discount_percent = percent
+            invoice.discount_fixed_amount = fixed_amount
             invoice.discount_date = discount_date
             invoice.discount_approved_by = approved_by
             invoice.discount_motivation = motivation
             invoice.save(update_fields=[
-                'discount_percent', 'discount_date', 'discount_approved_by', 'discount_motivation',
+                'discount_type', 'discount_percent', 'discount_fixed_amount',
+                'discount_date', 'discount_approved_by', 'discount_motivation',
             ])
             _reprice_all()
 
         invoice.refresh_from_db()
+        if discount_type == 'amount':
+            summary = f'Discount of R{fixed_amount:,.2f}'
+        else:
+            summary = f'Discount of {percent}% (R{invoice.discount_amount:,.2f})'
         messages.success(
             request,
-            f'Discount of {percent}% (R{invoice.discount_amount:,.2f}) applied to {invoice.invoice_number}. '
-            f'Invoice recalculated.',
+            f'{summary} applied to {invoice.invoice_number}. Invoice recalculated.',
         )
         return redirect('erp:invoice_detail', pk=invoice.pk)
 

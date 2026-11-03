@@ -28,8 +28,14 @@ class Invoice(models.Model):
     paid_date = models.DateField(null=True, blank=True)
     # Manual staff-applied discount. Applied to the total stand price on the invoice
     # (excluding electricity deposit, accessories and VAT), then the invoice is recalculated.
+    DISCOUNT_TYPES = [
+        ('percent', 'Percentage'),
+        ('amount', 'Rand amount'),
+    ]
+    discount_type = models.CharField(max_length=10, choices=DISCOUNT_TYPES, default='percent', help_text="How the manual discount is entered: a percentage of stand price or a Rand total")
     discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="Manual discount percentage applied to the total stand price")
-    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Computed discount amount (stand price x percent)")
+    discount_fixed_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Manual discount as a Rand total (used when discount_type is 'amount')")
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Computed total discount amount")
     discount_date = models.DateField(null=True, blank=True, help_text="Date the discount was applied")
     discount_approved_by = models.CharField(max_length=150, blank=True, help_text="Who approved the discount (free text)")
     discount_motivation = models.TextField(blank=True, help_text="Motivation for the discount (optional)")
@@ -73,6 +79,13 @@ class Invoice(models.Model):
             (l.booking.early_payment_discount or Decimal('0'))
             for l in self.billable_lines.select_related('booking').all() if l.booking
         ), Decimal('0'))
+
+    @property
+    def discount_label(self):
+        """Human-readable description of the manual discount type/value."""
+        if self.discount_type == 'amount':
+            return f"R{self.discount_amount:,.2f}"
+        return f"{self.discount_percent}%"
 
 
 class InvoiceLine(models.Model):

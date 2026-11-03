@@ -12,13 +12,59 @@ from django.db.models import Sum, Q
 from notifications.utils import send_invoice_email, send_payment_received
 
 
-def _manual_discount(stall_price, invoice):
-    """Manual staff-applied discount for one stand: a percentage of the stand price
-    only (excludes electricity deposit, accessories and VAT)."""
-    pct = (invoice.discount_percent or Decimal('0')) if invoice is not None else Decimal('0')
-    if not pct:
-        return Decimal('0')
-    return (Decimal(stall_price or 0) * pct / Decimal('100')).quantize(Decimal('0.01'))
+def _discount_lines(invoice):
+    """Billable invoice lines (excludes cancelled stands), in stable id order."""
+    return [
+        l for l in invoice.billable_lines.select_related('booking').order_by('id')
+        if l.booking is not None
+    ]
+
+
+def _manual_discount_allocations(invoice, lines=None):
+    """Return {booking_id: manual discount amount} for an invoice.
+
+    Percentage mode: every stand gets `discount_percent` of its own stand price.
+
+    Rand mode: `discount_fixed_amount` is spread across the invoice's stands in
+    proportion to their stand prices. The last line absorbs the rounding
+    remainder so the allocated shares always add up to exactly the requested
+    Rand amount.
+    """
+    if invoice is None:
+        return {}
+    if lines is None:
+        lines = _discount_lines(invoice)
+    lines = [l for l in lines if l.booking is not None]
+    if not lines:
+        return {}
+
+    if (getattr(invoice, 'discount_type', 'percent') or 'percent') == 'amount':
+        total = Decimal(getattr(invoice, 'discount_fixed_amount', 0) or 0)
+        stand_base = sum((Decimal(l.booking.stall_price or 0) for l in lines), Decimal('0'))
+        if total <= 0 or stand_base <= 0:
+            return {}
+        total = min(total, stand_base)
+        allocations = {}
+        remaining = total
+        for idx, line in enumerate(lines):
+            price = Decimal(line.booking.stall_price or 0)
+            if idx == len(lines) - 1:
+                share = remaining
+            else:
+                share = (total * price / stand_base).quantize(Decimal('0.01'))
+                if share > remaining:
+                    share = remaining
+                remaining -= share
+            allocations[line.booking_id] = share.quantize(Decimal('0.01'))
+        return allocations
+
+    pct = Decimal(invoice.discount_percent or 0)
+    if pct <= 0:
+        return {}
+    return {
+        l.booking_id: (Decimal(l.booking.stall_price or 0) * pct / Decimal('100')).quantize(Decimal('0.01'))
+        for l in lines
+    }
 
 
 def booking_amount_incl(booking, invoice=None):
@@ -27,7 +73,8 @@ def booking_amount_incl(booking, invoice=None):
     if invoice is None:
         line = getattr(booking, 'invoice_line', None)
         invoice = line.invoice if line is not None else None
-    discount = (booking.early_payment_discount or Decimal('0')) + _manual_discount(booking.stall_price, invoice)
+    manual = _manual_discount_allocations(invoice).get(booking.id, Decimal('0'))
+    discount = (booking.early_payment_discount or Decimal('0')) + manual
     return amount_incl - discount, vat_amount
 
 
@@ -76,6 +123,7 @@ def evaluate_invoice_discounts(invoice):
             untagged.append(p)
     from datetime import timedelta
     results = {}
+    manual_allocations = _manual_discount_allocations(invoice)
     for line in invoice.billable_lines.select_related('booking').all():
         b = line.booking
         if b is None:
@@ -113,7 +161,7 @@ def evaluate_invoice_discounts(invoice):
                 discount = (stall * Decimal('0.025')).quantize(Decimal('0.01')); tier = '2.5'
         b.early_payment_discount = discount
         b.early_payment_tier = tier
-        manual = _manual_discount(b.stall_price, invoice)
+        manual = manual_allocations.get(b.id, Decimal('0'))
         b.total_amount = (b.subtotal or Decimal('0')) - discount - manual
         b.balance_due = b.total_amount - (b.amount_paid or Decimal('0'))
         b.save(update_fields=['early_payment_discount', 'early_payment_tier', 'total_amount', 'balance_due'])
@@ -130,22 +178,46 @@ def _stall_description(booking):
     return f"Stall {name}{size}" + (f" - {zone}" if zone else "")
 
 
+def reprice_invoice_lines(inv):
+    """Recalculate every billable invoice line, including manual discount shares.
+
+    Rand discounts are shared across the invoice's stands, so adding/removing a
+    stand or changing a stand price must reprice all lines to keep the
+    allocated shares summing to the requested discount.
+    """
+    lines = _discount_lines(inv)
+    allocations = _manual_discount_allocations(inv, lines)
+    for line in lines:
+        b = line.booking
+        elec_dep = b.electricity_deposit if b.requires_power else Decimal('0')
+        amount_incl, vat = booking_totals(b.stall_price, elec_dep, b.accessories_total, 0)
+        manual = allocations.get(b.id, Decimal('0'))
+        early = b.early_payment_discount or Decimal('0')
+        line_incl = amount_incl - early - manual
+        line.description = _stall_description(b)
+        line.amount_excl = line_incl - vat
+        line.vat_amount = vat
+        line.amount_incl = line_incl
+        line.save(update_fields=['description', 'amount_excl', 'vat_amount', 'amount_incl'])
+    return lines
+
+
 def _set_line(inv, booking):
     """Create or update the consolidated invoice line for a booking, reassigning to inv if moved."""
     line = InvoiceLine.objects.filter(booking=booking).first()
     if line is None:
-        line = InvoiceLine(invoice=inv, booking=booking)
+        line = InvoiceLine(invoice=inv, booking=booking, amount_excl=0, vat_amount=0, amount_incl=0)
     elif line.invoice_id != inv.id:
         old_inv = line.invoice
         line.invoice = inv
         line.save(update_fields=['invoice'])
+        reprice_invoice_lines(old_inv)
         refresh_invoice(old_inv)
-    amount_incl, vat = booking_amount_incl(booking, inv)
     line.description = _stall_description(booking)
-    line.amount_excl = amount_incl - vat
-    line.vat_amount = vat
-    line.amount_incl = amount_incl
     line.save()
+    # Reprice every line so pro-rata Rand discount shares stay balanced.
+    reprice_invoice_lines(inv)
+    line.refresh_from_db()
     return line
 
 
@@ -162,8 +234,7 @@ def refresh_invoice(inv):
     inv.amount_paid = paid
     inv.balance_due = incl - paid
     inv.discount_amount = sum(
-        (_manual_discount(l.booking.stall_price, inv) for l in lines if l.booking),
-        Decimal('0'),
+        _manual_discount_allocations(inv, lines).values(), Decimal('0'),
     )
     if not lines:
         inv.status = 'draft'
@@ -294,13 +365,10 @@ def update_invoice_from_booking(booking):
             line.vat_amount = Decimal('0')
             line.amount_incl = Decimal('0')
             line.save(update_fields=['description', 'amount_excl', 'vat_amount', 'amount_incl'])
+        # Redistribute any Rand discount across the remaining stands.
+        reprice_invoice_lines(line.invoice)
         return refresh_invoice(line.invoice)
-    amount_incl, vat = booking_amount_incl(booking, line.invoice)
-    line.description = _stall_description(booking)
-    line.amount_excl = amount_incl - vat
-    line.vat_amount = vat
-    line.amount_incl = amount_incl
-    line.save()
+    reprice_invoice_lines(line.invoice)
     return refresh_invoice(line.invoice)
 
 

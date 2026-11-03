@@ -113,18 +113,22 @@
                     <tr class="text-success"><td>Early Payment Discount</td><td class="text-end">-R{{ invoice.total_early_discount|floatformat:2 }}</td></tr>
                     {% endif %}
                     {% if invoice.discount_amount > 0 %}
-                    <tr class="text-success"><td>Discount ({{ invoice.discount_percent }}% on stand price)</td><td class="text-end">-R{{ invoice.discount_amount|floatformat:2 }}</td></tr>
+                    <tr class="text-success"><td>Discount ({{ invoice.discount_label }}{% if invoice.discount_type != 'amount' %} on stand price{% endif %})</td><td class="text-end">-R{{ invoice.discount_amount|floatformat:2 }}</td></tr>
                     {% endif %}
                     <tr><td>Total Paid</td><td class="text-end text-success">R{{ verified_total|floatformat:2 }}</td></tr>
                     <tr class="fw-bold"><td>Balance Due</td><td class="text-end text-danger">R{{ invoice.balance_due|floatformat:2 }}</td></tr>
                 </table>
             </div>
         </div>
-        {% if invoice.discount_percent > 0 %}
+        {% if invoice.discount_amount > 0 %}
         <div class="card mb-3 border-success">
             <div class="card-header bg-success text-white"><h6 class="mb-0">Discount Applied</h6></div>
             <div class="card-body small">
+                {% if invoice.discount_type == 'amount' %}
+                <p class="mb-1"><strong>R{{ invoice.discount_amount|floatformat:2 }}</strong> off stand prices{% if invoice.discount_percent > 0 %} ({{ invoice.discount_percent }}%){% endif %}</p>
+                {% else %}
                 <p class="mb-1"><strong>{{ invoice.discount_percent }}%</strong> on stand price = <strong>R{{ invoice.discount_amount|floatformat:2 }}</strong></p>
+                {% endif %}
                 <p class="mb-1"><strong>Date applied:</strong> {{ invoice.discount_date|date:"d M Y"|default:"-" }}</p>
                 <p class="mb-1"><strong>Approved by:</strong> {{ invoice.discount_approved_by|default:"-" }}</p>
                 <p class="mb-0"><strong>Motivation:</strong> {{ invoice.discount_motivation|default:"-" }}</p>

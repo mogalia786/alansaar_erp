@@ -1,4 +1,5 @@
 {% extends 'portal/base.html' %}
+{% load l10n %}
 {% block title %}Apply Discount - {{ invoice.invoice_number }}{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -17,15 +18,50 @@
                 <form method="post" action="{% url 'erp:apply_discount' invoice.pk %}">
                     {% csrf_token %}
                     <div class="mb-3">
+                        <label class="form-label fw-bold">Discount Type</label>
+                        <div class="btn-group w-100" role="group" aria-label="Discount type">
+                            <input type="radio" class="btn-check" name="discount_type" id="dt-percent" value="percent"
+                                   {% if invoice.discount_type != 'amount' %}checked{% endif %}>
+                            <label class="btn btn-outline-success" for="dt-percent"><i class="bi bi-percent"></i> Percentage (%)</label>
+
+                            <input type="radio" class="btn-check" name="discount_type" id="dt-amount" value="amount"
+                                   {% if invoice.discount_type == 'amount' %}checked{% endif %}>
+                            <label class="btn btn-outline-success" for="dt-amount"><i class="bi bi-currency-exchange"></i> Rand Amount (R)</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="percent-group">
                         <label class="form-label fw-bold">Discount %</label>
-                        <input type="number" name="discount_percent" class="form-control" min="0" max="100" step="0.01"
-                               value="{{ invoice.discount_percent|default_if_none:'' }}" required>
+                        <div class="input-group">
+                            <input type="number" name="discount_percent" id="discount_percent" class="form-control"
+                                   min="0" max="100" step="0.01"
+                                   value="{{ invoice.discount_percent|default_if_none:'' }}">
+                            <span class="input-group-text">%</span>
+                        </div>
                         <div class="form-text">
                             Applied to the total <strong>stand price</strong> on this invoice
                             ({{ lines|length }} stand{{ lines|length|pluralize }}, R{{ stand_base|floatformat:2 }}).
                             Excludes electricity deposit, accessories and VAT.
                         </div>
                     </div>
+
+                    <div class="mb-3 d-none" id="amount-group">
+                        <label class="form-label fw-bold">Discount Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R</span>
+                            <input type="number" name="discount_amount" id="discount_amount" class="form-control"
+                                   min="0" max="{{ stand_base|unlocalize }}" step="0.01"
+                                   value="{{ invoice.discount_fixed_amount|default_if_none:'' }}">
+                        </div>
+                        <div class="form-text">
+                            Spread across the {{ lines|length }} stand{{ lines|length|pluralize }} in proportion to their
+                            stand prices. Maximum R{{ stand_base|floatformat:2 }}. Excludes electricity deposit,
+                            accessories and VAT.
+                        </div>
+                    </div>
+
+                    <div class="alert alert-success py-2 mb-3 d-none" id="discount-preview"></div>
+
                     <div class="mb-3">
                         <label class="form-label fw-bold">Date Applied</label>
                         <input type="date" name="discount_date" class="form-control"
@@ -41,7 +77,7 @@
                         <textarea name="motivation" class="form-control" rows="3">{{ invoice.discount_motivation }}</textarea>
                     </div>
                     <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Apply Discount to Invoice</button>
-                    {% if invoice.discount_percent > 0 %}
+                    {% if invoice.discount_amount > 0 %}
                     <button type="submit" name="action" value="remove" class="btn btn-outline-danger"
                             onclick="return confirm('Remove the discount from this invoice?');">
                         <i class="bi bi-x-lg"></i> Remove Discount
@@ -60,7 +96,7 @@
                     <tr><td>Invoice total (current)</td><td class="text-end">R{{ invoice.amount_incl|floatformat:2 }}</td></tr>
                     <tr><td>Balance due (current)</td><td class="text-end">R{{ invoice.balance_due|floatformat:2 }}</td></tr>
                     {% if invoice.discount_amount > 0 %}
-                    <tr class="text-success fw-bold"><td>Discount ({{ invoice.discount_percent }}%)</td><td class="text-end">-R{{ invoice.discount_amount|floatformat:2 }}</td></tr>
+                    <tr class="text-success fw-bold"><td>Discount ({{ invoice.discount_label }})</td><td class="text-end">-R{{ invoice.discount_amount|floatformat:2 }}</td></tr>
                     {% endif %}
                 </table>
             </div>
@@ -83,4 +119,62 @@
         </div>
     </div>
 </div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+(function () {
+    var standBase = parseFloat('{{ stand_base|unlocalize }}') || 0;
+    var currentTotal = parseFloat('{{ invoice.amount_incl|unlocalize }}') || 0;
+    var currentDiscount = parseFloat('{{ invoice.discount_amount|unlocalize }}') || 0;
+    var percentRadio = document.getElementById('dt-percent');
+    var amountRadio = document.getElementById('dt-amount');
+    var percentGroup = document.getElementById('percent-group');
+    var amountGroup = document.getElementById('amount-group');
+    var percentInput = document.getElementById('discount_percent');
+    var amountInput = document.getElementById('discount_amount');
+    var preview = document.getElementById('discount-preview');
+
+    function money(v) {
+        return 'R' + v.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function sync() {
+        var isAmount = amountRadio.checked;
+        percentGroup.classList.toggle('d-none', isAmount);
+        amountGroup.classList.toggle('d-none', !isAmount);
+        percentInput.required = !isAmount;
+        amountInput.required = isAmount;
+        updatePreview();
+    }
+
+    function updatePreview() {
+        var discount = 0;
+        if (amountRadio.checked) {
+            discount = parseFloat(amountInput.value) || 0;
+        } else {
+            var pct = parseFloat(percentInput.value) || 0;
+            discount = standBase * pct / 100;
+        }
+        if (discount < 0) discount = 0;
+        if (discount > standBase) discount = standBase;
+
+        if (discount <= 0) {
+            preview.classList.add('d-none');
+            return;
+        }
+        var newTotal = currentTotal + currentDiscount - discount;
+        if (newTotal < 0) newTotal = 0;
+        preview.classList.remove('d-none');
+        preview.innerHTML = '<i class="bi bi-info-circle"></i> Discount: <strong>' + money(discount) +
+            '</strong> &mdash; new invoice total: <strong>' + money(newTotal) + '</strong>';
+    }
+
+    percentRadio.addEventListener('change', sync);
+    amountRadio.addEventListener('change', sync);
+    percentInput.addEventListener('input', updatePreview);
+    amountInput.addEventListener('input', updatePreview);
+
+    sync();
+})();
+</script>
 {% endblock %}
