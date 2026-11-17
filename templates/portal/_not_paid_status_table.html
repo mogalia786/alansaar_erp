@@ -1,0 +1,52 @@
+<div class="tab-pane fade {% if active_tab == category %}show active{% endif %}" id="tab-{{ category }}" role="tabpanel">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+        <div class="text-muted" style="font-size:12px;">
+            <strong class="text-purple">{{ label }}</strong> &bull;
+            {{ rows|length }} exhibitor{{ rows|length|pluralize }} &bull;
+            {{ stands }} stand{{ stands|pluralize }} &bull;
+            Balance <strong class="text-danger">R{{ balance|floatformat:2 }}</strong>
+        </div>
+        {% if category != 'fully_paid' and rows %}
+        <button type="button" class="btn btn-purple btn-sm no-print" data-bs-toggle="modal" data-bs-target="#noticeModal"
+                data-bulk="1" data-category="{{ category }}" data-subject="{{ subject }}" data-body="{{ body }}">
+            <i class="bi bi-envelope-paper"></i> Email All ({{ rows|length }})
+        </button>
+        {% endif %}
+    </div>
+    <div class="card"><div class="card-body p-0">
+        <div class="table-responsive"><table class="table table-hover table-sm mb-0">
+            <thead class="table-purple"><tr>
+                <th style="width:40px;">#</th><th>Exhibitor / Company</th><th>Contact Person</th>
+                <th>Telephone</th><th>Email</th><th>Stands</th>
+                <th class="text-end">Total Due</th><th class="text-end">Paid</th>
+                <th class="text-end">Balance</th><th class="text-center" style="width:70px;">Paid %</th>
+                <th class="text-center no-print" style="width:90px;">Action</th>
+            </tr></thead>
+            <tbody>
+            {% for r in rows %}<tr>
+                <td class="text-muted">{{ forloop.counter }}</td>
+                <td><strong>{{ r.name }}</strong>{% if r.first_booking %}<br><span class="text-muted" style="font-size:11px;">Booked {{ r.first_booking|date:'d M Y' }}</span>{% endif %}</td>
+                <td>{{ r.contact }}</td>
+                <td>{% if r.phone %}<a href="tel:{{ r.phone }}">{{ r.phone }}</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                <td style="font-size:12px;">{% if r.email %}<a href="mailto:{{ r.email }}">{{ r.email }}</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                <td title="{{ r.stands_text }}"><span class="badge bg-light text-dark border">{{ r.stands_count }}</span> <span class="text-muted" style="font-size:11px;">{{ r.stands_text|truncatechars:32 }}</span></td>
+                <td class="text-end">R{{ r.total|floatformat:2 }}</td>
+                <td class="text-end text-success">R{{ r.paid|floatformat:2 }}</td>
+                <td class="text-end fw-bold {% if r.balance > 0 %}text-danger{% else %}text-success{% endif %}">{% if r.balance > 0 %}R{{ r.balance|floatformat:2 }}{% else %}R0.00{% endif %}</td>
+                <td class="text-center">{{ r.pct|floatformat:0 }}%</td>
+                <td class="text-center no-print">
+                    {% if category != 'fully_paid' and r.email %}
+                    <button type="button" class="btn btn-sm btn-outline-purple py-0 px-2" data-bs-toggle="modal" data-bs-target="#noticeModal"
+                            data-bulk="0" data-category="{{ category }}" data-exhibitor="{{ r.id }}"
+                            data-name="{{ r.name }}" data-email="{{ r.email }}"
+                            data-subject="{{ r.email_subject }}" data-body="{{ r.email_body }}"
+                            data-balance="{{ r.balance|floatformat:2 }}" title="Email payment notice">
+                        <i class="bi bi-envelope"></i> Email
+                    </button>
+                    {% else %}<span class="text-muted">—</span>{% endif %}
+                </td>
+            </tr>{% empty %}<tr><td colspan="11" class="text-center text-muted py-4">No exhibitors in this category.</td></tr>{% endfor %}
+            </tbody>
+        </table></div>
+    </div></div>
+</div>

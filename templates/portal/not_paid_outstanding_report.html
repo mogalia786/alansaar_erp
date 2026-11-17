@@ -1,0 +1,132 @@
+{% extends 'portal/base.html' %}
+{% block title %}Not Paid, Outstanding and Fully Paid Report - ERP{% endblock %}
+{% block extra_head %}
+<style>
+@media print {
+    .no-print, .navbar, .sidebar { display: none !important; }
+    .main-content { padding: 0 !important; margin: 0 !important; }
+    .tab-pane { display: block !important; opacity: 1 !important; }
+    .card { box-shadow: none !important; border: 1px solid #ddd !important; }
+    table { font-size: 11px; }
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-cash-coin"></i> Not Paid, Outstanding and Fully Paid Report</h3>
+        <div class="text-muted" style="font-size:13px;">
+            {% if active_event %}{{ active_event.name }} &bull; starts {{ active_event.start_date|date:'d M Y' }}{% endif %} &bull; Generated {{ today|date:'d M Y H:i' }}
+        </div>
+    </div>
+    <button type="button" class="btn btn-outline-secondary btn-sm no-print" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+</div>
+
+{% if not active_event %}
+<div class="alert alert-info">No events have been created yet.</div>
+{% else %}
+<div class="card mb-3 no-print">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label mb-1 small fw-bold text-muted">EVENT</label>
+                <select name="event_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    {% for e in events %}<option value="{{ e.pk }}" {% if e.pk == active_event.pk %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-auto"><span class="text-muted small">Payment status is based on active stand bookings only. Cancelled and rejected bookings are excluded.</span></div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-danger h-100"><div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+                <div><div class="text-muted small text-uppercase">Not Paid At All</div><div class="fs-3 fw-bold text-danger">{{ summary.not_paid.count }}</div></div>
+                <i class="bi bi-x-circle fs-3 text-danger"></i>
+            </div>
+            <div class="small text-muted mt-2">No payment received &bull; <strong>R{{ summary.not_paid.balance|floatformat:2 }}</strong> outstanding across {{ summary.not_paid.stands }} stand{{ summary.not_paid.stands|pluralize }}</div>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-warning h-100"><div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+                <div><div class="text-muted small text-uppercase">Outstanding Balance</div><div class="fs-3 fw-bold text-warning">{{ summary.outstanding.count }}</div></div>
+                <i class="bi bi-clock-history fs-3 text-warning"></i>
+            </div>
+            <div class="small text-muted mt-2">Part payment received &bull; <strong>R{{ summary.outstanding.balance|floatformat:2 }}</strong> still due across {{ summary.outstanding.stands }} stand{{ summary.outstanding.stands|pluralize }}</div>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-success h-100"><div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+                <div><div class="text-muted small text-uppercase">Fully Paid</div><div class="fs-3 fw-bold text-success">{{ summary.fully_paid.count }}</div></div>
+                <i class="bi bi-check-circle fs-3 text-success"></i>
+            </div>
+            <div class="small text-muted mt-2">Fully settled &bull; <strong>R{{ summary.fully_paid.total|floatformat:2 }}</strong> billed across {{ summary.fully_paid.stands }} stand{{ summary.fully_paid.stands|pluralize }}</div>
+        </div></div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item" role="presentation"><button class="nav-link {% if active_tab == 'not_paid' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab-not_paid" type="button"><i class="bi bi-x-circle text-danger"></i> Not Paid <span class="badge bg-danger">{{ summary.not_paid.count }}</span></button></li>
+    <li class="nav-item" role="presentation"><button class="nav-link {% if active_tab == 'outstanding' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab-outstanding" type="button"><i class="bi bi-clock-history text-warning"></i> Outstanding <span class="badge bg-warning text-dark">{{ summary.outstanding.count }}</span></button></li>
+    <li class="nav-item" role="presentation"><button class="nav-link {% if active_tab == 'fully_paid' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab-fully_paid" type="button"><i class="bi bi-check-circle text-success"></i> Fully Paid <span class="badge bg-success">{{ summary.fully_paid.count }}</span></button></li>
+</ul>
+
+<div class="tab-content pt-3">
+    {% include 'portal/_not_paid_status_table.html' with rows=groups.not_paid category='not_paid' label='Not Paid At All' stands=summary.not_paid.stands balance=summary.not_paid.balance subject=bulk_defaults.not_paid.0 body=bulk_defaults.not_paid.1 %}
+    {% include 'portal/_not_paid_status_table.html' with rows=groups.outstanding category='outstanding' label='Outstanding Balance' stands=summary.outstanding.stands balance=summary.outstanding.balance subject=bulk_defaults.outstanding.0 body=bulk_defaults.outstanding.1 %}
+    {% include 'portal/_not_paid_status_table.html' with rows=groups.fully_paid category='fully_paid' label='Fully Paid' stands=summary.fully_paid.stands balance=summary.fully_paid.balance %}
+</div>
+{% endif %}
+
+<!-- Payment notice modal -->
+<div class="modal fade" id="noticeModal" tabindex="-1" aria-labelledby="noticeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
+        <form method="post" action="{% url 'erp:send_not_paid_outstanding_email' %}">
+            {% csrf_token %}
+            {% if active_event %}<input type="hidden" name="event_id" value="{{ active_event.pk }}">{% endif %}
+            <input type="hidden" name="category" id="noticeCategory">
+            <input type="hidden" name="exhibitor_id" id="noticeExhibitor">
+            <input type="hidden" name="bulk" id="noticeBulk">
+            <div class="modal-header">
+                <h5 class="modal-title" id="noticeModalLabel">Send Payment Notice</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-light py-2 mb-3 small" id="noticeRecipient"></div>
+                <div class="mb-3"><label class="form-label fw-bold small">SUBJECT</label><input type="text" name="subject" id="noticeSubject" class="form-control" required></div>
+                <div class="mb-3"><label class="form-label fw-bold small">MESSAGE</label><textarea name="message" id="noticeBody" class="form-control" rows="12" required></textarea></div>
+                <div class="form-text">The message is sent as a styled HTML payment notice. Edit the wording before sending if required.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-purple" onclick="return confirm('Send this payment notice now?');"><i class="bi bi-send"></i> Send Email</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+<script>
+(function () {
+    var modal = document.getElementById('noticeModal');
+    if (!modal) return;
+    modal.addEventListener('show.bs.modal', function (event) {
+        var btn = event.relatedTarget;
+        if (!btn) return;
+        var bulk = btn.dataset.bulk === '1';
+        document.getElementById('noticeCategory').value = btn.dataset.category || '';
+        document.getElementById('noticeBulk').value = bulk ? '1' : '0';
+        document.getElementById('noticeExhibitor').value = btn.dataset.exhibitor || '';
+        document.getElementById('noticeSubject').value = btn.dataset.subject || '';
+        document.getElementById('noticeBody').value = btn.dataset.body || '';
+        document.getElementById('noticeModalLabel').textContent = bulk ? 'Send Payment Notice to All' : 'Send Payment Notice';
+        document.getElementById('noticeRecipient').innerHTML = bulk
+            ? 'A personalised notice will be sent to <strong>every exhibitor in this tab</strong>.'
+            : 'Sending to <strong>' + (btn.dataset.name || '') + '</strong> (' + (btn.dataset.email || 'no email on file') + '). Balance: <strong>R' + (btn.dataset.balance || '0.00') + '</strong>.';
+    });
+})();
+</script>
+{% endblock %}

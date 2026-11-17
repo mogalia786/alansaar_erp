@@ -31,6 +31,9 @@
         .btn-purple:hover { background: #7B3F95; border-color: #7B3F95; color: #fff; }
         .btn-gold { background: var(--gold); border-color: var(--gold); color: #2c1640; }
         .btn-gold:hover { background: #E8C84A; border-color: #E8C84A; }
+        .text-purple { color: var(--purple); }
+        .btn-outline-purple { border: 1px solid var(--purple); color: var(--purple); background: transparent; }
+        .btn-outline-purple:hover { background: var(--purple); color: #fff; }
         .card { border-radius: 12px; border: none; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
         .card-header { border-radius: 12px 12px 0 0 !important; }
         a { color: var(--purple); }
@@ -93,6 +96,7 @@
                 {% if request.user|has_perm:'booking_reports' %}<a href="{% url 'erp:all_bookings_report' %}" class="nav-link"><i class="bi bi-list-ul"></i> All Bookings Report</a>{% endif %}
                 {% if request.user|has_perm:'stands_products' %}<a href="{% url 'erp:stands_products_report' %}" class="nav-link"><i class="bi bi-shop"></i> Stands &amp; Products Report</a>{% endif %}
                 {% if request.user|has_perm:'payment_reports' %}<a href="{% url 'erp:payment_status_report' %}" class="nav-link"><i class="bi bi-credit-card"></i> Payment Status Report</a>{% endif %}
+                {% if request.user|has_perm:'payment_reports' %}<a href="{% url 'erp:not_paid_outstanding_report' %}" class="nav-link"><i class="bi bi-exclamation-circle"></i> Not Paid / Outstanding Report</a>{% endif %}
                 <hr class="border-secondary mx-3">
                 <a href="{% url 'erp:logout' %}" class="nav-link"><i class="bi bi-box-arrow-right"></i> Logout</a>
             </div>
@@ -146,6 +150,7 @@
                             {% if request.user|has_perm:'booking_reports' %}<a href="{% url 'erp:all_bookings_report' %}" class="d-block py-1">All Bookings Report</a>{% endif %}
                             {% if request.user|has_perm:'stands_products' %}<a href="{% url 'erp:stands_products_report' %}" class="d-block py-1">Stands &amp; Products Report</a>{% endif %}
                             {% if request.user|has_perm:'payment_reports' %}<a href="{% url 'erp:payment_status_report' %}" class="d-block py-1">Payment Status Report</a>{% endif %}
+                            {% if request.user|has_perm:'payment_reports' %}<a href="{% url 'erp:not_paid_outstanding_report' %}" class="d-block py-1">Not Paid / Outstanding Report</a>{% endif %}
                             <a href="{% url 'erp:logout' %}" class="d-block py-1">Logout</a>
                         </div>
                     </div>

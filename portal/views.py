@@ -2074,6 +2074,9 @@ def erp_stands_products_report(request):
 
 PAYMENT_BAND_COUNT = 10
 
+# Tabs for the Not Paid / Outstanding / Fully Paid report.
+NOT_PAYMENT_CATEGORIES = ('not_paid', 'outstanding', 'fully_paid')
+
 # Bookings that actually hold a stand. Cancelled/rejected bookings are excluded
 # because the stand has been released and nothing is owed.
 ACTIVE_BOOKING_STATUSES = Booking.ACTIVE_STATUSES
@@ -2144,6 +2147,169 @@ def build_payment_status_rows(event):
         row['stands_text'] = ', '.join(f"{b['stall']} ({b['section']})" for b in row['bookings'])
         rows.append(row)
     return rows
+
+
+def _payment_notice_defaults(row, event):
+    """Default subject/body for a professional payment notice email."""
+    event_name = event.name if event else 'the event'
+    balance = max(row['balance'], Decimal('0'))
+    if row['category'] == 'not_paid':
+        subject = f"Payment Notice - Immediate Payment Required - {event_name}"
+        intro = (
+            "Our records indicate that no payment has been received towards your "
+            f"stand booking(s) for {event_name}."
+        )
+    else:
+        subject = f"Outstanding Balance - Payment Due Immediately - {event_name}"
+        intro = (
+            "Our records indicate that an outstanding balance remains on your "
+            f"stand booking(s) for {event_name}."
+        )
+    body = (
+        f"Dear {row['contact']},\n\n"
+        f"{intro}\n\n"
+        f"Total stand booking value: R{row['total']:,.2f}\n"
+        f"Amount paid to date: R{row['paid']:,.2f}\n"
+        f"Outstanding balance: R{balance:,.2f}\n\n"
+        "Payment is due immediately. Kindly arrange settlement at your earliest "
+        "convenience so that your stand booking can be confirmed.\n\n"
+        "If payment has already been made, please disregard this notice and allow "
+        "a short period for it to reflect on your account.\n\n"
+        "Should you require any assistance, or wish to discuss a payment arrangement, "
+        "please contact the Al Ansaar Office.\n\n"
+        "Kind regards,\n"
+        "Al Ansaar Foundation Events Team"
+    )
+    return subject, body
+
+
+def build_not_paid_outstanding_rows(event):
+    """Split an event's exhibitors into three mutually exclusive payment groups.
+
+    Uses booking-level amounts (the same basis as the Payment Status Report) so
+    the totals agree with the dashboard and the other booking reports.
+    """
+    groups = {key: [] for key in NOT_PAYMENT_CATEGORIES}
+    if not event:
+        return groups
+
+    qs = (Booking.objects.filter(event=event, stall__isnull=False,
+                                 status__in=ACTIVE_BOOKING_STATUSES)
+          .select_related('exhibitor', 'stall', 'stall__section')
+          .order_by('booking_date'))
+
+    grouped = {}
+    for bk in qs:
+        u = bk.exhibitor
+        row = grouped.get(u.pk)
+        if row is None:
+            row = {
+                'id': u.pk,
+                'name': u.company_name or u.get_full_name() or u.username,
+                'contact': u.get_full_name() or u.username,
+                'email': u.email or '',
+                'phone': u.phone or '',
+                'bookings': [],
+                'stands_count': 0,
+                'total': Decimal('0'),
+                'paid': Decimal('0'),
+                'balance': Decimal('0'),
+                'first_booking': bk.booking_date,
+            }
+            grouped[u.pk] = row
+
+        stall = bk.stall
+        w = (Decimal(stall.width or 0) / Decimal('1000')).quantize(Decimal('0.1'))
+        h = (Decimal(stall.height or 0) / Decimal('1000')).quantize(Decimal('0.1'))
+        bk_total = bk.total_amount or Decimal('0')
+        bk_paid = bk.amount_paid or Decimal('0')
+        row['bookings'].append({
+            'ref': bk.booking_reference,
+            'stall': stall.name,
+            'section': stall.section.name if stall.section else '-',
+            'size': f"{w} x {h}",
+            'total': bk_total,
+            'paid': bk_paid,
+            'balance': bk_total - bk_paid,
+            'date': bk.booking_date,
+            'booking': bk,
+        })
+        row['total'] += bk_total
+        row['paid'] += bk_paid
+        row['stands_count'] += 1
+        if bk.booking_date and (not row['first_booking'] or bk.booking_date < row['first_booking']):
+            row['first_booking'] = bk.booking_date
+
+    for row in grouped.values():
+        if row['total'] <= 0:
+            # Nothing billed (e.g. a zero-value booking) - nothing owed, so not
+            # a payer in any of the three categories.
+            continue
+        row['balance'] = row['total'] - row['paid']
+        row['pct'] = max(
+            (row['paid'] / row['total'] * 100).quantize(Decimal('0.1')),
+            Decimal('0'),
+        )
+        row['pct_int'] = min(int(row['pct']), 100)
+        row['stands_text'] = ', '.join(f"{b['stall']} ({b['section']})" for b in row['bookings'])
+        if row['paid'] <= 0:
+            row['category'] = 'not_paid'
+        elif row['balance'] > 0:
+            row['category'] = 'outstanding'
+        else:
+            row['category'] = 'fully_paid'
+        row['email_subject'], row['email_body'] = _payment_notice_defaults(row, event)
+        groups[row['category']].append(row)
+
+    for rows in groups.values():
+        rows.sort(key=lambda r: (-r['balance'], r['name'].lower()))
+    return groups
+
+
+@erp_section_required('payment_reports')
+def erp_not_paid_outstanding_report(request):
+    """Three-tab report: no payment, part paid, and fully paid exhibitors."""
+    events = Event.objects.order_by('start_date')
+    active_event = events.first()
+    event_id = request.GET.get('event_id')
+    if event_id:
+        active_event = events.filter(pk=event_id).first() or active_event
+
+    groups = build_not_paid_outstanding_rows(active_event)
+    active_tab = request.GET.get('tab', 'not_paid')
+    if active_tab not in groups:
+        active_tab = 'not_paid'
+
+    summary = {}
+    for key, rows in groups.items():
+        summary[key] = {
+            'count': len(rows),
+            'stands': sum(r['stands_count'] for r in rows),
+            'total': sum((r['total'] for r in rows), Decimal('0')),
+            'paid': sum((r['paid'] for r in rows), Decimal('0')),
+            'balance': sum((max(r['balance'], Decimal('0')) for r in rows), Decimal('0')),
+        }
+
+    bulk_defaults = {}
+    for key in ('not_paid', 'outstanding'):
+        pseudo = {
+            'category': key,
+            'contact': 'Exhibitors',
+            'total': summary[key]['total'],
+            'paid': summary[key]['paid'],
+            'balance': summary[key]['balance'],
+        }
+        bulk_defaults[key] = _payment_notice_defaults(pseudo, active_event)
+
+    return render(request, 'portal/not_paid_outstanding_report.html', {
+        'events': events,
+        'active_event': active_event,
+        'groups': groups,
+        'summary': summary,
+        'bulk_defaults': bulk_defaults,
+        'active_tab': active_tab,
+        'today': timezone.localtime(),
+    })
 
 
 def _payment_band_badge(index):
@@ -2298,6 +2464,81 @@ def send_payment_reminder(request):
 
     messages.success(request, f"Payment reminder sent to {row['name']} ({row['email']}).")
     return redirect(f"{reverse('erp:payment_status_report')}?event_id={event.pk}&tab={row['bucket']}")
+
+
+@erp_section_required('payment_reports')
+def send_not_paid_outstanding_email(request):
+    """Send a professional payment notice to one exhibitor or a whole tab."""
+    from django.urls import reverse
+    from email.utils import parseaddr
+    from invoices.models import PaymentReminder
+    from notifications.utils import send_html_email
+
+    if request.method != 'POST':
+        return redirect('erp:not_paid_outstanding_report')
+
+    events = Event.objects.order_by('start_date')
+    event = events.first()
+    if request.POST.get('event_id'):
+        event = events.filter(pk=request.POST['event_id']).first() or event
+    if not event:
+        messages.error(request, 'No event found.')
+        return redirect('erp:not_paid_outstanding_report')
+
+    category = request.POST.get('category', '')
+    if category not in ('not_paid', 'outstanding'):
+        messages.error(request, 'Payment notices can only be sent from the Not Paid or Outstanding tabs.')
+        return redirect('erp:not_paid_outstanding_report')
+
+    groups = build_not_paid_outstanding_rows(event)
+    if request.POST.get('bulk') == '1':
+        targets = groups[category]
+    else:
+        exhibitor_id = request.POST.get('exhibitor_id', '')
+        target = next((r for r in groups[category] if str(r['id']) == str(exhibitor_id)), None)
+        if target is None:
+            messages.error(request, 'That exhibitor is not in this payment category.')
+            return redirect(f"{reverse('erp:not_paid_outstanding_report')}?event_id={event.pk}&tab={category}")
+        targets = [target]
+
+    subject = (request.POST.get('subject') or '').strip()
+    message = (request.POST.get('message') or '').strip()
+    if not subject or not message:
+        messages.error(request, 'Both a subject and a message are required.')
+        return redirect(f"{reverse('erp:not_paid_outstanding_report')}?event_id={event.pk}&tab={category}")
+
+    sent = 0
+    skipped = 0
+    for row in targets:
+        if not row['email']:
+            skipped += 1
+            continue
+        send_html_email(subject, 'emails/outstanding_payment_notice.html', {
+            'event': event,
+            'exhibitor_name': row['name'],
+            'contact': row['contact'],
+            'paragraphs': [p.strip() for p in message.splitlines() if p.strip()],
+            'stands': row['bookings'],
+            'total_value': row['total'],
+            'amount_paid': row['paid'],
+            'balance': max(row['balance'], Decimal('0')),
+            'pct_paid': row['pct'],
+            'site_url': getattr(settings, 'SITE_URL', ''),
+            'office_email': parseaddr(getattr(settings, 'DEFAULT_FROM_EMAIL', ''))[1],
+        }, [row['email']])
+        for b in row['bookings']:
+            PaymentReminder.objects.create(
+                booking=b['booking'], sent_to=row['email'],
+                reminder_type='not_paid' if category == 'not_paid' else 'outstanding',
+                notes=message,
+            )
+        sent += 1
+
+    if sent:
+        messages.success(request, f"Payment notice sent to {sent} exhibitor(s).")
+    if skipped:
+        messages.warning(request, f"{skipped} exhibitor(s) had no email address on file.")
+    return redirect(f"{reverse('erp:not_paid_outstanding_report')}?event_id={event.pk}&tab={category}")
 
 
 @erp_section_required('expenses')
