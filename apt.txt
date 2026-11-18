@@ -1,4 +1,5 @@
 libpq-dev
+postgresql-client
 libjpeg-dev
 libpng-dev
 zlib1g-dev
